@@ -8,6 +8,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <gmp.h>
+#include <mpfr.h>
+
 struct {
 	/** total number of items */
 	int n;
@@ -161,16 +164,61 @@ bad_call:
 	usage(argv[0]);
 }
 
+#define PREC 2048
+
 int main(int argc, char **argv)
 {
+	mpfr_rnd_t rnd_mode = MPFR_RNDN;
+	mpfr_t d, d1, tmp, tmp1;
+	mpz_t r, tmpz;
+	int i;
+
 	parse_arguments(argc, argv);
-	double d = exp(-0.1/(2 * sqrt(2)) * sqrt(args.a * args.a + args.b * args.b));
-	printf("Maximal distance: %lf\n", d);
-	args.R = pow(3, args.n) - pow(2, args.n + 1) + 1;
-	printf("Total number of rules: %lf\n", args.R*d);
-	args.R = d*pow(3, args.n) - d*pow(2, args.n + 1) + d;
-	printf("Total number of rules: %lf\n", args.R);
-	printf("Total number of rules: %lf\n", pow(args.n, 20)*d);
-	printf("Total number of rules: %lf\n", d*144857410309465103451471029094069468208667261374247731916731898171780.0);
+
+	mpfr_init2(d, PREC);
+	mpfr_init2(d1, PREC);
+	mpfr_init2(tmp, PREC);
+	mpfr_init2(tmp1, PREC);
+	mpz_init_set_ui(r, 1);
+	mpz_init_set_ui(tmpz, 3);
+
+	/* compute total number of rules */
+	mpz_pow_ui(tmpz, tmpz, args.n);
+	mpz_add(r, r, tmpz);
+	mpz_set_ui(tmpz, 2);
+	mpz_pow_ui(tmpz, tmpz, args.n);
+	mpz_sub(r, r, tmpz);
+
+	/* compute distance over sensibility (power = 1) */
+	mpfr_set_ui(d, 2, rnd_mode);
+	mpfr_rec_sqrt(d, d, rnd_mode);
+	mpfr_set_ui(tmp, ((long)args.a) * ((long)args.a) + ((long)args.b * (long)args.b), rnd_mode);
+	mpfr_sqrt(tmp, tmp, rnd_mode);
+	mpfr_mul(d, d, tmp, rnd_mode);
+
+	for (i = 1; i < 10; i++) {
+		/* tmp = -epsilon/2 */
+		mpfr_set_d(tmp, -args.epsilon / 2, rnd_mode);
+		mpfr_set_d(tmp1, 1 + (i + 0.0) / 10, rnd_mode);
+		mpfr_pow(d1, d, tmp1, rnd_mode);
+
+		/* compute final distance */
+		mpfr_mul(tmp, d1, tmp, rnd_mode);
+		mpfr_exp(tmp, tmp, rnd_mode);
+
+		/* multiply with number of rules */
+		mpfr_mul_z(tmp, tmp, r, rnd_mode);
+
+		printf("Power %d: ", i); mpfr_out_str(stdout, 10, 0, tmp, rnd_mode); printf("\n");
+		printf("Power %d: ", i); mpfr_out_str(stdout, 10, 0, d1, rnd_mode); printf("\n");
+	}
+
+	mpfr_clear(d);
+	mpfr_clear(d1);
+	mpfr_clear(tmp);
+	mpfr_clear(tmp1);
+	mpz_clear(r);
+	mpz_clear(tmpz);
+
 	return 0;
 }
