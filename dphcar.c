@@ -186,7 +186,7 @@ int main(int argc, char **argv)
 	mpz_pow_ui(tmpz, tmpz, args.n);
 	mpz_add(r, r, tmpz);
 	mpz_set_ui(tmpz, 2);
-	mpz_pow_ui(tmpz, tmpz, args.n);
+	mpz_pow_ui(tmpz, tmpz, args.n + 1);
 	mpz_sub(r, r, tmpz);
 
 	/* compute distance over sensibility (power = 1) */
