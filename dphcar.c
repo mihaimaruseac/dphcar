@@ -36,6 +36,53 @@ struct {
 	char *fname;
 } args;
 
+typedef struct {
+	size_t sz, all;
+	int *elems;
+} itemset[1];
+
+static void itemset_init(itemset it)
+{
+	it->all = 10;
+	it->sz = 0;
+	it->elems = calloc(it->all, sizeof(it->elems[0]));
+}
+
+static void itemset_clear(itemset it)
+{
+	free(it->elems);
+}
+
+static void itemset_append(itemset it, int x)
+{
+	it->elems[sz++] = x;
+	if (it->sz == it->all) {
+		it->all *= 2;
+		it->elems = realloc(it->elems, it->all * sizeof(it->elems[0]));
+	}
+}
+
+static int int_cmp(const void *a, const void *b)
+{
+	int ia = *((int *)a);
+	int ib = *((int *)b);
+	return ia - ib;
+}
+
+#define MULTIPLY 180503
+#define HASH_SIZE (1<<16)
+static int hash_itemset(itemset it)
+{
+	int i, hash;
+
+	qsort(it->elems, it->sz, sizeof(it->elems[0]), int_cmp);
+	hash = 0;
+	for (i = 0; i < it->sz; i++)
+		hash = (hash * MULTIPLY + it->elems[i]) & (HASH_SIZE - 1);
+
+	return hash;
+}
+
 static void usage(char *prg)
 {
 	fprintf(stderr, "Usage: %s OPTIONS\n", prg);
