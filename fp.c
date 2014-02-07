@@ -169,11 +169,13 @@ static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, 
 	struct fptree_node *n;
 	int i, elem = t[c];
 
+	if (c >= sz)
+		return;
+
 	for (i = 0; i < fpn->num_children; i++)
 		if (fpn->children[i]->val == elem) {
 			fpn->children[i]->cnt++;
-			if (c < sz - 1)
-				fpt_add_transaction(t, c + 1, sz, fpn->children[i], tb);
+			fpt_add_transaction(t, c + 1, sz, fpn->children[i], tb);
 			return;
 		}
 
@@ -184,7 +186,6 @@ static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, 
 	n = fpt_node_new();
 	n->val = elem;
 	n->cnt = 1;
-	/* TODO: update pointers */
 	i = tb[elem-1].rpi;
 	if (tb[i].fst == NULL)
 		tb[i].fst = tb[i].lst = n;
@@ -193,8 +194,7 @@ static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, 
 		tb[i].lst = n;
 	}
 	fpn->children[fpn->num_children++] = n;
-	if (c < sz - 1)
-		fpt_add_transaction(t, c + 1, sz, n, tb);
+	fpt_add_transaction(t, c + 1, sz, n, tb);
 }
 
 static void fpt_node_free(struct fptree_node *r)
