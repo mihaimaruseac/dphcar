@@ -19,6 +19,8 @@ struct fptree_node {
 	struct fptree_node **children;
 	/* size of said vector */
 	int sz_children;
+	/* parent in tree */
+	struct fptree_node *parent;
 };
 
 struct table {
@@ -194,6 +196,7 @@ static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, 
 		tb[i].lst = n;
 	}
 	fpn->children[fpn->num_children++] = n;
+	n->parent = fpn;
 	fpt_add_transaction(t, c + 1, sz, n, tb);
 }
 
