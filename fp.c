@@ -41,7 +41,7 @@ static int fptable_cmp(const void *a, const void *b)
 	return tb->cnt - ta->cnt;
 }
 
-#define LINELENGTH 4 //096
+#define LINELENGTH 4096
 #define INITIAL_SIZE 100
 
 static void single_item_stat(FILE *f, struct fptree *fp)
