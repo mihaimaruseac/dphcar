@@ -121,8 +121,10 @@ static void read_transactions(FILE *f, struct fptree *fp)
 		/* see if another number is split */
 		if (isdigit(line[l])) {
 			q = strrchr(line, ' ');
-			save = strtol(q, NULL, 0);
-			*q = 0; /* remove last number */
+			if (q) {
+				save = strtol(q, NULL, 0);
+				*q = 0; /* remove last number */
+			}
 		}
 
 		while ((i = strtol(p, &q, 10))) {
