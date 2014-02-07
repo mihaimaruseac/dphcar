@@ -55,7 +55,7 @@ static void itemset_clear(itemset it)
 
 static void itemset_append(itemset it, int x)
 {
-	it->elems[sz++] = x;
+	it->elems[it->sz++] = x;
 	if (it->sz == it->all) {
 		it->all *= 2;
 		it->elems = realloc(it->elems, it->all * sizeof(it->elems[0]));
@@ -73,7 +73,7 @@ static int int_cmp(const void *a, const void *b)
 #define HASH_SIZE (1<<16)
 static int hash_itemset(itemset it)
 {
-	int i, hash;
+	size_t i, hash;
 
 	qsort(it->elems, it->sz, sizeof(it->elems[0]), int_cmp);
 	hash = 0;
