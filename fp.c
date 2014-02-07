@@ -91,7 +91,7 @@ static void single_item_stat(FILE *f, struct fptree *fp)
 	fseek(f, 0, SEEK_SET);
 }
 
-static void fpt_add_transaction(int *t, int c, int sz, struct fptree *fp);
+static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, struct table *tb);
 static void read_transactions(FILE *f, struct fptree *fp)
 {
 	int l, i, save = 0, newt, *items, isz = 0, isp = INITIAL_SIZE;
@@ -140,7 +140,7 @@ static void read_transactions(FILE *f, struct fptree *fp)
 			qsort(items, isz, sizeof(items[0]), int_cmp);
 			for (i = 0; i < isz; i++)
 				items[i] = fp->table[items[i]].val;
-			fpt_add_transaction(items, 0, isz, fp);
+			fpt_add_transaction(items, 0, isz, fp->tree, fp->table);
 			isz = 0;
 		}
 	}
@@ -162,18 +162,37 @@ static struct fptree_node *fpt_node_new()
 
 #undef INITIAL_SIZE
 
-static void fpt_add_transaction(int *t, int c, int sz, struct fptree *fp)
+static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, struct table *tb)
 {
+	struct fptree_node *n;
 	int i, elem = t[c];
 
-#if 0
-	for (i = 0; i < fp->num_children; i++)
-		if (fp->children[i].val == t)
-#else
-	for (i = 0; i < sz; i++)
-#endif
-		printf("%d ", t[i]);
-	printf("\n");
+	for (i = 0; i < fpn->num_children; i++)
+		if (fpn->children[i]->val == elem) {
+			fpn->children[i]->cnt++;
+			if (c < sz - 1)
+				fpt_add_transaction(t, c + 1, sz, fpn->children[i], tb);
+			return;
+		}
+
+	if (fpn->num_children == fpn->sz_children) {
+		fpn->sz_children *= 2;
+		fpn->children = realloc(fpn->children, fpn->sz_children * sizeof(fpn->children));
+	}
+	n = fpt_node_new();
+	n->val = elem;
+	n->cnt = 1;
+	/* TODO: update pointers */
+	i = tb[elem-1].rpi;
+	if (tb[i].fst == NULL)
+		tb[i].fst = tb[i].lst = n;
+	else {
+		tb[i].lst->next = n;
+		tb[i].lst = n;
+	}
+	fpn->children[fpn->num_children++] = n;
+	if (c < sz - 1)
+		fpt_add_transaction(t, c + 1, sz, n, tb);
 }
 
 static void fpt_node_free(struct fptree_node *r)
@@ -184,6 +203,35 @@ static void fpt_node_free(struct fptree_node *r)
 		fpt_node_free(r->children[i]);
 	free(r->children);
 	free(r);
+}
+
+void fpt_node_print(struct fptree_node *r)
+{
+	int i, j;
+
+	printf("%p %d %d %p %d <", r, r->val, r->cnt, r->next, r->num_children);
+	for (j = 0; j < r->num_children; j++)
+		printf("%p ", r->children[j]);
+	printf("> %d\n", r->sz_children);
+	for (i = 0; i < r->num_children; i++) {
+		fpt_node_print(r->children[i]);
+	}
+}
+
+void fpt_table_print(struct table *table, int n)
+{
+	struct fptree_node *p;
+	int i;
+
+	for (i = 0; i < n; i++) {
+		printf("%d] %d %d %d | %p -> %p |", i, table[i].val, table[i].cnt, table[i].rpi, table[i].fst, table[i].lst);
+		p = table[i].fst;
+		while (p != table[i].lst) {
+			printf(" %p", p);
+			p = p->next;
+		}
+		printf("\n");
+	}
 }
 
 void fpt_read_from_file(char *fname, struct fptree *fp)

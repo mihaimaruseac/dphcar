@@ -33,4 +33,8 @@ void fpt_read_from_file(char *fname, struct fptree *fp);
  */
 void fpt_cleanup(struct fptree *fp);
 
+/** Debug printing. */
+void fpt_node_print(struct fptree_node *r);
+void fpt_table_print(struct table *table, int n);
+
 #endif
