@@ -5,7 +5,7 @@ TARGET1 = ./dph
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0
 LDFLAGS = -lm -lmpfr -lgmp
-OBJS = fp.o globals.o
+OBJS = dp2d.o fp.o globals.o
 
 all: $(TARGET) $(TARGET1)
 

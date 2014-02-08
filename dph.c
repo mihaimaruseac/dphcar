@@ -11,6 +11,7 @@
 #include <gmp.h>
 #include <mpfr.h>
 
+#include "dp2d.h"
 #include "fp.h"
 #include "globals.h"
 
@@ -54,6 +55,8 @@ int main(int argc, char **argv)
 	fpt_read_from_file(args.tfname, &fp);
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
+
+	dp2d(&fp, args.minth);
 
 	fpt_cleanup(&fp);
 
