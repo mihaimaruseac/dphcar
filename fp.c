@@ -210,6 +210,29 @@ static void fpt_node_free(struct fptree_node *r)
 	free(r);
 }
 
+static int fpt_get_height(struct fptree_node *r)
+{
+	int ret = 0, i, x;
+
+	for (i = 0; i < r->num_children; i++) {
+		x = fpt_get_height(r->children[i]);
+		if (ret < x)
+			ret = x;
+	}
+
+	return ret + 1;
+}
+
+static int fpt_get_nodes(struct fptree_node *r)
+{
+	int ret = 1, i;
+
+	for (i = 0; i < r->num_children; i++)
+		ret += fpt_get_nodes(r->children[i]);
+
+	return ret;
+}
+
 void fpt_node_print(struct fptree_node *r)
 {
 	int i, j;
@@ -264,4 +287,14 @@ void fpt_cleanup(struct fptree *fp)
 {
 	free(fp->table);
 	fpt_node_free(fp->tree);
+}
+
+int fpt_height(struct fptree *fp)
+{
+	return fpt_get_height(fp->tree);
+}
+
+int fpt_nodes(struct fptree *fp)
+{
+	return fpt_get_nodes(fp->tree);
 }
