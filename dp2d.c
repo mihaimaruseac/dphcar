@@ -122,16 +122,33 @@ static struct experiment *prepare_experiments(int t, int minsup, int *exps_sz)
 #undef EXTRA
 #undef PPC
 
-static void free_experiments(struct experiment *exps, int exps_sz)
+static void run_on_experiments(struct experiment *exps, int exps_sz, void (*expf)(struct experiment *))
 {
 	int i;
 
-	for (i = 0; i < exps_sz; i++) {
-		mpfr_clear(exps[i].Z);
-		mpfr_clear(exps[i].Z0);
-	}
+	for (i = 0; i < exps_sz; i++)
+		expf(&exps[i]);
+}
 
+static void free_experiment(struct experiment *xp)
+{
+	mpfr_clear(xp->Z);
+	mpfr_clear(xp->Z0);
+}
+
+static void free_experiments(struct experiment *exps, int exps_sz)
+{
+	run_on_experiments(exps, exps_sz, free_experiment);
 	free(exps);
+}
+
+static void print_experiment(struct experiment *xp)
+{
+	printf("(%d, %d) %4.2f%%, ^%4.2f, |%d Z0=", xp->x, xp->y, xp->c, xp->k, xp->K);
+	mpfr_out_str(stdout, 10, 0, xp->Z0, ROUND_MODE);
+	printf(" Z=");
+	mpfr_out_str(stdout, 10, 0, xp->Z, ROUND_MODE);
+	printf("\n");
 }
 
 void dp2d(struct fptree *fp, int minsup)
@@ -143,6 +160,8 @@ void dp2d(struct fptree *fp, int minsup)
 	fflush(stdout);
 	exps = prepare_experiments(fp->t, minsup, &exps_sz);
 	printf("OK (%d experiments)\n", exps_sz);
+
+	run_on_experiments(exps, exps_sz, print_experiment);
 
 	free_experiments(exps, exps_sz);
 }
