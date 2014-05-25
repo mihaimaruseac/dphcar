@@ -21,11 +21,13 @@ struct {
 	char *tfname;
 	/* minimum threshold */
 	int minth;
+	/* k value (top k rules) */
+	int k;
 } args;
 
 static void usage(char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE MINSUP\n", prg);
+	fprintf(stderr, "Usage: %s TFILE MINSUP kVALUE\n", prg);
 	fprintf(stderr, "\n");
 	exit(EXIT_FAILURE);
 }
@@ -33,10 +35,12 @@ static void usage(char *prg)
 static void parse_arguments(int argc, char **argv)
 {
 	/* TODO: use optparse */
-	if (argc != 3)
+	if (argc != 4)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (sscanf(argv[2], "%d", &args.minth) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[3], "%d", &args.k) != 1)
 		usage(argv[0]);
 }
 
@@ -56,7 +60,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp, args.minth);
+	dp2d(&fp, args.minth, args.k);
 
 	fpt_cleanup(&fp);
 

@@ -7,6 +7,6 @@
 
 struct fptree;
 
-void dp2d(struct fptree *fp, int minsup);
+void dp2d(struct fptree *fp, int minsup, int k);
 
 #endif
