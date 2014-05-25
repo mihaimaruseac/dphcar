@@ -10,7 +10,7 @@
 
 /** settings for an experiment */
 struct experiment {
-	/* center of exp-mech invocation */
+	/* center of exp-mechanism invocation */
 	int x, y;
 	/* min-conf used */
 	float c;
