@@ -137,6 +137,11 @@ void dp2d(struct fptree *fp, int minsup, int k)
 	exps = prepare_experiments(fp->t, minsup, k, &exps_sz);
 	printf("OK (%d experiments)\n", exps_sz);
 
+#if 0
+	fpt_node_print(fp->tree);
+	fpt_table_print(fp->table, fp->n);
+#endif
+
 	//run_on_experiments(exps, exps_sz, print_experiment);
 
 	free_experiments(exps, exps_sz);
