@@ -258,7 +258,7 @@ void fpt_table_print(struct table *table, int n)
 			printf(" %p", p);
 			p = p->next;
 		}
-		printf("\n");
+		printf(" %p\n", p);
 	}
 }
 
