@@ -19,6 +19,12 @@
 struct {
 	/* filename containing the transactions */
 	char *tfname;
+	/* minimum confidence level */
+	float c;
+	/* global value for epsilon */
+	float eps;
+	/* fraction of epsilon for first step */
+	float eps_share;
 #if 0
 	/* minimum threshold */
 	int minth;
@@ -29,7 +35,7 @@ struct {
 
 static void usage(char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE MINSUP kVALUE\n", prg);
+	fprintf(stderr, "Usage: %s TFILE MINCONF EPSILON EPSILON_SHARE\n", prg);
 	fprintf(stderr, "\n");
 	exit(EXIT_FAILURE);
 }
@@ -37,9 +43,15 @@ static void usage(char *prg)
 static void parse_arguments(int argc, char **argv)
 {
 	/* TODO: use optparse */
-	if (argc != 1)
+	if (argc != 5)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
+	if (sscanf(argv[2], "%f", &args.c) != 1 || args.c < 0 || args.c >= 1)
+		usage(argv[0]);
+	if (sscanf(argv[3], "%f", &args.eps) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[4], "%f", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
+		usage(argv[0]);
 #if 0
 	if (sscanf(argv[2], "%d", &args.minth) != 1)
 		usage(argv[0]);
@@ -64,7 +76,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp); //, args.minth, args.k);
+	dp2d(&fp, args.c, args.eps, args.eps_share);
 
 	fpt_cleanup(&fp);
 
