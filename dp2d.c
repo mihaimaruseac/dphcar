@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -65,6 +66,44 @@ static double get_first_theta_value(struct fptree *fp, struct item_count *ic,
 	return x.noisy_count;
 }
 
+static double quality(int x, int y, double X, double Y);
+#define DISPLACEMENT 1
+#define DISTANCE 2
+#define METHOD DISPLACEMENT
+#if METHOD == DISPLACEMENT
+static double displacement(int x, double m, double M, double v)
+{
+	double z = 1 - fabs(x - v) / (M - m);
+
+	if (signbit(z))
+		return 0;
+
+	return v * z;
+}
+
+static double quality(int x, int y, double X, double Y)
+{
+	return displacement(x, Y, X, X) * displacement(y, Y, X, Y);
+}
+#elif METHOD == DISTANCE
+static double quality(int x, int y, double X, double Y)
+{
+	double dx = X - x, dy = Y - y;
+	return sqrt(dx * dx + dy * dy);
+}
+#else
+#error ("Undefined quality method")
+#endif
+#undef DISPLACEMENT
+#undef DISTANCE
+#undef METHOD
+
+static void mine(struct fptree *fp, struct item_count *ic,
+		double c, double epsilon, double m, double M,
+		struct drand48_data *buffer)
+{
+}
+
 void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni)
 {
 	struct item_count *ic = alloc_items(fp->n);
@@ -83,6 +122,10 @@ void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni)
 	printf("Step 2: get min support for %d items: ", ni);
 	theta = get_first_theta_value(fp, ic, ni, c, c * fp->t);
 	printf("%lf\n", theta);
+
+	printf("Step 3: mining rules\n");
+	mine(fp, ic, c, eps - eps_share, theta, fp->t, &randbuffer);
+
 
 #if 0
 	int i;
