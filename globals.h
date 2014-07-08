@@ -23,4 +23,10 @@ void init_rng(struct drand48_data *buffer);
 double laplace_mechanism(double x, double eps, double sens,
 		struct drand48_data *buffer);
 
+/* version of bsearch which returns the rightmost insertion index
+ * (the first index for which the element is at least equal to the key)
+ */
+int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
+		int (*compar)(const void *, const void *));
+
 #endif

@@ -35,3 +35,21 @@ double laplace_mechanism(double x, double eps, double sens,
 {
 	return x + laplace(sens/eps, buffer);
 }
+
+int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
+		int (*compar)(const void *, const void *))
+{
+	int low = 0, high = nmemb - 1, mid, test;
+	const char* cbase = base;
+
+	while (low <= high) {
+		mid = low + ((high - low) >> 1);
+		test = compar(base + mid * size, key);
+		if (test > 0)
+			high = mid - 1;
+		else
+			low = mid + 1;
+	}
+
+	return low;
+}
