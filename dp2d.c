@@ -137,6 +137,8 @@ void dp2d(struct fptree *fp, float c, float eps, float eps_share)
 
 	epsilon_step1 = eps * eps_share;
 	printf("Step 1: compute noisy counts for items: eps_1 = %f\n", epsilon_step1);
+
+	fpt_table_print(fp);
 #if 0
 	struct experiment *exps;
 	int exps_sz;

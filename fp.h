@@ -37,7 +37,7 @@ int fpt_height(struct fptree *fp);
 int fpt_nodes(struct fptree *fp);
 
 /** Debug printing. */
-void fpt_node_print(struct fptree_node *r);
-void fpt_table_print(struct table *table, int n);
+void fpt_tree_print(struct fptree *fp);
+void fpt_table_print(struct fptree *fp);
 
 #endif

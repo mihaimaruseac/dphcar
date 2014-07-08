@@ -233,22 +233,31 @@ static int fpt_get_nodes(struct fptree_node *r)
 	return ret;
 }
 
-void fpt_node_print(struct fptree_node *r)
+static void fpt_node_print(struct fptree_node *r, int gap)
 {
 	int i, j;
 
+	if (gap)
+		printf("%*c", 2 * gap, ' ');
 	printf("%p %d %d %p %d <", r, r->val, r->cnt, r->next, r->num_children);
 	for (j = 0; j < r->num_children; j++)
 		printf("%p ", r->children[j]);
 	printf("> %d\n", r->sz_children);
 	for (i = 0; i < r->num_children; i++) {
-		fpt_node_print(r->children[i]);
+		fpt_node_print(r->children[i], gap + 1);
 	}
 }
 
-void fpt_table_print(struct table *table, int n)
+void fpt_tree_print(struct fptree *fp)
 {
+	fpt_node_print(fp->tree, 0);
+}
+
+void fpt_table_print(struct fptree *fp)
+{
+	struct table *table = fp->table;
 	struct fptree_node *p;
+	int n = fp->n;
 	int i;
 
 	for (i = 0; i < n; i++) {
