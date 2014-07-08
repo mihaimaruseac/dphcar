@@ -8,6 +8,7 @@
 #include "fp.h"
 #include "globals.h"
 
+#if 0
 /** settings for an experiment */
 struct experiment {
 	/* center of exp-mechanism invocation */
@@ -126,9 +127,11 @@ static void print_experiment(struct experiment *xp)
 	mpfr_out_str(stdout, 10, 0, xp->Z, ROUND_MODE);
 	printf("\n");
 }
+#endif
 
-void dp2d(struct fptree *fp, int minsup, int k)
+void dp2d(struct fptree *fp) //, int minsup, int k)
 {
+#if 0
 	struct experiment *exps;
 	int exps_sz;
 
@@ -145,4 +148,5 @@ void dp2d(struct fptree *fp, int minsup, int k)
 	//run_on_experiments(exps, exps_sz, print_experiment);
 
 	free_experiments(exps, exps_sz);
+#endif
 }

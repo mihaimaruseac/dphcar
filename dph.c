@@ -64,9 +64,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-#if 0
-	dp2d(&fp, args.minth, args.k);
-#endif
+	dp2d(&fp); //, args.minth, args.k);
 
 	fpt_cleanup(&fp);
 
