@@ -169,18 +169,41 @@ static void build_items_table(struct fptree *fp, struct item_count *ic,
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
-void dp2d(struct fptree *fp, double c, double eps, double eps_share)
+static double get_first_theta_value(struct fptree *fp, struct item_count *ic,
+		int ni, double c, double try)
+{
+	struct item_count x;
+	int ix;
+
+	x.noisy_count = try;
+	ix = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+
+	while (ix < ni) {
+		x.noisy_count *= c;
+		ix = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+	}
+
+	return x.noisy_count;
+}
+
+void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni)
 {
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
+	double theta;
 
 	init_rng(&randbuffer);
 
-	printf("Running dp2D with c=%lf, eps=%lf, eps_share=%lf\n", c, eps, eps_share);
+	printf("Running dp2D with ni=%d, c=%lf, eps=%lf, eps_share=%lf\n",
+			ni, c, eps, eps_share);
 
 	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n", epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
+
+	printf("Step 2: get min support for %d items: ", ni);
+	theta = get_first_theta_value(fp, ic, ni, c, c * fp->t);
+	printf("%lf\n", theta);
 
 #if 0
 	int i;

@@ -40,7 +40,6 @@ int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
 		int (*compar)(const void *, const void *))
 {
 	int low = 0, high = nmemb - 1, mid, test;
-	const char* cbase = base;
 
 	while (low <= high) {
 		mid = low + ((high - low) >> 1);

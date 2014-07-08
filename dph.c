@@ -25,6 +25,8 @@ struct {
 	double eps;
 	/* fraction of epsilon for first step */
 	double eps_share;
+	/* number of items in the first set */
+	int ni;
 #if 0
 	/* minimum threshold */
 	int minth;
@@ -35,7 +37,7 @@ struct {
 
 static void usage(char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE MINCONF EPSILON EPSILON_SHARE\n", prg);
+	fprintf(stderr, "Usage: %s TFILE MINCONF EPSILON EPSILON_SHARE NITEMS\n", prg);
 	fprintf(stderr, "\n");
 	exit(EXIT_FAILURE);
 }
@@ -43,7 +45,7 @@ static void usage(char *prg)
 static void parse_arguments(int argc, char **argv)
 {
 	/* TODO: use optparse */
-	if (argc != 5)
+	if (argc != 6)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (sscanf(argv[2], "%lf", &args.c) != 1 || args.c < 0 || args.c >= 1)
@@ -51,6 +53,8 @@ static void parse_arguments(int argc, char **argv)
 	if (sscanf(argv[3], "%lf", &args.eps) != 1)
 		usage(argv[0]);
 	if (sscanf(argv[4], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
+		usage(argv[0]);
+	if (sscanf(argv[5], "%d", &args.ni) != 1)
 		usage(argv[0]);
 #if 0
 	if (sscanf(argv[2], "%d", &args.minth) != 1)
@@ -76,7 +80,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp, args.c, args.eps, args.eps_share);
+	dp2d(&fp, args.c, args.eps, args.eps_share, args.ni);
 
 	fpt_cleanup(&fp);
 
