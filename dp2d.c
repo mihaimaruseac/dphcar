@@ -129,16 +129,65 @@ static void print_experiment(struct experiment *xp)
 }
 #endif
 
-void dp2d(struct fptree *fp, float c, float eps, float eps_share)
+struct item_count {
+	int value;
+	int real_count;
+	double noisy_count;
+};
+
+static struct item_count *alloc_items(int sz)
 {
-	float epsilon_step1;
+	return calloc(sz, sizeof(struct item_count));
+}
 
-	printf("Running dp2D with c=%f, eps=%f, eps_share=%f\n", c, eps, eps_share);
+static void free_items(struct item_count *ic)
+{
+	free(ic);
+}
 
-	epsilon_step1 = eps * eps_share;
-	printf("Step 1: compute noisy counts for items: eps_1 = %f\n", epsilon_step1);
+static int ic_noisy_cmp(const void *a, const void *b)
+{
+	const struct item_count *ia = a, *ib = b;
+	return ib->noisy_count - ia->noisy_count;
+}
 
-	fpt_table_print(fp);
+static void build_items_table(struct fptree *fp, struct item_count *ic,
+		double eps, struct drand48_data *buffer)
+{
+	int i;
+
+	for (i = 0; i < fp->n; i++) {
+		ic[i].value = i + 1;
+		ic[i].real_count = fpt_item_count(fp, i);
+		ic[i].noisy_count = laplace_mechanism(ic[i].real_count,
+				eps, 1, buffer);
+		/* TODO: filter some noise */
+		if (ic[i].noisy_count < 0)
+			ic[i].noisy_count = 0;
+	}
+
+	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+}
+
+void dp2d(struct fptree *fp, double c, double eps, double eps_share)
+{
+	struct item_count *ic = alloc_items(fp->n);
+	double epsilon_step1 = eps * eps_share;
+	struct drand48_data randbuffer;
+
+	init_rng(&randbuffer);
+
+	printf("Running dp2D with c=%lf, eps=%lf, eps_share=%lf\n", c, eps, eps_share);
+
+	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n", epsilon_step1);
+	build_items_table(fp, ic, epsilon_step1, &randbuffer);
+
+#if 0
+	int i;
+	for (i = 0; i < fp->n; i++)
+		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
+#endif
+
 #if 0
 	struct experiment *exps;
 	int exps_sz;
@@ -157,4 +206,5 @@ void dp2d(struct fptree *fp, float c, float eps, float eps_share)
 
 	free_experiments(exps, exps_sz);
 #endif
+	free_items(ic);
 }

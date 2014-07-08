@@ -307,3 +307,10 @@ int fpt_nodes(struct fptree *fp)
 {
 	return fpt_get_nodes(fp->tree);
 }
+
+int fpt_item_count(struct fptree *fp, int it)
+{
+	if (it < 0 || it >= fp->n)
+		return 0;
+	return fp->table[fp->table[it].rpi].cnt;
+}

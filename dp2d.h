@@ -7,6 +7,6 @@
 
 struct fptree;
 
-void dp2d(struct fptree *fp, float c, float eps, float eps_share);
+void dp2d(struct fptree *fp, double c, double eps, double eps_share);
 
 #endif

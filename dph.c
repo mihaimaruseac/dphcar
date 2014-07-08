@@ -20,11 +20,11 @@ struct {
 	/* filename containing the transactions */
 	char *tfname;
 	/* minimum confidence level */
-	float c;
+	double c;
 	/* global value for epsilon */
-	float eps;
+	double eps;
 	/* fraction of epsilon for first step */
-	float eps_share;
+	double eps_share;
 #if 0
 	/* minimum threshold */
 	int minth;
@@ -46,11 +46,11 @@ static void parse_arguments(int argc, char **argv)
 	if (argc != 5)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
-	if (sscanf(argv[2], "%f", &args.c) != 1 || args.c < 0 || args.c >= 1)
+	if (sscanf(argv[2], "%lf", &args.c) != 1 || args.c < 0 || args.c >= 1)
 		usage(argv[0]);
-	if (sscanf(argv[3], "%f", &args.eps) != 1)
+	if (sscanf(argv[3], "%lf", &args.eps) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[4], "%f", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
+	if (sscanf(argv[4], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
 		usage(argv[0]);
 #if 0
 	if (sscanf(argv[2], "%d", &args.minth) != 1)
