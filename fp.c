@@ -249,12 +249,9 @@ void fpt_node_print(struct fptree_node *r)
 void fpt_table_print(struct table *table, int n)
 {
 	struct fptree_node *p;
-	int i, max = table[i].cnt;
+	int i;
 
 	for (i = 0; i < n; i++) {
-		if (max < table[i].cnt)
-			max = table[i].cnt;
-#if 0
 		printf("%d] %d %d %d | %p -> %p |", i, table[i].val, table[i].cnt, table[i].rpi, table[i].fst, table[i].lst);
 		p = table[i].fst;
 		while (p != table[i].lst) {
@@ -262,9 +259,7 @@ void fpt_table_print(struct table *table, int n)
 			p = p->next;
 		}
 		printf(" %p\n", p);
-#endif
 	}
-	printf("%d\n", max);
 }
 
 void fpt_read_from_file(char *fname, struct fptree *fp)
