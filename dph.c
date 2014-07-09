@@ -16,7 +16,7 @@
 #include "globals.h"
 
 /* Command line arguments */
-struct {
+static struct {
 	/* filename containing the transactions */
 	char *tfname;
 	/* minimum confidence level */
@@ -27,9 +27,9 @@ struct {
 	double eps_share;
 	/* number of items in the first set */
 	int ni;
-#if 0
 	/* minimum threshold */
 	int minth;
+#if 0
 	/* k value (top k rules) */
 	int k;
 #endif
@@ -37,15 +37,15 @@ struct {
 
 static void usage(char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE MINCONF EPSILON EPSILON_SHARE NITEMS\n", prg);
-	fprintf(stderr, "\n");
+	fprintf(stderr, "Usage: %s TFILE MINCONF EPSILON EPSILON_SHARE NITEMS"
+			" MINTHRESHOLD\n", prg);
 	exit(EXIT_FAILURE);
 }
 
 static void parse_arguments(int argc, char **argv)
 {
 	/* TODO: use optparse */
-	if (argc != 6)
+	if (argc != 7)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (sscanf(argv[2], "%lf", &args.c) != 1 || args.c < 0 || args.c >= 1)
@@ -56,9 +56,9 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[5], "%d", &args.ni) != 1)
 		usage(argv[0]);
-#if 0
-	if (sscanf(argv[2], "%d", &args.minth) != 1)
+	if (sscanf(argv[6], "%d", &args.minth) != 1)
 		usage(argv[0]);
+#if 0
 	if (sscanf(argv[3], "%d", &args.k) != 1)
 		usage(argv[0]);
 #endif
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp, args.c, args.eps, args.eps_share, args.ni);
+	dp2d(&fp, args.c, args.eps, args.eps_share, args.ni, args.minth);
 
 	fpt_cleanup(&fp);
 

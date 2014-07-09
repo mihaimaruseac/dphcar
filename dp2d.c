@@ -54,7 +54,7 @@ static void build_items_table(struct fptree *fp, struct item_count *ic,
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
-static double get_first_theta_value(struct fptree *fp, struct item_count *ic,
+static int get_first_theta_value(struct fptree *fp, struct item_count *ic,
 		int ni, double c, double try)
 {
 	struct item_count x;
@@ -68,10 +68,92 @@ static double get_first_theta_value(struct fptree *fp, struct item_count *ic,
 		ix = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 	}
 
-	return x.noisy_count;
+	return floor(x.noisy_count);
+}
+
+static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
+		int m, int M, int minth)
+{
+	int num_triangles = 0;
+
+	if (m <= minth)
+		die("Minimum threshold set too high");
+
+	while (m > minth) {
+#ifndef PRINT_TRIANGLES_ITEMS
+#define PRINT_TRIANGLES_ITEMS 1
+#endif
+#if PRINT_TRIANGLES_ITEMS
+		struct item_count x;
+		int miu, mil;
+
+		x.noisy_count = M;
+		mil = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+		x.noisy_count = m;
+		miu = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+		if (ic[miu - 1].noisy_count < m)
+			die("Invalid item miu=%d val=%d real=%d noise=%lf "
+					"m=%d M=%d", miu, ic[miu-1].value,
+					ic[miu-1].real_count,
+					ic[miu-1].noisy_count, m, M);
+
+		if (num_triangles == 0) printf("\n");
+		printf("\tTriangle %d: (%d, %d), inside: %d, all: %d\n",
+				num_triangles, m, M, miu - mil, miu);
+#endif
+
+		M = m;
+		m *= c;
+		num_triangles++;
+	}
+
+	return num_triangles;
 }
 
 static double quality(int x, int y, double X, double Y);
+static void mine(struct fptree *fp, struct item_count *ic,
+		double c, double epsilon, int m, int M,
+		struct drand48_data *buffer)
+{
+}
+
+void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni,
+		int minth)
+{
+	struct item_count *ic = alloc_items(fp->n);
+	double epsilon_step1 = eps * eps_share;
+	struct drand48_data randbuffer;
+	int theta, nt;
+
+	init_rng(&randbuffer);
+
+	printf("Running dp2D with ni=%d, minth=%d, c=%lf, eps=%lf, "
+			"eps_share=%lf\n", ni, minth, c, eps, eps_share);
+
+	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n",
+			epsilon_step1);
+	build_items_table(fp, ic, epsilon_step1, &randbuffer);
+
+#if 0
+	int i;
+	for (i = 0; i < fp->n; i++)
+		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
+#endif
+
+	printf("Step 2: get min support for %d items: ", ni);
+	theta = get_first_theta_value(fp, ic, ni, c, c * fp->t);
+	printf("%d\n", theta);
+
+	printf("Step 3: get triangles: ");
+	nt = get_triangles(fp, ic, c, theta, fp->t, minth);
+	printf("%d triangles needed\n", nt);
+
+	printf("Step 4: mining rules\n");
+	mine(fp, ic, c, eps - eps_share, theta, fp->t, &randbuffer);
+
+	free_items(ic);
+}
+
 #define DISPLACEMENT 1
 #define DISTANCE 2
 #define METHOD DISPLACEMENT
@@ -102,41 +184,3 @@ static double quality(int x, int y, double X, double Y)
 #undef DISPLACEMENT
 #undef DISTANCE
 #undef METHOD
-
-static void mine(struct fptree *fp, struct item_count *ic,
-		double c, double epsilon, double m, double M,
-		struct drand48_data *buffer)
-{
-}
-
-void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni)
-{
-	struct item_count *ic = alloc_items(fp->n);
-	double epsilon_step1 = eps * eps_share;
-	struct drand48_data randbuffer;
-	double theta;
-
-	init_rng(&randbuffer);
-
-	printf("Running dp2D with ni=%d, c=%lf, eps=%lf, eps_share=%lf\n",
-			ni, c, eps, eps_share);
-
-	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n", epsilon_step1);
-	build_items_table(fp, ic, epsilon_step1, &randbuffer);
-
-	printf("Step 2: get min support for %d items: ", ni);
-	theta = get_first_theta_value(fp, ic, ni, c, c * fp->t);
-	printf("%lf\n", theta);
-
-	printf("Step 3: mining rules\n");
-	mine(fp, ic, c, eps - eps_share, theta, fp->t, &randbuffer);
-
-
-#if 0
-	int i;
-	for (i = 0; i < fp->n; i++)
-		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
-#endif
-
-	free_items(ic);
-}
