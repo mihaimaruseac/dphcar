@@ -130,9 +130,16 @@ static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 
 static double quality(int x, int y, double X, double Y);
 static void mine(struct fptree *fp, struct item_count *ic,
-		double c, double epsilon, int m, int M,
-		struct drand48_data *buffer)
+		double c, double epsilon, int num_triangles,
+		int m, int M, struct drand48_data *buffer)
 {
+	double c_epsilon;
+	int c_triangle;
+
+	for (c_triangle = 0; c_triangle < num_triangles; c_triangle++) {
+		/* TODO: split based on triangles and rules per triangles */
+		c_epsilon = epsilon / num_triangles;
+	}
 }
 
 void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni,
@@ -166,8 +173,8 @@ void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni,
 	nt = get_triangles(fp, ic, c, theta, fp->t, minth);
 	printf("%d triangles needed\n", nt);
 
-	printf("Step 4: mining rules\n");
-	mine(fp, ic, c, eps - eps_share, theta, fp->t, &randbuffer);
+	printf("Step 4: mining rules:\n");
+	mine(fp, ic, c, eps - eps_share, nt, theta, fp->t, &randbuffer);
 
 	free_items(ic);
 }
