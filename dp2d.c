@@ -74,36 +74,40 @@ static int get_first_theta_value(struct fptree *fp, struct item_count *ic,
 static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 		int m, int M, int minth)
 {
-	int num_triangles = 0;
+#ifndef PRINT_TRIANGLES_ITEMS
+#define PRINT_TRIANGLES_ITEMS 1
+#endif
+	int num_triangles = 0, nm, nM;
+	struct item_count x;
 
 	if (m <= minth)
 		die("Minimum threshold set too high");
 
-	while (m > minth) {
-#ifndef PRINT_TRIANGLES_ITEMS
-#define PRINT_TRIANGLES_ITEMS 1
-#endif
+	x.noisy_count = M;
+	nM = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+	x.noisy_count = m;
+	nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+
 #if PRINT_TRIANGLES_ITEMS
-		struct item_count x;
-		int miu, mil;
+	printf("\n");
+#endif
+
+	while (m > minth) {
+#if PRINT_TRIANGLES_ITEMS
+		printf("triangle %d (%d %d) (items %d %d) (noise %lf %lf) "
+				"inside: %d\n",
+				num_triangles, M, m, nM, nm,
+				ic[nM].noisy_count, ic[nm].noisy_count,
+				nm - nM);
+#endif
 
 		x.noisy_count = M;
-		mil = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+		nM = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 		x.noisy_count = m;
-		miu = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
-		if (ic[miu - 1].noisy_count < m)
-			die("Invalid item miu=%d val=%d real=%d noise=%lf "
-					"m=%d M=%d", miu, ic[miu-1].value,
-					ic[miu-1].real_count,
-					ic[miu-1].noisy_count, m, M);
+		nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 
-		if (num_triangles == 0) printf("\n");
-		printf("\tTriangle %d: (%d, %d), inside: %d, all: %d\n",
-				num_triangles, m, M, miu - mil, miu);
-#endif
-
-		M = m;
-		m *= c;
+		m = floor(ic[nm].noisy_count - 1); /* get one more item */
+		M = m / c;
 		num_triangles++;
 	}
 
