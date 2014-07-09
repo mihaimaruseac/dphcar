@@ -71,25 +71,40 @@ static int get_first_theta_value(struct fptree *fp, struct item_count *ic,
 	return floor(x.noisy_count);
 }
 
+static void get_next_triangle(struct fptree *fp, struct item_count *ic,
+		double c, int *m, int *M)
+{
+	struct item_count x;
+	int nm;
+
+	/* get one more item */
+	x.noisy_count = *m;
+	nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+	*m = floor(ic[nm].noisy_count - 1);
+	*M = *m / c;
+}
+
 static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 		int m, int M, int minth)
 {
 #ifndef PRINT_TRIANGLES_ITEMS
 #define PRINT_TRIANGLES_ITEMS 0
 #endif
-	int num_triangles = 0, nm, nM = nM;
-	struct item_count x;
+	int num_triangles = 0;
 
 	if (m <= minth)
 		die("Minimum threshold set too high");
+
+#if PRINT_TRIANGLES_ITEMS
+	struct item_count x;
+	int nm, nM;
+
+	printf("\n");
 
 	x.noisy_count = M;
 	nM = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 	x.noisy_count = m;
 	nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
-
-#if PRINT_TRIANGLES_ITEMS
-	printf("\n");
 #endif
 
 	while (m > minth) {
@@ -99,15 +114,14 @@ static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 				num_triangles, M, m, nM, nm,
 				ic[nM].noisy_count, ic[nm].noisy_count,
 				nm - nM);
-#endif
 
 		x.noisy_count = M;
 		nM = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 		x.noisy_count = m;
 		nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+#endif
 
-		m = floor(ic[nm].noisy_count - 1); /* get one more item */
-		M = m / c;
+		get_next_triangle(fp, ic, c, &m, &M);
 		num_triangles++;
 	}
 
