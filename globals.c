@@ -18,6 +18,12 @@ int int_cmp(const void *a, const void *b)
 	return *ia - *ib;
 }
 
+int int_cmp_r(const void *a, const void *b)
+{
+	const int *ia = a, *ib = b;
+	return *ib - *ia;
+}
+
 static double laplace(double lambda, struct drand48_data *buffer)
 {
 	double rnd;
