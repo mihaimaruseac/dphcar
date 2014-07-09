@@ -28,12 +28,7 @@ static void free_items(struct item_count *ic)
 static int ic_noisy_cmp(const void *a, const void *b)
 {
 	const struct item_count *ia = a, *ib = b;
-	if (ib->noisy_count < ia->noisy_count)
-		return -1;
-	if (ib->noisy_count > ia->noisy_count)
-		return 1;
-	return 0;
-
+	return double_cmp_r(&ia->noisy_count, &ib->noisy_count);
 }
 
 static void build_items_table(struct fptree *fp, struct item_count *ic,

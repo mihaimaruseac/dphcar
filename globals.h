@@ -17,6 +17,8 @@ struct drand48_data;
 /* qsort functions for integer comparisons */
 int int_cmp(const void *a, const void *b);
 int int_cmp_r(const void *a, const void *b);
+int double_cmp(const void *a, const void *b);
+int double_cmp_r(const void *a, const void *b);
 
 void init_rng(struct drand48_data *buffer);
 

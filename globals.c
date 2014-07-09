@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 
@@ -22,6 +23,22 @@ int int_cmp_r(const void *a, const void *b)
 {
 	const int *ia = a, *ib = b;
 	return *ib - *ia;
+}
+
+int double_cmp(const void *a, const void *b)
+{
+	const double *fa = a, *fb = b;
+
+	if (*fa < *fb)
+		return -1;
+	else if (*fa > *fb)
+		return 1;
+	return 0;
+}
+
+int double_cmp_r(const void *a, const void *b)
+{
+	return -double_cmp(a, b);
 }
 
 static double laplace(double lambda, struct drand48_data *buffer)
