@@ -128,17 +128,76 @@ static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 	return num_triangles;
 }
 
+static int num_allowed_items(struct fptree *fp, struct item_count *ic,
+		int m, int M)
+{
+	struct item_count x;
+	int nm;
+
+	x.noisy_count = m;
+	nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+	x.noisy_count = M;
+	return nm - bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+}
+
+static void all_allowed_items(struct fptree *fp, struct item_count *ic,
+		int m, int M, int *items)
+{
+	int i = 0;
+	struct item_count x;
+	int nm, nM;
+
+	x.noisy_count = m;
+	nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+	x.noisy_count = M;
+	nM = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+
+	for (i = nM;  i < nm; i++)
+		items[i - nM] = ic[i].value;
+}
+
 static double quality(int x, int y, double X, double Y);
 static void mine(struct fptree *fp, struct item_count *ic,
 		double c, double epsilon, int num_triangles,
 		int m, int M, struct drand48_data *buffer)
 {
+#ifndef PRINT_TRIANGLE_CONTENT
+#define PRINT_TRIANGLE_CONTENT 0
+#endif
+	int c_triangle, num_items, *items;
 	double c_epsilon;
-	int c_triangle;
 
 	for (c_triangle = 0; c_triangle < num_triangles; c_triangle++) {
-		/* TODO: split based on triangles and rules per triangles */
+		/* TODO: split based on triangles */
 		c_epsilon = epsilon / num_triangles;
+
+		num_items = num_allowed_items(fp, ic, m, M);
+#if PRINT_TRIANGLE_CONTENT == 1
+		printf("Triangle %d %d %d: %d", c_triangle, m, M, num_items);
+#endif
+		if (num_items < 2)
+			goto end_loop;
+
+		items = calloc(num_items, sizeof(items[0]));
+		all_allowed_items(fp, ic, m, M, items);
+#if PRINT_TRIANGLE_CONTENT == 1
+		int i;
+
+		printf("| ");
+		for (i = 0; i < num_items; i++)
+			printf("%d ", items[i]);
+#endif
+
+		/* TODO: extract all rules with current items */
+		free(items);
+
+		/* TODO: sample */
+
+end_loop:
+#if PRINT_TRIANGLE_CONTENT == 1
+		printf("\n");
+#endif
+		get_next_triangle(fp, ic, c, &m, &M);
 	}
 }
 
