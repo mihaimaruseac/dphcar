@@ -159,7 +159,10 @@ void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni,
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
 
-#if 0
+#ifndef PRINT_ITEM_TABLE
+#define PRINT_ITEM_TABLE 0
+#endif
+#if PRINT_ITEM_TABLE == 1
 	int i;
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
