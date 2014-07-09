@@ -75,9 +75,9 @@ static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 		int m, int M, int minth)
 {
 #ifndef PRINT_TRIANGLES_ITEMS
-#define PRINT_TRIANGLES_ITEMS 1
+#define PRINT_TRIANGLES_ITEMS 0
 #endif
-	int num_triangles = 0, nm, nM;
+	int num_triangles = 0, nm, nM = nM;
 	struct item_count x;
 
 	if (m <= minth)
