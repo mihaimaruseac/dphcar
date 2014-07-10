@@ -10,6 +10,20 @@
 #include "fp.h"
 #include "globals.h"
 
+/* debug defines */
+#ifndef PRINT_TRIANGLES_ITEMS
+#define PRINT_TRIANGLES_ITEMS 0
+#endif
+#ifndef PRINT_TRIANGLE_CONTENT
+#define PRINT_TRIANGLE_CONTENT 0
+#endif
+#ifndef PRINT_ITEM_TABLE
+#define PRINT_ITEM_TABLE 0
+#endif
+#ifndef PRINT_RULE_TABLE
+#define PRINT_RULE_TABLE 0
+#endif
+
 struct item_count {
 	int value;
 	int real_count;
@@ -85,9 +99,6 @@ static void get_next_triangle(struct fptree *fp, struct item_count *ic,
 static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 		int m, int M, int minth)
 {
-#ifndef PRINT_TRIANGLES_ITEMS
-#define PRINT_TRIANGLES_ITEMS 0
-#endif
 	int num_triangles = 0;
 
 	if (m <= minth)
@@ -159,12 +170,14 @@ static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
 {
 	int i;
 
+#if PRINT_RULE_TABLE == 1
 	for (i = 0; i < a_length; i++)
 		printf("%d ", A[i]);
 	printf("-> ");
 	for (i = 0; i < b_length; i++)
 		printf("%d ", B[i]);
 	printf("\n");
+#endif
 }
 
 static void for_all_rules(struct fptree *fp, int *items, int num_items,
@@ -218,9 +231,6 @@ static void mine(struct fptree *fp, struct item_count *ic,
 		double c, double epsilon, int num_triangles,
 		int m, int M, struct drand48_data *buffer)
 {
-#ifndef PRINT_TRIANGLE_CONTENT
-#define PRINT_TRIANGLE_CONTENT 0
-#endif
 	int c_triangle, num_items, *items;
 	double c_epsilon;
 
@@ -278,9 +288,6 @@ void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni,
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
 
-#ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 0
-#endif
 #if PRINT_ITEM_TABLE == 1
 	int i;
 	for (i = 0; i < fp->n; i++)
