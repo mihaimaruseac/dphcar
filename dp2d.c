@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <gmp.h>
 #include <mpfr.h>
@@ -14,6 +15,8 @@ struct item_count {
 	int real_count;
 	double noisy_count;
 };
+
+static double quality(int x, int y, double X, double Y);
 
 static struct item_count *alloc_items(int sz)
 {
@@ -151,7 +154,66 @@ static void all_allowed_items(struct fptree *fp, struct item_count *ic,
 		items[i - nM] = ic[i].value;
 }
 
-static double quality(int x, int y, double X, double Y);
+static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
+		int *A, int *B, int a_length, int b_length)
+{
+	int i;
+
+	for (i = 0; i < a_length; i++)
+		printf("%d ", A[i]);
+	printf("-> ");
+	for (i = 0; i < b_length; i++)
+		printf("%d ", B[i]);
+	printf("\n");
+}
+
+static void for_all_rules(struct fptree *fp, int *items, int num_items,
+		int m, int M, double epsilon,
+		void (*f)(struct fptree *, int, int, double,
+			int*, int *, int, int))
+{
+#define RULE_A 1
+#define RULE_B 2
+#define RULE_END 3
+	int i, a_length, b_length;
+	unsigned char *AB;
+	int *A, *B;
+
+	AB = calloc(num_items, sizeof(AB[0]));
+	A = calloc(num_items, sizeof(A[0]));
+	B = calloc(num_items, sizeof(B[0]));
+	AB[num_items - 1] = 1;
+	AB[num_items - 2] = 1;
+
+	while (1) {
+		AB[num_items - 1]++;
+		a_length = b_length = 0;
+
+		for (i = num_items - 1; i > 0; i--)
+			if (AB[i] == RULE_END) {
+				AB[i] = 0;
+				AB[i-1]++;
+			}
+
+		for (i = 0; i < num_items; i++)
+			switch (AB[i]) {
+			case RULE_B: B[b_length++] = items[i]; break;
+			case RULE_A: A[a_length++] = items[i]; break;
+			}
+
+		if (AB[0] == RULE_END) break;
+		if (a_length == 0) continue;
+		if (b_length == 0) continue;
+
+		f(fp, m, M, epsilon, A, B, a_length, b_length);
+	}
+
+	free(AB);
+#undef RULE_A
+#undef RULE_B
+#undef RULE_END
+}
+
 static void mine(struct fptree *fp, struct item_count *ic,
 		double c, double epsilon, int num_triangles,
 		int m, int M, struct drand48_data *buffer)
@@ -184,9 +246,12 @@ static void mine(struct fptree *fp, struct item_count *ic,
 #endif
 
 		/* TODO: extract all rules with current items */
-		free(items);
+		for_all_rules(fp, items, num_items, m, M, c_epsilon,
+				compute_cdf);
 
 		/* TODO: sample */
+
+		free(items);
 
 end_loop:
 #if PRINT_TRIANGLE_CONTENT == 1
