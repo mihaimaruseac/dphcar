@@ -37,9 +37,9 @@ static struct item_count *alloc_items(int sz)
 	return calloc(sz, sizeof(struct item_count));
 }
 
-static void free_items(struct item_count *ic)
+static void free_items(const struct item_count *ic)
 {
-	free(ic);
+	free((void*)ic);
 }
 
 static int ic_noisy_cmp(const void *a, const void *b)
@@ -48,7 +48,7 @@ static int ic_noisy_cmp(const void *a, const void *b)
 	return double_cmp_r(&ia->noisy_count, &ib->noisy_count);
 }
 
-static void build_items_table(struct fptree *fp, struct item_count *ic,
+static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
 	int i;
@@ -66,8 +66,8 @@ static void build_items_table(struct fptree *fp, struct item_count *ic,
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
-static int get_first_theta_value(struct fptree *fp, struct item_count *ic,
-		int ni, double c, double try)
+static int get_first_theta_value(const struct fptree *fp,
+		const struct item_count *ic, int ni, double c, double try)
 {
 	struct item_count x;
 	int ix;
@@ -83,8 +83,8 @@ static int get_first_theta_value(struct fptree *fp, struct item_count *ic,
 	return floor(x.noisy_count);
 }
 
-static void get_next_triangle(struct fptree *fp, struct item_count *ic,
-		double c, int *m, int *M)
+static void get_next_triangle(const struct fptree *fp,
+		const struct item_count *ic, double c, int *m, int *M)
 {
 	struct item_count x;
 	int nm;
@@ -96,8 +96,8 @@ static void get_next_triangle(struct fptree *fp, struct item_count *ic,
 	*M = *m / c;
 }
 
-static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
-		int m, int M, int minth)
+static int get_triangles(const struct fptree *fp, const struct item_count *ic,
+		double c, int m, int M, int minth)
 {
 	int num_triangles = 0;
 
@@ -137,8 +137,8 @@ static int get_triangles(struct fptree *fp, struct item_count *ic, double c,
 	return num_triangles;
 }
 
-static int num_allowed_items(struct fptree *fp, struct item_count *ic,
-		int m, int M)
+static int num_allowed_items(const struct fptree *fp,
+		const struct item_count *ic, int m, int M)
 {
 	struct item_count x;
 	int nm;
@@ -149,8 +149,8 @@ static int num_allowed_items(struct fptree *fp, struct item_count *ic,
 	return nm - bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
-static void all_allowed_items(struct fptree *fp, struct item_count *ic,
-		int m, int M, int *items)
+static void all_allowed_items(const struct fptree *fp,
+		const struct item_count *ic, int m, int M, int *items)
 {
 	int i = 0;
 	struct item_count x;
@@ -165,7 +165,7 @@ static void all_allowed_items(struct fptree *fp, struct item_count *ic,
 		items[i - nM] = ic[i].value;
 }
 
-static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
+static void compute_cdf(const struct fptree *fp, int m, int M, double epsilon,
 		const int *A, const int *B, const int *AB,
 		int a_length, int b_length, int ab_length)
 {
@@ -185,9 +185,9 @@ static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
 #endif
 }
 
-static void for_all_rules(struct fptree *fp, int *items, int num_items,
-		int m, int M, double epsilon,
-		void (*f)(struct fptree*, int, int, double,
+static void for_all_rules(const struct fptree *fp, const int *items,
+		int num_items, int m, int M, double epsilon,
+		void (*f)(const struct fptree*, int, int, double,
 			const int*, const int*, const int*, int, int, int))
 {
 #define RULE_A 1
@@ -237,7 +237,7 @@ static void for_all_rules(struct fptree *fp, int *items, int num_items,
 #undef RULE_END
 }
 
-static void mine(struct fptree *fp, struct item_count *ic,
+static void mine(const struct fptree *fp, const struct item_count *ic,
 		double c, double epsilon, int num_triangles,
 		int m, int M, struct drand48_data *buffer)
 {
@@ -281,8 +281,8 @@ end_loop:
 	}
 }
 
-void dp2d(struct fptree *fp, double c, double eps, double eps_share, int ni,
-		int minth)
+void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
+		int ni, int minth)
 {
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;

@@ -35,7 +35,7 @@ static struct {
 #endif
 } args;
 
-static void usage(char *prg)
+static void usage(const char *prg)
 {
 	fprintf(stderr, "Usage: %s TFILE MINCONF EPSILON EPSILON_SHARE NITEMS"
 			" MINTHRESHOLD\n", prg);

@@ -26,21 +26,21 @@ struct fptree {
 /**
  * Read a transaction file and construct a fp-tree from it.
  */
-void fpt_read_from_file(char *fname, struct fptree *fp);
+void fpt_read_from_file(const char *fname, struct fptree *fp);
 
 /**
  * Cleanup the data structures used in a fp-tree.
  */
-void fpt_cleanup(struct fptree *fp);
+void fpt_cleanup(const struct fptree *fp);
 
-int fpt_height(struct fptree *fp);
-int fpt_nodes(struct fptree *fp);
+int fpt_height(const struct fptree *fp);
+int fpt_nodes(const struct fptree *fp);
 
-int fpt_item_count(struct fptree *fp, int it);
-int fpt_itemset_count(struct fptree *fp, const int *its, int itslen);
+int fpt_item_count(const struct fptree *fp, int it);
+int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen);
 
 /** Debug printing. */
-void fpt_tree_print(struct fptree *fp);
-void fpt_table_print(struct fptree *fp);
+void fpt_tree_print(const struct fptree *fp);
+void fpt_table_print(const struct fptree *fp);
 
 #endif

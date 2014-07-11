@@ -93,8 +93,9 @@ static void single_item_stat(FILE *f, struct fptree *fp)
 	fseek(f, 0, SEEK_SET);
 }
 
-static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, struct table *tb);
-static void read_transactions(FILE *f, struct fptree *fp)
+static void fpt_add_transaction(const int *t, int c, int sz,
+		struct fptree_node *fpn, struct table *tb);
+static void read_transactions(FILE *f, const struct fptree *fp)
 {
 	int l, i, save = 0, newt, *items, isz = 0, isp = INITIAL_SIZE;
 	char line[LINELENGTH], *p, *q;
@@ -166,7 +167,8 @@ static struct fptree_node *fpt_node_new()
 
 #undef INITIAL_SIZE
 
-static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, struct table *tb)
+static void fpt_add_transaction(const int *t, int c, int sz,
+		struct fptree_node *fpn, struct table *tb)
 {
 	struct fptree_node *n;
 	int i, elem = t[c];
@@ -200,17 +202,17 @@ static void fpt_add_transaction(int *t, int c, int sz, struct fptree_node *fpn, 
 	fpt_add_transaction(t, c + 1, sz, n, tb);
 }
 
-static void fpt_node_free(struct fptree_node *r)
+static void fpt_node_free(const struct fptree_node *r)
 {
 	int i;
 
 	for (i = 0; i < r->num_children; i++)
 		fpt_node_free(r->children[i]);
 	free(r->children);
-	free(r);
+	free((void*)r);
 }
 
-static int fpt_get_height(struct fptree_node *r)
+static int fpt_get_height(const struct fptree_node *r)
 {
 	int ret = 0, i, x;
 
@@ -223,7 +225,7 @@ static int fpt_get_height(struct fptree_node *r)
 	return ret + 1;
 }
 
-static int fpt_get_nodes(struct fptree_node *r)
+static int fpt_get_nodes(const struct fptree_node *r)
 {
 	int ret = 1, i;
 
@@ -233,7 +235,7 @@ static int fpt_get_nodes(struct fptree_node *r)
 	return ret;
 }
 
-static void fpt_node_print(struct fptree_node *r, int gap)
+static void fpt_node_print(const struct fptree_node *r, int gap)
 {
 	int i, j;
 
@@ -248,12 +250,12 @@ static void fpt_node_print(struct fptree_node *r, int gap)
 	}
 }
 
-void fpt_tree_print(struct fptree *fp)
+void fpt_tree_print(const struct fptree *fp)
 {
 	fpt_node_print(fp->tree, 0);
 }
 
-void fpt_table_print(struct fptree *fp)
+void fpt_table_print(const struct fptree *fp)
 {
 	struct table *table = fp->table;
 	struct fptree_node *p;
@@ -271,7 +273,7 @@ void fpt_table_print(struct fptree *fp)
 	}
 }
 
-void fpt_read_from_file(char *fname, struct fptree *fp)
+void fpt_read_from_file(const char *fname, struct fptree *fp)
 {
 	FILE *f = fopen(fname, "r");
 
@@ -292,30 +294,31 @@ void fpt_read_from_file(char *fname, struct fptree *fp)
 	fclose(f);
 }
 
-void fpt_cleanup(struct fptree *fp)
+void fpt_cleanup(const struct fptree *fp)
 {
 	free(fp->table);
 	fpt_node_free(fp->tree);
 }
 
-int fpt_height(struct fptree *fp)
+int fpt_height(const struct fptree *fp)
 {
 	return fpt_get_height(fp->tree);
 }
 
-int fpt_nodes(struct fptree *fp)
+int fpt_nodes(const struct fptree *fp)
 {
 	return fpt_get_nodes(fp->tree);
 }
 
-int fpt_item_count(struct fptree *fp, int it)
+int fpt_item_count(const struct fptree *fp, int it)
 {
 	if (it < 0 || it >= fp->n)
 		return 0;
 	return fp->table[fp->table[it].rpi].cnt;
 }
 
-static int search_on_path(const struct fptree_node *n, const int *key, int keylen)
+static int search_on_path(const struct fptree_node *n,
+		const int *key, int keylen)
 {
 	int i = keylen - 2;
 	struct fptree_node *p = n->parent;
@@ -336,7 +339,7 @@ static int search_on_path(const struct fptree_node *n, const int *key, int keyle
 	return n->cnt;
 }
 
-int fpt_itemset_count(struct fptree *fp, const int *its, int itslen)
+int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen)
 {
 	int *search_key = calloc(itslen, sizeof(search_key[0]));
 	struct fptree_node *p, *l;
