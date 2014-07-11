@@ -21,7 +21,7 @@
 #define PRINT_ITEM_TABLE 0
 #endif
 #ifndef PRINT_RULE_TABLE
-#define PRINT_RULE_TABLE 0
+#define PRINT_RULE_TABLE 1
 #endif
 
 struct item_count {
