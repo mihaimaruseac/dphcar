@@ -37,6 +37,7 @@ int fpt_height(struct fptree *fp);
 int fpt_nodes(struct fptree *fp);
 
 int fpt_item_count(struct fptree *fp, int it);
+int fpt_itemset_count(struct fptree *fp, const int *its, int itslen);
 
 /** Debug printing. */
 void fpt_tree_print(struct fptree *fp);

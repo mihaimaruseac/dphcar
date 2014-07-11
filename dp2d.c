@@ -166,9 +166,20 @@ static void all_allowed_items(struct fptree *fp, struct item_count *ic,
 }
 
 static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
-		int *A, int *B, int a_length, int b_length)
+		const int *A, const int *B, int a_length, int b_length)
 {
-	int i;
+	int sup_a, sup_ab, *AB, ab_length, i;
+
+	ab_length = a_length + b_length;
+	AB = calloc(ab_length, sizeof(AB[0]));
+
+	for (i = 0 ; i < a_length; i++)
+		AB[i] = A[i];
+	for (i = 0; i < b_length; i++)
+		AB[i + a_length] = B[i];
+
+	sup_a = fpt_itemset_count(fp, A, a_length);
+	sup_ab = fpt_itemset_count(fp, AB, ab_length);
 
 #if PRINT_RULE_TABLE == 1
 	for (i = 0; i < a_length; i++)
@@ -176,14 +187,17 @@ static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
 	printf("-> ");
 	for (i = 0; i < b_length; i++)
 		printf("%d ", B[i]);
+	printf(" sup(A): %d, sup(AB): %d", sup_a, sup_ab);
 	printf("\n");
 #endif
+
+	free(AB);
 }
 
 static void for_all_rules(struct fptree *fp, int *items, int num_items,
 		int m, int M, double epsilon,
-		void (*f)(struct fptree *, int, int, double,
-			int*, int *, int, int))
+		void (*f)(struct fptree*, int, int, double,
+			const int*, const int*, int, int))
 {
 #define RULE_A 1
 #define RULE_B 2

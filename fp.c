@@ -314,3 +314,8 @@ int fpt_item_count(struct fptree *fp, int it)
 		return 0;
 	return fp->table[fp->table[it].rpi].cnt;
 }
+
+int fpt_itemset_count(struct fptree *fp, const int *its, int itslen)
+{
+	return 0;
+}
