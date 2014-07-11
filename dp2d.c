@@ -166,17 +166,10 @@ static void all_allowed_items(struct fptree *fp, struct item_count *ic,
 }
 
 static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
-		const int *A, const int *B, int a_length, int b_length)
+		const int *A, const int *B, const int *AB,
+		int a_length, int b_length, int ab_length)
 {
-	int sup_a, sup_ab, *AB, ab_length, i;
-
-	ab_length = a_length + b_length;
-	AB = calloc(ab_length, sizeof(AB[0]));
-
-	for (i = 0 ; i < a_length; i++)
-		AB[i] = A[i];
-	for (i = 0; i < b_length; i++)
-		AB[i + a_length] = B[i];
+	int sup_a, sup_ab, i;
 
 	sup_a = fpt_itemset_count(fp, A, a_length);
 	sup_ab = fpt_itemset_count(fp, AB, ab_length);
@@ -190,51 +183,54 @@ static void compute_cdf(struct fptree *fp, int m, int M, double epsilon,
 	printf(" sup(A): %d, sup(AB): %d", sup_a, sup_ab);
 	printf("\n");
 #endif
-
-	free(AB);
 }
 
 static void for_all_rules(struct fptree *fp, int *items, int num_items,
 		int m, int M, double epsilon,
 		void (*f)(struct fptree*, int, int, double,
-			const int*, const int*, int, int))
+			const int*, const int*, const int*, int, int, int))
 {
 #define RULE_A 1
 #define RULE_B 2
 #define RULE_END 3
-	int i, a_length, b_length;
-	unsigned char *AB;
-	int *A, *B;
+	int i, a_length, b_length, ab_length;
+	unsigned char *ABi;
+	int *A, *B, *AB;
 
+	ABi = calloc(num_items, sizeof(ABi[0]));
 	AB = calloc(num_items, sizeof(AB[0]));
 	A = calloc(num_items, sizeof(A[0]));
 	B = calloc(num_items, sizeof(B[0]));
-	AB[num_items - 1] = 1;
-	AB[num_items - 2] = 1;
+	ABi[num_items - 1] = 1;
+	ABi[num_items - 2] = 1;
 
 	while (1) {
-		AB[num_items - 1]++;
-		a_length = b_length = 0;
+		ABi[num_items - 1]++;
+		a_length = b_length = ab_length = 0;
 
 		for (i = num_items - 1; i > 0; i--)
-			if (AB[i] == RULE_END) {
-				AB[i] = 0;
-				AB[i-1]++;
+			if (ABi[i] == RULE_END) {
+				ABi[i] = 0;
+				ABi[i-1]++;
 			}
 
 		for (i = 0; i < num_items; i++)
-			switch (AB[i]) {
-			case RULE_B: B[b_length++] = items[i]; break;
-			case RULE_A: A[a_length++] = items[i]; break;
+			if (ABi[i]) {
+				AB[ab_length++] = items[i];
+				switch (ABi[i]) {
+				case RULE_B: B[b_length++] = items[i]; break;
+				case RULE_A: A[a_length++] = items[i]; break;
+				}
 			}
 
-		if (AB[0] == RULE_END) break;
+		if (ABi[0] == RULE_END) break;
 		if (a_length == 0) continue;
 		if (b_length == 0) continue;
 
-		f(fp, m, M, epsilon, A, B, a_length, b_length);
+		f(fp, m, M, epsilon, A, B, AB, a_length, b_length, ab_length);
 	}
 
+	free(ABi);
 	free(AB);
 #undef RULE_A
 #undef RULE_B
