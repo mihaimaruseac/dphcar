@@ -315,7 +315,49 @@ int fpt_item_count(struct fptree *fp, int it)
 	return fp->table[fp->table[it].rpi].cnt;
 }
 
+static int search_on_path(const struct fptree_node *n, const int *key, int keylen)
+{
+	int i = keylen - 2;
+	struct fptree_node *p = n->parent;
+
+	while (p && i >= 0) {
+		/* cut */
+		if (i > 0 && p->val == key[i-1])
+			return 0;
+		/* found */
+		if (p->val == key[i])
+			i--;
+		p = p->parent;
+	}
+
+	if (!p)
+		return 0;
+
+	return n->cnt;
+}
+
 int fpt_itemset_count(struct fptree *fp, const int *its, int itslen)
 {
-	return 0;
+	int *search_key = calloc(itslen, sizeof(search_key[0]));
+	struct fptree_node *p, *l;
+	int i, count = 0;
+
+	for (i = 0; i < itslen; i++)
+		search_key[i] = fp->table[its[i] - 1].rpi;
+	qsort(search_key, itslen, sizeof(search_key[0]), int_cmp);
+	for (i = 0; i < itslen; i++)
+		search_key[i] = fp->table[search_key[i]].val;
+
+	i = fp->table[search_key[itslen - 1] - 1].rpi;
+	p = fp->table[i].fst;
+	l = fp->table[i].lst;
+
+	while (p != l) {
+		count += search_on_path(p, search_key, itslen);
+		p = p->next;
+	}
+	count += search_on_path(p, search_key, itslen);
+
+	free(search_key);
+	return count;
 }
