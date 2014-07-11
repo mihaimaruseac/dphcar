@@ -21,7 +21,7 @@
 #define PRINT_ITEM_TABLE 0
 #endif
 #ifndef PRINT_RULE_TABLE
-#define PRINT_RULE_TABLE 1
+#define PRINT_RULE_TABLE 0
 #endif
 
 struct item_count {
@@ -169,19 +169,27 @@ static void compute_cdf(const struct fptree *fp, int m, int M, double epsilon,
 		const int *A, const int *B, const int *AB,
 		int a_length, int b_length, int ab_length)
 {
-	int sup_a, sup_ab, i;
+	int sup_a, sup_ab;
+	double q;
 
 	sup_a = fpt_itemset_count(fp, A, a_length);
 	sup_ab = fpt_itemset_count(fp, AB, ab_length);
+	q = quality(sup_a, sup_ab, M, m);
 
 #if PRINT_RULE_TABLE == 1
+	int i;
+
+	printf("\n");
 	for (i = 0; i < a_length; i++)
 		printf("%d ", A[i]);
 	printf("-> ");
 	for (i = 0; i < b_length; i++)
 		printf("%d ", B[i]);
-	printf(" sup(A): %d, sup(AB): %d", sup_a, sup_ab);
+	printf(" (%d, %d) %lf", sup_a, sup_ab, q);
 	printf("\n");
+#else
+	B = B;
+	b_length = b_length;
 #endif
 }
 
@@ -250,7 +258,7 @@ static void mine(const struct fptree *fp, const struct item_count *ic,
 
 		num_items = num_allowed_items(fp, ic, m, M);
 #if PRINT_TRIANGLE_CONTENT == 1
-		printf("Triangle %d %d %d: %d", c_triangle, m, M, num_items);
+		printf("\nTriangle %d %d %d: %d", c_triangle, m, M, num_items);
 #endif
 		if (num_items < 2)
 			goto end_loop;
@@ -299,6 +307,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
 
 #if PRINT_ITEM_TABLE == 1
+	printf("\n");
 	int i;
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
@@ -334,7 +343,8 @@ static double displacement(int x, double m, double M, double v)
 
 static double quality(int x, int y, double X, double Y)
 {
-	return displacement(x, Y, X, X) * displacement(y, Y, X, Y);
+	return 0.5 * (1/Y - 1/X) *
+		displacement(x, Y, X, X) * displacement(y, Y, X, Y);
 }
 #elif METHOD == DISTANCE
 static double quality(int x, int y, double X, double Y)

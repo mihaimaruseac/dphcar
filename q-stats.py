@@ -2,7 +2,7 @@ import itertools
 import bigfloat
 import math
 
-dataset = 'test'
+dataset = 'kosarak'
 
 #method = 'mt'     # distance to (m, theta)
 method = 'xy'     # linear biproduct of two triangles
@@ -25,7 +25,8 @@ if dataset == 'kosarak':
      (1, 3, 6, 11): 37743, (3, 6, 11, 218): 26501, (1, 6, 11, 218): 25608,
      (1, 3, 11, 218): 11176, (1, 3, 6, 218): 13060,
      (1, 3, 6, 11, 218): 11091}
-    params = {'m': 601374, 'theta': 81232, 'A': 1000000, 'B': 1000}
+    #params = {'m': 601374, 'theta': 81232, 'A': 1000000, 'B': 1000}
+    params = {'m': 990002, 'theta': 87743, 'A': 1000000, 'B': 1000}
 elif dataset == 'test':
     itemsets = {
      (1,): 15, (2,): 8, (3,): 14, (4,): 6, (5,): 5, (6,): 11, (7,): 6, (8,): 4, (9,): 4, (10,): 5,
