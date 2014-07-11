@@ -1,7 +1,9 @@
+#include <gmp.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "globals.h"
 
@@ -74,4 +76,42 @@ int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
 	}
 
 	return low;
+}
+
+/**
+ * Reads `bytes` bytes from /dev/urandom to initialize random number generator
+ * state.
+ */
+static char *read_from_devurandom(int bytes)
+{
+	FILE *f = fopen("/dev/urandom", "r");
+	char *buff = malloc(bytes);
+	char *p = buff;
+	size_t read;
+
+	while (bytes) {
+		read = fread(p, 1, bytes, f);
+		p += read;
+		bytes -= read;
+	}
+
+	fclose(f);
+	return buff;
+}
+
+void initialize_random(gmp_randstate_t state, int bytes)
+{
+	void *buff = read_from_devurandom(bytes);
+	time_t t;
+	mpz_t s;
+
+	gmp_randinit_default(state);
+	mpz_init(s);
+	mpz_import(s, bytes, 1, 1, 0, 0, buff);
+	gmp_randseed(state, s);
+	mpz_clear(s);
+	free(buff);
+
+	time(&t);
+	srand48(t);
 }

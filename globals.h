@@ -32,4 +32,12 @@ double laplace_mechanism(double x, double eps, double sens,
 int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
 		int (*compar)(const void *, const void *));
 
+struct gmp_randstate_t;
+
+/**
+ * Initializes the random number generator of GMP library. To be called in
+ * every `main` function.
+ */
+void initialize_random(gmp_randstate_t state, int bytes);
+
 #endif
