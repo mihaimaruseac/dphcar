@@ -189,7 +189,104 @@ static void print_rule(const int *A, const int *B, int a_length, int b_length)
 		printf("%d ", A[i]);
 	printf("-> ");
 	for (i = 0; i < b_length; i++)
-		printf("%d ", B[i]);
+		if (B[i])
+			printf("%d ", B[i]);
+}
+
+static void do_print_rule(const struct fptree *fp,
+		const int *A, const int *B, const int *AB,
+		int a_length, int b_length, int ab_length)
+{
+	int sup_a, sup_ab;
+
+	sup_a = fpt_itemset_count(fp, A, a_length);
+	sup_ab = fpt_itemset_count(fp, AB, ab_length);
+
+	printf("\n");
+	print_rule(A, B, a_length, b_length);
+	printf(" (%d, %d) %lf", sup_a, sup_ab,
+			(sup_ab + 0.0) / (0.0 + sup_a));
+
+}
+
+static void print_rule_and_expansions(const struct fptree *fp,
+		const int *A, const int *B,
+		int a_length, int b_length)
+{
+	int *ab = calloc(a_length + b_length, sizeof(*ab));
+	int *a = calloc(a_length + b_length, sizeof(*a));
+	int *b = calloc(a_length + b_length, sizeof(*b));
+	char *x = calloc(b_length, sizeof(*b));
+	int i, j = 0;
+
+	for (i = 0; i < a_length; i++) {
+		a[i] = A[i];
+		ab[i] = A[i];
+	}
+
+	for (i = 0; i < b_length; i++) {
+		b[i] = B[i];
+		ab[i + a_length] = B[i];
+	}
+
+	do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length);
+	x[b_length - 1]++;
+
+	while (x[0] < 2) {
+		/* remove from b */
+		for (i = 0; i < b_length; i++)
+			if (x[i]) {
+				b[i] = 0;
+				ab[i + a_length] = 0;
+			}
+
+		j = 0;
+		for (i = 0; i < b_length; i++)
+			if (b[i])
+				j++;
+
+		if (j == 0)
+			goto next;
+
+		do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length);
+
+		j = a_length;
+
+		/* add item to a */
+		for (i = 0; i < b_length; i++)
+			if (x[i]) {
+				a[a_length++] = B[i];
+				ab[i + j] = B[i];
+			}
+
+		do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length);
+
+		/* remove item from a */
+		for (i = j; i < a_length; i++)
+			a[i] = 0;
+		a_length = j;
+
+next:
+		/* add item back to b */
+		for (i = 0; i < b_length; i++)
+			if (x[i]) {
+				b[i] = B[i];
+				ab[i + a_length] = B[i];
+			}
+
+		x[b_length - 1]++;
+		if (x[0] == 2) break;
+		for (i = b_length - 1; i > 0; i--)
+			if (x[i] == 2) {
+				x[i] = 0;
+				x[i-1]++;
+			}
+	}
+
+	free(a);
+	free(ab);
+	free(b);
+	free(x);
 }
 
 static void compute_cdf(const struct fptree *fp, int m, int M, double epsilon,
@@ -231,12 +328,8 @@ static void sample_rule(const struct fptree *fp, int m, int M, double epsilon,
 	compute_pdf(fp, m, M, epsilon, A, AB, a_length, ab_length,
 			&sup_a, &sup_ab, &q, pdf);
 	mpfr_sub(rnd, rnd, pdf, ROUND_MODE);
-	if (mpfr_sgn(rnd) < 0) {
-		printf("\n");
-		print_rule(A, B, a_length, b_length);
-		printf(" (%d, %d) %lf", sup_a, sup_ab,
-				(sup_ab + 0.0) / (0.0 + sup_a));
-	}
+	if (mpfr_sgn(rnd) < 0)
+		print_rule_and_expansions(fp, A, B, a_length, b_length);
 
 	B = B;
 	b_length = b_length;

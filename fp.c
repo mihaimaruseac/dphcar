@@ -343,24 +343,25 @@ static int search_on_path(const struct fptree_node *n,
 int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen)
 {
 	int *search_key = calloc(itslen, sizeof(search_key[0]));
+	int i, count = 0, key_len = 0;
 	struct fptree_node *p, *l;
-	int i, count = 0;
 
 	for (i = 0; i < itslen; i++)
-		search_key[i] = fp->table[its[i] - 1].rpi;
-	qsort(search_key, itslen, sizeof(search_key[0]), int_cmp);
-	for (i = 0; i < itslen; i++)
+		if (its[i] > 0)
+			search_key[key_len++] = fp->table[its[i] - 1].rpi;
+	qsort(search_key, key_len, sizeof(search_key[0]), int_cmp);
+	for (i = 0; i < key_len; i++)
 		search_key[i] = fp->table[search_key[i]].val;
 
-	i = fp->table[search_key[itslen - 1] - 1].rpi;
+	i = fp->table[search_key[key_len - 1] - 1].rpi;
 	p = fp->table[i].fst;
 	l = fp->table[i].lst;
 
 	while (p != l) {
-		count += search_on_path(p, search_key, itslen);
+		count += search_on_path(p, search_key, key_len);
 		p = p->next;
 	}
-	count += search_on_path(p, search_key, itslen);
+	count += search_on_path(p, search_key, key_len);
 
 	free(search_key);
 	return count;
