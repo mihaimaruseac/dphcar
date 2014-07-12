@@ -259,7 +259,7 @@ static void print_rule_and_expansions(const struct fptree *fp,
 				ab[i + j] = B[i];
 			}
 
-		do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length);
+		do_print_rule(fp, a, b, ab, a_length, b_length, j + b_length);
 
 		/* remove item from a */
 		for (i = j; i < a_length; i++)
