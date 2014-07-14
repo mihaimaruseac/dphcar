@@ -21,7 +21,7 @@
 #define PRINT_ITEM_TABLE 0
 #endif
 #ifndef PRINT_RULE_TABLE
-#define PRINT_RULE_TABLE 1
+#define PRINT_RULE_TABLE 0
 #endif
 
 #define PRECISION 2048
@@ -335,6 +335,9 @@ static void sample_rule(const struct fptree *fp, int m, int M, double epsilon,
 	b_length = b_length;
 }
 
+#define SHORT 1 /* item -. anything, O(n^2) */
+#define LONG 2 /* anything -> anything, O(n^3) */
+#define METHOD SHORT
 static void for_all_rules(const struct fptree *fp, const int *items,
 		int num_items, int m, int M, double epsilon,
 		mpfr_t arg1, mpfr_t arg2,
@@ -342,10 +345,6 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 			const int*, const int*, const int*, int, int, int,
 			mpfr_t, mpfr_t))
 {
-#define SHORT 1 /* item -. anything, O(n^2) */
-#define LONG 2 /* anything -> anything, O(n^3) */
-#define METHOD SHORT
-
 	int i, a_length, b_length, ab_length;
 	unsigned char *ABi;
 	int *A, *B, *AB;
