@@ -21,7 +21,7 @@
 #define PRINT_ITEM_TABLE 0
 #endif
 #ifndef PRINT_RULE_TABLE
-#define PRINT_RULE_TABLE 0
+#define PRINT_RULE_TABLE 1
 #endif
 
 #define PRECISION 2048
@@ -342,9 +342,10 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 			const int*, const int*, const int*, int, int, int,
 			mpfr_t, mpfr_t))
 {
-#define RULE_A 1
-#define RULE_B 2
-#define RULE_END 3
+#define SHORT 1 /* item -. anything, O(n^2) */
+#define LONG 2 /* anything -> anything, O(n^3) */
+#define METHOD SHORT
+
 	int i, a_length, b_length, ab_length;
 	unsigned char *ABi;
 	int *A, *B, *AB;
@@ -353,8 +354,16 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 	AB = calloc(num_items, sizeof(AB[0]));
 	A = calloc(num_items, sizeof(A[0]));
 	B = calloc(num_items, sizeof(B[0]));
+
+#if METHOD == SHORT
+#define RULE_END 2
+#elif METHOD == LONG
+#define RULE_A 1
+#define RULE_B 2
+#define RULE_END 3
 	ABi[num_items - 1] = 1;
 	ABi[num_items - 2] = 1;
+#endif
 
 	while (1) {
 		ABi[num_items - 1]++;
@@ -364,8 +373,31 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 			if (ABi[i] == RULE_END) {
 				ABi[i] = 0;
 				ABi[i-1]++;
-			}
+		}
 
+		if (ABi[0] == RULE_END) break;
+
+#if METHOD == SHORT
+		for (i = 0; i < num_items; i++)
+			if (ABi[i])
+				AB[ab_length++] = items[i];
+
+		if (ab_length < 2) continue;
+
+		for (i = 0; i < ab_length; i++) {
+			int j;
+
+			A[0] = AB[i];
+			b_length = 0;
+			for (j = 0; j < ab_length; j++)
+				if (i != j)
+					B[b_length++] = AB[j];
+
+			f(fp, m, M, epsilon, A, B, AB, 1, b_length, ab_length,
+					arg1, arg2);
+		}
+
+#elif METHOD == LONG
 		for (i = 0; i < num_items; i++)
 			if (ABi[i]) {
 				AB[ab_length++] = items[i];
@@ -375,12 +407,12 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 				}
 			}
 
-		if (ABi[0] == RULE_END) break;
 		if (a_length == 0) continue;
 		if (b_length == 0) continue;
 
 		f(fp, m, M, epsilon, A, B, AB, a_length, b_length, ab_length,
 				arg1, arg2);
+#endif
 	}
 
 	free(ABi);
@@ -390,6 +422,9 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 #undef RULE_A
 #undef RULE_B
 #undef RULE_END
+#undef METHOD
+#undef SHORT
+#undef LONG
 }
 
 static void mine(const struct fptree *fp, const struct item_count *ic,
