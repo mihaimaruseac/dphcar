@@ -356,7 +356,6 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 
 #if METHOD == SHORT
 #define RULE_END 2
-	a_length = 1;
 #elif METHOD == LONG
 #define RULE_A 1
 #define RULE_B 2
@@ -378,6 +377,7 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 		if (ABi[0] == RULE_END) break;
 
 #if METHOD == SHORT
+		a_length = a_length;
 		for (i = 0; i < num_items; i++)
 			if (ABi[i])
 				AB[ab_length++] = items[i];
@@ -393,7 +393,7 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 				if (i != j)
 					B[b_length++] = AB[j];
 
-			f(fp, m, M, epsilon, A, B, AB, a_length, b_length, ab_length,
+			f(fp, m, M, epsilon, A, B, AB, 1, b_length, ab_length,
 					arg1, arg2);
 		}
 
