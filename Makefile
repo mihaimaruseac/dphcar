@@ -2,6 +2,7 @@
 
 #TARGET = ./dphcar
 TARGET1 = ./dph
+TARGET2 = ./test
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0
 LDFLAGS = -lm -lmpfr -lgmp
@@ -13,5 +14,7 @@ all: $(TARGET) $(TARGET1)
 
 $(TARGET1): $(OBJS)
 
+$(TARGET2): $(OBJS)
+
 clean:
-	@$(RM) $(OBJS) $(TARGET) $(TARGET1)
+	@$(RM) $(OBJS) $(TARGET) $(TARGET1) $(TARGET2)
