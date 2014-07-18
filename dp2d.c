@@ -23,6 +23,12 @@
 #ifndef PRINT_RULE_TABLE
 #define PRINT_RULE_TABLE 0
 #endif
+#ifndef RULE_LEN_LIMIT
+#define RULE_LEN_LIMIT 1
+#endif
+#ifndef RULE_LEN_LIMITED_STEP
+#define RULE_LEN_LIMITED_STEP 100
+#endif
 
 #define PRECISION 2048
 #define ROUND_MODE MPFR_RNDN
@@ -89,6 +95,11 @@ static int get_first_theta_value(const struct fptree *fp,
 static void get_next_triangle(const struct fptree *fp,
 		const struct item_count *ic, double c, int *m, int *M)
 {
+#if RULE_LEN_LIMIT
+	*m -= RULE_LEN_LIMITED_STEP;
+	fp = fp;
+	ic = ic;
+#else
 	struct item_count x;
 	int nm;
 
@@ -96,12 +107,17 @@ static void get_next_triangle(const struct fptree *fp,
 	x.noisy_count = *m;
 	nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 	*m = floor(ic[nm].noisy_count - 1);
+#endif
 	*M = *m / c;
 }
 
 static int get_triangles(const struct fptree *fp, const struct item_count *ic,
 		double c, int m, int M, int minth)
 {
+#if RULE_LEN_LIMIT
+	fp = fp; ic = ic; c = c; M = M;
+	return (m - minth) / RULE_LEN_LIMITED_STEP;
+#else
 	int num_triangles = 0;
 
 	if (m <= minth)
@@ -138,8 +154,11 @@ static int get_triangles(const struct fptree *fp, const struct item_count *ic,
 	}
 
 	return num_triangles;
+#endif
 }
 
+#if RULE_LEN_LIMIT
+#else
 static int num_allowed_items(const struct fptree *fp,
 		const struct item_count *ic, int m, int M)
 {
@@ -151,6 +170,7 @@ static int num_allowed_items(const struct fptree *fp,
 	x.noisy_count = M;
 	return nm - bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
+#endif
 
 static void all_allowed_items(const struct fptree *fp,
 		const struct item_count *ic, int m, int M, int *items)
@@ -161,8 +181,13 @@ static void all_allowed_items(const struct fptree *fp,
 
 	x.noisy_count = m;
 	nm = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+#if RULE_LEN_LIMIT
+	nM = nm - M;
+	if (nM < 0) nM = 0;
+#else
 	x.noisy_count = M;
 	nM = bsearch_i(&x, ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+#endif
 
 	for (i = nM;  i < nm; i++)
 		items[i - nM] = ic[i].value;
@@ -337,7 +362,7 @@ static void sample_rule(const struct fptree *fp, int m, int M, double epsilon,
 
 #define SHORT 1 /* item -. anything, O(n^2) */
 #define LONG 2 /* anything -> anything, O(n^3) */
-#define METHOD SHORT
+#define METHOD LONG
 static void for_all_rules(const struct fptree *fp, const int *items,
 		int num_items, int m, int M, double epsilon,
 		mpfr_t arg1, mpfr_t arg2,
@@ -429,13 +454,14 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 
 static void mine(const struct fptree *fp, const struct item_count *ic,
 		double c, double epsilon, int num_triangles,
-		int m, int M)
+		int m, int M, int ni)
 {
 	int c_triangle, num_items, *items;
 	gmp_randstate_t rnd_state;
 	mpfr_t cdf, pdf, rnd;
 	double c_epsilon;
 
+	ni = ni;
 	mpfr_init2(pdf, PRECISION);
 	mpfr_init2(cdf, PRECISION);
 	mpfr_init2(rnd, PRECISION);
@@ -445,7 +471,11 @@ static void mine(const struct fptree *fp, const struct item_count *ic,
 		/* TODO: split based on triangles */
 		c_epsilon = epsilon / num_triangles;
 
+#if RULE_LEN_LIMIT
+		num_items = ni;
+#else
 		num_items = num_allowed_items(fp, ic, m, M);
+#endif
 #if PRINT_TRIANGLE_CONTENT == 1
 		printf("\nTriangle %d %d %d: %d", c_triangle, m, M, num_items);
 #endif
@@ -453,7 +483,11 @@ static void mine(const struct fptree *fp, const struct item_count *ic,
 			goto end_loop;
 
 		items = calloc(num_items, sizeof(items[0]));
+#if RULE_LEN_LIMIT
+		all_allowed_items(fp, ic, m, ni, items);
+#else
 		all_allowed_items(fp, ic, m, M, items);
+#endif
 #if PRINT_TRIANGLE_CONTENT == 1
 		int i;
 
@@ -520,7 +554,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	printf("%d triangles needed\n", nt);
 
 	printf("Step 4: mining rules:\n");
-	mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t);
+	mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t, ni);
 
 	free_items(ic);
 }
