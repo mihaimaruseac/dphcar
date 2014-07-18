@@ -527,6 +527,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 
 #define DISPLACEMENT 1
 #define DISTANCE 2
+#define NEW 3
 #define METHOD DISPLACEMENT
 #if METHOD == DISPLACEMENT
 static double displacement(int x, double m, double M, double v)
@@ -549,6 +550,34 @@ static double quality(int x, int y, double X, double Y)
 {
 	double dx = X - x, dy = Y - y;
 	return sqrt(dx * dx + dy * dy);
+}
+#elif METHOD == NEW
+static double quality(int x, int y, double X, double Y)
+{
+#define P1 1
+#define P2 1
+#define P3 1
+	double s1, s2, s, x1, y1;
+
+	s  = pow(1 + 1 / X, P3);
+	s1 = pow(1 + 1 / Y, P2);
+	s2 = 2 - pow(1 - 1 / (X - Y), P1);
+
+	if (s1 > s2)
+		s *= s1;
+	else
+		s *= s2;
+
+	x1 = x / X;
+	if (y < Y)
+		y1 = pow(y / Y, P2);
+	else
+		y1 = pow((X - y) / (X - Y), P1);
+
+	return x1 * y1 / s;
+#undef P1
+#undef P2
+#undef P3
 }
 #else
 #error ("Undefined quality method")
