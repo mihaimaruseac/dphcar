@@ -117,7 +117,8 @@ err:
 int main(int argc, char **argv)
 {
 	double ts[] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0};
-	long long *cs = calloc(sizeof(ts)/sizeof(ts[0]), sizeof(*cs));
+	unsigned int **cs = calloc(sizeof(ts)/sizeof(ts[0]), sizeof(*cs));
+	unsigned int lens[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 42424242};
 	struct file_data *data = NULL;
 	int status = EXIT_FAILURE;
 	struct itemset tmp, *res;
@@ -125,6 +126,9 @@ int main(int argc, char **argv)
 	int *tmp_items = NULL;
 	int *masks = NULL;
 	double c;
+
+	for (i = 0; i < sizeof(ts)/sizeof(ts[0]); i++)
+		cs[i] = calloc(sizeof(lens)/sizeof(lens[0]), sizeof(*cs[i]));
 
 	if (argc != 2) {
 		printf("Need filename\n");
@@ -171,14 +175,26 @@ int main(int argc, char **argv)
 			c = (data->itemsets[i].count + 0.0) / (res->count + 0.0);
 			for (j = 0; j < sizeof(ts) / sizeof(ts[0]); j++)
 				if (c > ts[j]) {
-					cs[j]++;
+					for (l = 0; l < sizeof(lens) / sizeof(lens[0]); l++)
+						if (data->itemsets[i].size <= lens[l]) {
+							cs[j][l]++;
+							break;
+						}
 					break;
 				}
 		}
 	}
 
-	for (i = 0; i < sizeof(ts) / sizeof(ts[0]); i++)
-		printf(">%lf: %lld\n", ts[i], cs[i]);
+	printf("Histogram:\n           ");
+	for (i = 0; i < sizeof(lens) / sizeof(lens[0]); i++)
+		printf("%10d", lens[i]);
+	printf("\n");
+	for (i = 0; i < sizeof(ts) / sizeof(ts[0]); i++) {
+		printf(">%lf: ", ts[i]);
+		for (j = 0; j < sizeof(lens) / sizeof(lens[0]); j++)
+			printf("%10d", cs[i][j]);
+		printf("\n");
+	}
 
 	status = EXIT_SUCCESS;
 out:
