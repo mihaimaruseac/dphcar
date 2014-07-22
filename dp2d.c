@@ -220,7 +220,8 @@ static void print_rule(const int *A, const int *B, int a_length, int b_length)
 
 static void do_print_rule(const struct fptree *fp,
 		const int *A, const int *B, const int *AB,
-		int a_length, int b_length, int ab_length)
+		int a_length, int b_length, int ab_length,
+		int m, int M)
 {
 	int sup_a, sup_ab;
 
@@ -228,6 +229,19 @@ static void do_print_rule(const struct fptree *fp,
 	sup_ab = fpt_itemset_count(fp, AB, ab_length);
 
 	printf("\n");
+	if (sup_ab > M)
+		printf("a ");
+	else if (sup_ab >= m)
+		if (sup_a > M)
+			printf("r ");
+		else
+			printf("  ");
+	else if (sup_a > M)
+		printf("+ ");
+	else if (sup_a >= m)
+		printf("b ");
+	else
+		printf("* ");
 	print_rule(A, B, a_length, b_length);
 	printf(" (%d, %d) %lf", sup_a, sup_ab,
 			(sup_ab + 0.0) / (0.0 + sup_a));
@@ -236,7 +250,7 @@ static void do_print_rule(const struct fptree *fp,
 
 static void print_rule_and_expansions(const struct fptree *fp,
 		const int *A, const int *B,
-		int a_length, int b_length)
+		int a_length, int b_length, int m, int M)
 {
 	int *ab = calloc(a_length + b_length, sizeof(*ab));
 	int *a = calloc(a_length + b_length, sizeof(*a));
@@ -254,7 +268,8 @@ static void print_rule_and_expansions(const struct fptree *fp,
 		ab[i + a_length] = B[i];
 	}
 
-	do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length);
+	do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length,
+			m, M);
 	x[b_length - 1]++;
 
 	while (x[0] < 2) {
@@ -273,7 +288,8 @@ static void print_rule_and_expansions(const struct fptree *fp,
 		if (j == 0)
 			goto next;
 
-		do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length);
+		do_print_rule(fp, a, b, ab, a_length, b_length,
+				a_length + b_length, m, M);
 
 		j = a_length;
 
@@ -284,7 +300,8 @@ static void print_rule_and_expansions(const struct fptree *fp,
 				ab[i + j] = B[i];
 			}
 
-		do_print_rule(fp, a, b, ab, a_length, b_length, j + b_length);
+		do_print_rule(fp, a, b, ab, a_length, b_length,
+				j + b_length, m, M);
 
 		/* remove item from a */
 		for (i = j; i < a_length; i++)
@@ -354,13 +371,13 @@ static void sample_rule(const struct fptree *fp, int m, int M, double epsilon,
 			&sup_a, &sup_ab, &q, pdf);
 	mpfr_sub(rnd, rnd, pdf, ROUND_MODE);
 	if (mpfr_sgn(rnd) < 0)
-		print_rule_and_expansions(fp, A, B, a_length, b_length);
+		print_rule_and_expansions(fp, A, B, a_length, b_length, m, M);
 
 	B = B;
 	b_length = b_length;
 }
 
-#define SHORT 1 /* item -. anything, O(n^2) */
+#define SHORT 1 /* item -> anything, O(n^2) */
 #define LONG 2 /* anything -> anything, O(n^3) */
 #define METHOD LONG
 static void for_all_rules(const struct fptree *fp, const int *items,
