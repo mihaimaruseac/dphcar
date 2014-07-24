@@ -29,6 +29,9 @@
 #ifndef RULE_LEN_LIMITED_STEP
 #define RULE_LEN_LIMITED_STEP 100
 #endif
+#ifndef RULE_ITEMSET
+#define RULE_ITEMSET 0
+#endif
 
 #define PRECISION 2048
 #define ROUND_MODE MPFR_RNDN
@@ -201,6 +204,8 @@ static void compute_pdf(const struct fptree *fp, int m, int M, double epsilon,
 	*sup_a = fpt_itemset_count(fp, A, a_length);
 	*sup_ab = fpt_itemset_count(fp, AB, ab_length);
 	*q = quality(*sup_a, *sup_ab, M, m);
+#if RULE_ITEMSET
+#endif
 	mpfr_set_d(pdf, *q, ROUND_MODE);
 	mpfr_mul_d(pdf, pdf, epsilon / 2, ROUND_MODE);
 	mpfr_exp(pdf, pdf, ROUND_MODE);
@@ -580,7 +585,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 #define DISTANCE 2
 #define NEW 3
 #define DELTA 4
-#define METHOD DELTA
+#define METHOD DISPLACEMENT
 #if METHOD == DISPLACEMENT
 static double displacement(int x, double m, double M, double v)
 {
