@@ -19,6 +19,8 @@
 static struct {
 	/* filename containing the transactions */
 	char *tfname;
+	/* filename containing the item scores */
+	char *ifname;
 	/* minimum confidence level */
 	double c;
 	/* global value for epsilon */
@@ -37,39 +39,34 @@ static struct {
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE MINCONF EPSILON EPSILON_SHARE NITEMS"
-			" MINTHRESHOLD\n", prg);
+	fprintf(stderr, "Usage: %s TFILE IFILE MINCONF EPSILON EPSILON_SHARE "
+			"NITEMS MINTHRESHOLD\n", prg);
 	exit(EXIT_FAILURE);
 }
 
 static void parse_arguments(int argc, char **argv)
 {
 	/* TODO: use optparse */
-	if (argc != 7)
+	if (argc != 8)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
-	if (sscanf(argv[2], "%lf", &args.c) != 1 || args.c < 0 || args.c >= 1)
+	args.ifname = strdup(argv[2]);
+	if (sscanf(argv[3], "%lf", &args.c) != 1 || args.c < 0 || args.c >= 1)
 		usage(argv[0]);
-	if (sscanf(argv[3], "%lf", &args.eps) != 1)
+	if (sscanf(argv[4], "%lf", &args.eps) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[4], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
+	if (sscanf(argv[5], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
 		usage(argv[0]);
-	if (sscanf(argv[5], "%d", &args.ni) != 1)
+	if (sscanf(argv[6], "%d", &args.ni) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[6], "%d", &args.minth) != 1)
+	if (sscanf(argv[7], "%d", &args.minth) != 1)
 		usage(argv[0]);
-}
-
-static void final_cleanup(void)
-{
-	free(args.tfname);
 }
 
 int main(int argc, char **argv)
 {
 	struct fptree fp;
 
-	atexit(final_cleanup);
 	parse_arguments(argc, argv);
 
 	fpt_read_from_file(args.tfname, &fp);
@@ -79,6 +76,8 @@ int main(int argc, char **argv)
 	dp2d(&fp, args.c, args.eps, args.eps_share, args.ni, args.minth);
 
 	fpt_cleanup(&fp);
+	free(args.tfname);
+	free(args.ifname);
 
 	return 0;
 }
