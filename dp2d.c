@@ -30,7 +30,7 @@
 #define RULE_LEN_LIMITED_STEP 100
 #endif
 #ifndef RULE_ITEMSET
-#define RULE_ITEMSET 0
+#define RULE_ITEMSET 1
 #endif
 
 #define PRECISION 2048
@@ -205,6 +205,9 @@ static void compute_pdf(const struct fptree *fp, int m, int M, double epsilon,
 	*sup_ab = fpt_itemset_count(fp, AB, ab_length);
 	*q = quality(*sup_a, *sup_ab, M, m);
 #if RULE_ITEMSET
+	int i;
+	for (i = 0; i < ab_length; i++)
+		*q *= fpt_item_score(fp, AB[i]);
 #endif
 	mpfr_set_d(pdf, *q, ROUND_MODE);
 	mpfr_mul_d(pdf, pdf, epsilon / 2, ROUND_MODE);

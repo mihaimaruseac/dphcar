@@ -348,6 +348,13 @@ int fpt_item_count(const struct fptree *fp, int it)
 	return fp->table[fp->table[it].rpi].cnt;
 }
 
+int fpt_item_score(const struct fptree *fp, int it)
+{
+	if (it < 0 || it >= fp->n)
+		return 0;
+	return fp->table[fp->table[it].rpi].score;
+}
+
 static int search_on_path(const struct fptree_node *n,
 		const int *key, int keylen)
 {
