@@ -58,10 +58,6 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[6], "%d", &args.minth) != 1)
 		usage(argv[0]);
-#if 0
-	if (sscanf(argv[3], "%d", &args.k) != 1)
-		usage(argv[0]);
-#endif
 }
 
 static void final_cleanup(void)
