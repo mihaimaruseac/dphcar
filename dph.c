@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv);
 
-	fpt_read_from_file(args.tfname, &fp);
+	fpt_read_from_file(args.tfname, args.ifname, &fp);
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
