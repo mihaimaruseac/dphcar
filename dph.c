@@ -46,6 +46,11 @@ static void usage(const char *prg)
 
 static void parse_arguments(int argc, char **argv)
 {
+    int i;
+    printf("Called with: argc=%d\n", argc);
+    for (i = 0; i < argc; i++)
+        printf("%s ", argv[i]);
+    printf("\n");
 	/* TODO: use optparse */
 	if (argc != 8)
 		usage(argv[0]);
