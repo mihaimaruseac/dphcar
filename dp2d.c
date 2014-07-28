@@ -42,7 +42,7 @@ struct item_count {
 	double noisy_count;
 };
 
-static double quality(int x, int y, double X, double Y);
+static double quality(int x, int y, double X, double Y, double c);
 
 static struct item_count *alloc_items(int sz)
 {
@@ -196,14 +196,15 @@ static void all_allowed_items(const struct fptree *fp,
 		items[i - nM] = ic[i].value;
 }
 
-static void compute_pdf(const struct fptree *fp, int m, int M, double epsilon,
+static void compute_pdf(const struct fptree *fp, int m, int M,
+		double c, double epsilon,
 		const int *A, const int *AB,
 		int a_length, int ab_length,
 		int *sup_a, int *sup_ab, double *q, mpfr_t pdf)
 {
 	*sup_a = fpt_itemset_count(fp, A, a_length);
 	*sup_ab = fpt_itemset_count(fp, AB, ab_length);
-	*q = quality(*sup_a, *sup_ab, M, m);
+	*q = quality(*sup_a, *sup_ab, M, m, c);
 #if RULE_ITEMSET
 	int i;
 	for (i = 0; i < ab_length; i++)
@@ -339,7 +340,8 @@ next:
 	free(x);
 }
 
-static void compute_cdf(const struct fptree *fp, int m, int M, double epsilon,
+static void compute_cdf(const struct fptree *fp, int m, int M,
+		double c, double epsilon,
 		const int *A, const int *B, const int *AB,
 		int a_length, int b_length, int ab_length,
 		mpfr_t pdf, mpfr_t cdf)
@@ -347,7 +349,7 @@ static void compute_cdf(const struct fptree *fp, int m, int M, double epsilon,
 	int sup_a, sup_ab;
 	double q;
 
-	compute_pdf(fp, m, M, epsilon, A, AB, a_length, ab_length,
+	compute_pdf(fp, m, M, c, epsilon, A, AB, a_length, ab_length,
 			&sup_a, &sup_ab, &q, pdf);
 	mpfr_add(cdf, cdf, pdf, ROUND_MODE);
 
@@ -364,7 +366,8 @@ static void compute_cdf(const struct fptree *fp, int m, int M, double epsilon,
 	b_length = b_length;
 }
 
-static void sample_rule(const struct fptree *fp, int m, int M, double epsilon,
+static void sample_rule(const struct fptree *fp, int m, int M,
+		double c, double epsilon,
 		const int *A, const int *B, const int *AB,
 		int a_length, int b_length, int ab_length,
 		mpfr_t pdf, mpfr_t rnd)
@@ -375,7 +378,7 @@ static void sample_rule(const struct fptree *fp, int m, int M, double epsilon,
 	if (mpfr_sgn(rnd) < 0)
 		return; /* one rule was already sampled */
 
-	compute_pdf(fp, m, M, epsilon, A, AB, a_length, ab_length,
+	compute_pdf(fp, m, M, c, epsilon, A, AB, a_length, ab_length,
 			&sup_a, &sup_ab, &q, pdf);
 	mpfr_sub(rnd, rnd, pdf, ROUND_MODE);
 	if (mpfr_sgn(rnd) < 0)
@@ -389,9 +392,9 @@ static void sample_rule(const struct fptree *fp, int m, int M, double epsilon,
 #define LONG 2 /* anything -> anything, O(n^3) */
 #define METHOD LONG
 static void for_all_rules(const struct fptree *fp, const int *items,
-		int num_items, int m, int M, double epsilon,
+		int num_items, int m, int M, double c, double epsilon,
 		mpfr_t arg1, mpfr_t arg2,
-		void (*f)(const struct fptree*, int, int, double,
+		void (*f)(const struct fptree*, int, int, double, double,
 			const int*, const int*, const int*, int, int, int,
 			mpfr_t, mpfr_t))
 {
@@ -443,8 +446,8 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 				if (i != j)
 					B[b_length++] = AB[j];
 
-			f(fp, m, M, epsilon, A, B, AB, 1, b_length, ab_length,
-					arg1, arg2);
+			f(fp, m, M, c, epsilon, A, B, AB,
+				1, b_length, ab_length, arg1, arg2);
 		}
 
 #elif METHOD == LONG
@@ -460,8 +463,8 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 		if (a_length == 0) continue;
 		if (b_length == 0) continue;
 
-		f(fp, m, M, epsilon, A, B, AB, a_length, b_length, ab_length,
-				arg1, arg2);
+		f(fp, m, M, c, epsilon, A, B, AB,
+			a_length, b_length, ab_length, arg1, arg2);
 #endif
 	}
 
@@ -522,12 +525,12 @@ static void mine(const struct fptree *fp, const struct item_count *ic,
 #endif
 
 		mpfr_set_zero(cdf, 1);
-		for_all_rules(fp, items, num_items, m, M, c_epsilon,
+		for_all_rules(fp, items, num_items, m, M, c, c_epsilon,
 				pdf, cdf, compute_cdf);
 
 		mpfr_urandomb(rnd, rnd_state);
 		mpfr_mul(rnd, rnd, cdf, ROUND_MODE); /* rnd in [0, cdf) */
-		for_all_rules(fp, items, num_items, m, M, c_epsilon,
+		for_all_rules(fp, items, num_items, m, M, c, c_epsilon,
 				pdf, rnd, sample_rule);
 
 		free(items);
@@ -588,6 +591,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 #define DISTANCE 2
 #define NEW 3
 #define DELTA 4
+#define CDIST 5
 #define METHOD DISPLACEMENT
 #if METHOD == DISPLACEMENT
 static double displacement(int x, double m, double M, double v)
@@ -600,20 +604,23 @@ static double displacement(int x, double m, double M, double v)
 	return v * z;
 }
 
-static double quality(int x, int y, double X, double Y)
+static double quality(int x, int y, double X, double Y, double c)
 {
+	c = c;
 	return 0.5 * (1/Y - 1/X) *
 		displacement(x, Y, X, X) * displacement(y, Y, X, Y);
 }
 #elif METHOD == DISTANCE
-static double quality(int x, int y, double X, double Y)
+static double quality(int x, int y, double X, double Y, double c)
 {
 	double dx = X - x, dy = Y - y;
+	c = c;
 	return sqrt(dx * dx + dy * dy);
 }
 #elif METHOD == NEW
-static double quality(int x, int y, double X, double Y)
+static double quality(int x, int y, double X, double Y, double c)
 {
+	c = c;
 #define P1 1
 #define P2 1
 #define P3 1
@@ -640,10 +647,22 @@ static double quality(int x, int y, double X, double Y)
 #undef P3
 }
 #elif METHOD == DELTA
-static double quality(int x, int y, double X, double Y)
+static double quality(int x, int y, double X, double Y, double c)
 {
-	X = X; Y = Y;
+	X = X; Y = Y; c = c;
 	return y - x;
+}
+#elif METHOD == CDIST
+static double quality(int x, int y, double X, double Y, double c)
+{
+	double s = c;
+	X = X; Y = Y;
+
+	if (1 - c > s)
+		s = 1 - c;
+	s /= sqrt(1 + c*c);
+
+	return fabs(c * x - y) / s;
 }
 #else
 #error ("Undefined quality method")
