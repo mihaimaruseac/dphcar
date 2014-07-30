@@ -55,8 +55,8 @@ struct rule_table *init_rule_table()
 void save_rule(struct rule_table *rt, const struct rule *r,
 		int supA, int supAB)
 {
+	size_t ix, s = rt->sz;
 	struct rule **p;
-	size_t ix;
 
 	if (rt->sz == rt->av) {
 #define INCREASE_RATE 2
@@ -68,18 +68,21 @@ void save_rule(struct rule_table *rt, const struct rule *r,
 		rt->c = realloc(rt->c, rt->av * sizeof(rt->c[0]));
 	}
 
-	p = lsearch(&r, rt->rules, &(rt->sz), sizeof(r), rule_cmp);
+	p = lsearch(&r, rt->rules, &s, sizeof(r), rule_cmp);
 	ix = p - &rt->rules[0];
 
-	if (ix != rt->sz - 1) {
+	if (s == rt->sz) {
 		if (rt->supA[ix] != supA || rt->supAB[ix] != supAB)
 			die("Same rule with different sup %d %d / %d %d",
 				rt->supA[ix], rt->supAB[ix], supA, supAB);
+		free_rule((struct rule*)r);
 	} else {
 		rt->supA[ix] = supA;
 		rt->supAB[ix] = supAB;
 		rt->c[ix] = supAB / (supA + 0.0);
 	}
+
+	rt->sz = s;
 }
 
 void print_rule(const struct rule *r)
