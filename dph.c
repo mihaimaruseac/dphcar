@@ -31,16 +31,21 @@ static struct {
 	int ni;
 	/* minimum threshold */
 	int minth;
-#if 0
-	/* k value (top k rules) */
-	int k;
-#endif
+	/* threshold for S set */
+	int thS;
+	/* threshold for L set */
+	int thL;
+	/* weight for M set */
+	double wM;
+	/* weight for L set */
+	double wL;
 } args;
 
 static void usage(const char *prg)
 {
 	fprintf(stderr, "Usage: %s TFILE IFILE MINCONF EPSILON EPSILON_SHARE "
-			"NITEMS MINTHRESHOLD\n", prg);
+			"NITEMS MINTHRESHOLD THRESH_S THRESH_L "
+			"WEIGHT_M WEIGHT_L\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -53,7 +58,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 8)
+	if (argc != 12)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	args.ifname = strdup(argv[2]);
@@ -67,6 +72,14 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[7], "%d", &args.minth) != 1)
 		usage(argv[0]);
+	if (sscanf(argv[8], "%d", &args.thS) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[9], "%d", &args.thL) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[10], "%lf", &args.wM) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[11], "%lf", &args.wL) != 1)
+		usage(argv[0]);
 }
 
 int main(int argc, char **argv)
@@ -75,7 +88,8 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv);
 
-	fpt_read_from_file(args.tfname, args.ifname, &fp);
+	fpt_read_from_file(args.tfname, args.thS, args.thL, args.wM, args.wL,
+			&fp);
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 

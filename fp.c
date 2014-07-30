@@ -49,22 +49,6 @@ static int fptable_cmp(const void *a, const void *b)
 #define LINELENGTH 4096
 #define INITIAL_SIZE 100
 
-static void read_item_scores(FILE *f, struct fptree *fp)
-{
-	double s;
-	int i;
-
-	/* default scores */
-	for (i = 0; i < fp->n; i++)
-		fp->table[i].score = 0.5;
-
-	while (fscanf(f, "%d%lf", &i, &s) == 2) {
-		if (i < 1 || i > fp->n)
-			continue;
-		fp->table[fp->table[i-1].rpi].score = s;
-	}
-}
-
 static void single_item_stat(FILE *f, struct fptree *fp)
 {
 	int x, sa = INITIAL_SIZE, *xs, i;
@@ -292,10 +276,12 @@ void fpt_table_print(const struct fptree *fp)
 	}
 }
 
-void fpt_read_from_file(const char *fname, const char *ifname,
+void fpt_read_from_file(const char *fname,
+		int thS, int thL, double wM, double wL,
 		struct fptree *fp)
 {
 	FILE *f = fopen(fname, "r");
+	int i;
 
 	if (!f)
 		die("Invalid transaction filename %s", fname);
@@ -312,17 +298,14 @@ void fpt_read_from_file(const char *fname, const char *ifname,
 	printf("OK\n");
 
 	fclose(f);
-	f = fopen(ifname, "r");
 
-	if (!f)
-		die("Invalid item score filename %s", fname);
-
-	printf("Reading item scores .. ");
-	fflush(stdout);
-	read_item_scores(f, fp);
-	printf("OK\n");
-
-	fclose(f);
+	for (i = 0; i < fp->n; i++)
+		if (fp->table[i].cnt >= thL)
+			fp->table[i].score = wL;
+		else if (fp->table[i].cnt > thS)
+			fp->table[i].score = wM;
+		else
+			fp->table[i].score = 0;
 }
 
 void fpt_cleanup(const struct fptree *fp)

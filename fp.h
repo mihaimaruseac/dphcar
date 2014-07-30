@@ -26,7 +26,8 @@ struct fptree {
 /**
  * Read a transaction file and construct a fp-tree from it.
  */
-void fpt_read_from_file(const char *fname, const char *ifname,
+void fpt_read_from_file(const char *fname,
+		int thS, int thL, double wM, double wL,
 		struct fptree *fp);
 
 /**
