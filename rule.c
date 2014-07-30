@@ -194,12 +194,8 @@ void free_rule_table(struct rule_table *rt)
 	if (!rt)
 		return;
 
-	for (i = 0; i < rt->sz; i++) {
-		// TODO: clean
-		print_rule(rt->rules[i]);
-		printf(" (%d, %d) %lf\n", rt->supA[i], rt->supAB[i], rt->c[i]);
+	for (i = 0; i < rt->sz; i++)
 		free_rule(rt->rules[i]);
-	}
 
 	free(rt->supA);
 	free(rt->supAB);
