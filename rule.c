@@ -5,6 +5,60 @@
 #include "globals.h"
 #include "rule.h"
 
+static int rule_cmp(const void *a, const void *b)
+{
+	const struct rule *ra = a, *rb = b;
+	ra = rb;
+	rb = ra;
+	return 1;
+}
+
+struct rule_table *init_rule_table()
+{
+	struct rule_table *rt = calloc(1, sizeof(*rt));
+
+	rt->sz = 0;
+#define INITIAL 10
+	rt->av = INITIAL;
+#undef INITIAL
+	rt->rules = calloc(rt->av, sizeof(rt->rules[0]));
+	rt->supA = calloc(rt->av, sizeof(rt->supA[0]));
+	rt->supAB = calloc(rt->av, sizeof(rt->supAB[0]));
+	rt->c = calloc(rt->av, sizeof(rt->c[0]));
+
+	return rt;
+}
+
+void save_rule(struct rule_table *rt, const struct rule *r,
+		int supA, int supAB)
+{
+	struct rule **p;
+	size_t ix;
+
+	if (rt->sz == rt->av) {
+#define INCREASE_RATE 2
+		rt->av *= INCREASE_RATE;
+#undef INCREASE_RATE
+		rt->rules = realloc(rt->rules, rt->av * sizeof(rt->rules[0]));
+		rt->supA = realloc(rt->supA, rt->av * sizeof(rt->supA[0]));
+		rt->supAB = realloc(rt->supAB, rt->av * sizeof(rt->supAB[0]));
+		rt->c = realloc(rt->c, rt->av * sizeof(rt->c[0]));
+	}
+
+	p = lsearch(&r, rt->rules, &(rt->sz), sizeof(r), rule_cmp);
+	ix = p - &rt->rules[0];
+
+	if (ix != rt->sz - 1) {
+		if (rt->supA[ix] != supA || rt->supAB[ix] != supAB)
+			die("Same rule with different sup %d %d / %d %d",
+				rt->supA[ix], rt->supAB[ix], supA, supAB);
+	} else {
+		rt->supA[ix] = supA;
+		rt->supAB[ix] = supAB;
+		rt->c[ix] = supAB / (supA + 0.0);
+	}
+}
+
 void print_rule(const struct rule *r)
 {
 	size_t i;
@@ -42,7 +96,7 @@ struct rule *build_rule_A_B(const struct itemset *A, const struct itemset *B)
 struct rule *build_rule_A_AB(const struct itemset *A, const struct itemset *AB)
 {
 	struct rule *r = calloc(1, sizeof(*r));
-	size_t l = AB->length, i, j = 0;
+	size_t l = A->length, i, j = 0;
 	int *p;
 
 	r->A = calloc(1, sizeof(*(r->A)));
@@ -67,22 +121,26 @@ struct rule *build_rule_A_AB(const struct itemset *A, const struct itemset *AB)
 	if (j != r->B->length)
 		die("Length of B: expected %lu got %lu", r->B->length, j);
 
-	if (l != AB->length)
+	if (l != A->length)
 		die("Length changed from %lu to %lu", AB->length, l);
 
 	return r;
 }
 
-struct itemset *build_itemset(const int *items, int length)
+struct itemset *build_itemset(const int *items, size_t length)
 {
 	struct itemset *its = calloc(1, sizeof(*its));
 	size_t i;
 
 	its->length = length;
 	its->items = calloc(its->length, sizeof(its->items[0]));
+	its->length = 0;
 
-	for (i = 0; i < its->length; i++)
-		its->items[i] = items[i];
+	for (i = 0; i < length; i++)
+		if (items[i])
+			its->items[its->length++] = items[i];
+
+	its->items = realloc(its->items, its->length * sizeof(its->items[0]));
 
 	return its;
 }
@@ -104,4 +162,21 @@ void free_itemset(struct itemset *its)
 
 	free(its->items);
 	free(its);
+}
+
+void free_rule_table(struct rule_table *rt)
+{
+	size_t i;
+
+	if (!rt)
+		return;
+
+	for (i = 0; i < rt->sz; i++)
+		free_rule(rt->rules[i]);
+
+	free(rt->supA);
+	free(rt->supAB);
+	free(rt->c);
+	free(rt->rules);
+	free(rt);
 }

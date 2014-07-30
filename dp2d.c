@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include <gmp.h>
 #include <mpfr.h>
@@ -17,13 +16,16 @@
 #define PRINT_TRIANGLES_ITEMS 0
 #endif
 #ifndef PRINT_TRIANGLE_CONTENT
-#define PRINT_TRIANGLE_CONTENT 1
+#define PRINT_TRIANGLE_CONTENT 0
 #endif
 #ifndef PRINT_ITEM_TABLE
 #define PRINT_ITEM_TABLE 0
 #endif
 #ifndef PRINT_RULE_TABLE
 #define PRINT_RULE_TABLE 0
+#endif
+#ifndef PRINT_RULE_RESULTS
+#define PRINT_RULE_RESULTS 1
 #endif
 #ifndef RULE_LEN_LIMIT
 #define RULE_LEN_LIMIT 1
@@ -64,7 +66,6 @@ static char *read_from_devurandom(int bytes)
 static void initialize_random(gmp_randstate_t state, int bytes)
 {
 	void *buff = read_from_devurandom(bytes);
-	time_t t;
 	mpz_t s;
 
 	gmp_randinit_default(state);
@@ -73,9 +74,6 @@ static void initialize_random(gmp_randstate_t state, int bytes)
 	gmp_randseed(state, s);
 	mpz_clear(s);
 	free(buff);
-
-	time(&t);
-	srand48(t);
 }
 
 struct item_count {
@@ -236,7 +234,8 @@ static void all_allowed_items(const struct fptree *fp,
 		items[i - nM] = ic[i].value;
 }
 
-static void do_print_rule(const struct fptree *fp,
+static void do_output_rule(const struct fptree *fp,
+		struct rule_table *rt,
 		const int *A, const int *AB,
 		int a_length, int ab_length,
 		int m, int M)
@@ -248,6 +247,11 @@ static void do_print_rule(const struct fptree *fp,
 	sup_a = fpt_itemset_count(fp, A, a_length);
 	sup_ab = fpt_itemset_count(fp, AB, ab_length);
 
+	a = build_itemset(A, a_length);
+	ab = build_itemset(AB, ab_length);
+	r = build_rule_A_AB(a, ab);
+
+#if PRINT_RULE_RESULTS
 	printf("\n");
 	if (sup_ab > M)
 		printf("a ");
@@ -263,20 +267,20 @@ static void do_print_rule(const struct fptree *fp,
 	else
 		printf("* ");
 
-	a = build_itemset(A, a_length);
-	ab = build_itemset(AB, ab_length);
-	r = build_rule_A_AB(a, ab);
 	print_rule(r);
 
 	printf(" (%d, %d) %lf", sup_a, sup_ab,
 			(sup_ab + 0.0) / (0.0 + sup_a));
+#endif
 
-	free_rule(r);
+	save_rule(rt, r, sup_a, sup_ab);
+
 	free_itemset(a);
 	free_itemset(ab);
 }
 
-static void print_rule_and_expansions(const struct fptree *fp,
+static void output_rule_and_expansions(const struct fptree *fp,
+		struct rule_table *rt,
 		const int *A, const int *B,
 		int a_length, int b_length, int m, int M)
 {
@@ -296,7 +300,7 @@ static void print_rule_and_expansions(const struct fptree *fp,
 		ab[i + a_length] = B[i];
 	}
 
-	do_print_rule(fp, a, ab, a_length, a_length + b_length, m, M);
+	do_output_rule(fp, rt, a, ab, a_length, a_length + b_length, m, M);
 	x[b_length - 1]++;
 
 	while (x[0] < 2) {
@@ -315,7 +319,7 @@ static void print_rule_and_expansions(const struct fptree *fp,
 		if (j == 0)
 			goto next;
 
-		do_print_rule(fp, a, ab, a_length, a_length + b_length, m, M);
+		do_output_rule(fp, rt, a, ab, a_length, a_length + b_length, m, M);
 
 		j = a_length;
 
@@ -326,7 +330,7 @@ static void print_rule_and_expansions(const struct fptree *fp,
 				ab[i + j] = B[i];
 			}
 
-		do_print_rule(fp, a, ab, a_length, j + b_length, m, M);
+		do_output_rule(fp, rt, a, ab, a_length, j + b_length, m, M);
 
 		/* remove item from a */
 		for (i = j; i < a_length; i++)
@@ -375,7 +379,8 @@ static void compute_pdf(const struct fptree *fp, int m, int M,
 	mpfr_exp(pdf, pdf, ROUND_MODE);
 }
 
-static void compute_cdf(const struct fptree *fp, int m, int M,
+static void compute_cdf(const struct fptree *fp, struct rule_table *rt,
+		int m, int M,
 		double c, double epsilon,
 		const int *A, const int *B, const int *AB,
 		int a_length, int b_length, int ab_length,
@@ -399,9 +404,11 @@ static void compute_cdf(const struct fptree *fp, int m, int M,
 	B = B;
 #endif
 	b_length = b_length;
+	rt = rt; /* unused */
 }
 
-static void sample_rule(const struct fptree *fp, int m, int M,
+static void sample_rule(const struct fptree *fp, struct rule_table *rt,
+		int m, int M,
 		double c, double epsilon,
 		const int *A, const int *B, const int *AB,
 		int a_length, int b_length, int ab_length,
@@ -417,7 +424,7 @@ static void sample_rule(const struct fptree *fp, int m, int M,
 			&sup_a, &sup_ab, &q, pdf);
 	mpfr_sub(rnd, rnd, pdf, ROUND_MODE);
 	if (mpfr_sgn(rnd) < 0)
-		print_rule_and_expansions(fp, A, B, a_length, b_length, m, M);
+		output_rule_and_expansions(fp, rt, A, B, a_length, b_length, m, M);
 
 	B = B;
 	b_length = b_length;
@@ -426,12 +433,12 @@ static void sample_rule(const struct fptree *fp, int m, int M,
 #define SHORT 1 /* item -> anything, O(n^2) */
 #define LONG 2 /* anything -> anything, O(n^3) */
 #define METHOD LONG
-static void for_all_rules(const struct fptree *fp, const int *items,
-		int num_items, int m, int M, double c, double epsilon,
-		mpfr_t arg1, mpfr_t arg2,
-		void (*f)(const struct fptree*, int, int, double, double,
-			const int*, const int*, const int*, int, int, int,
-			mpfr_t, mpfr_t))
+static void for_all_rules(const struct fptree *fp, struct rule_table *rt,
+		const int *items, int num_items, int m, int M,
+		double c, double epsilon, mpfr_t arg1, mpfr_t arg2,
+		void (*f)(const struct fptree*, struct rule_table*, int, int,
+			double, double, const int*, const int*, const int*,
+			int, int, int, mpfr_t, mpfr_t))
 {
 	int i, a_length, b_length, ab_length;
 	unsigned char *ABi;
@@ -481,7 +488,7 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 				if (i != j)
 					B[b_length++] = AB[j];
 
-			f(fp, m, M, c, epsilon, A, B, AB,
+			f(fp, rt, m, M, c, epsilon, A, B, AB,
 				1, b_length, ab_length, arg1, arg2);
 		}
 
@@ -498,7 +505,7 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 		if (a_length == 0) continue;
 		if (b_length == 0) continue;
 
-		f(fp, m, M, c, epsilon, A, B, AB,
+		f(fp, rt, m, M, c, epsilon, A, B, AB,
 			a_length, b_length, ab_length, arg1, arg2);
 #endif
 	}
@@ -515,10 +522,12 @@ static void for_all_rules(const struct fptree *fp, const int *items,
 #undef LONG
 }
 
-static void mine(const struct fptree *fp, const struct item_count *ic,
+static struct rule_table *mine(const struct fptree *fp,
+		const struct item_count *ic,
 		double c, double epsilon, int num_triangles,
 		int m, int M, int ni)
 {
+	struct rule_table *rt = init_rule_table();
 	int c_triangle, num_items, *items;
 	gmp_randstate_t rnd_state;
 	mpfr_t cdf, pdf, rnd;
@@ -560,12 +569,12 @@ static void mine(const struct fptree *fp, const struct item_count *ic,
 #endif
 
 		mpfr_set_zero(cdf, 1);
-		for_all_rules(fp, items, num_items, m, M, c, c_epsilon,
+		for_all_rules(fp, rt, items, num_items, m, M, c, c_epsilon,
 				pdf, cdf, compute_cdf);
 
 		mpfr_urandomb(rnd, rnd_state);
 		mpfr_mul(rnd, rnd, cdf, ROUND_MODE); /* rnd in [0, cdf) */
-		for_all_rules(fp, items, num_items, m, M, c, c_epsilon,
+		for_all_rules(fp, rt, items, num_items, m, M, c, c_epsilon,
 				pdf, rnd, sample_rule);
 
 		free(items);
@@ -582,6 +591,8 @@ end_loop:
 	mpfr_clear(rnd);
 	mpfr_free_cache();
 	gmp_randclear(rnd_state);
+
+	return rt;
 }
 
 void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
@@ -590,6 +601,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
+	struct rule_table *rt;
 	int theta, nt;
 
 	init_rng(&randbuffer);
@@ -617,8 +629,11 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	printf("%d triangles needed\n", nt);
 
 	printf("Step 4: mining rules:\n");
-	mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t, ni);
+	rt = mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t, ni);
 
+	/* TODO: extract statistics & baseline */
+
+	free_rule_table(rt);
 	free_items(ic);
 }
 
