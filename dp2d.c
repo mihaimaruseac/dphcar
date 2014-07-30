@@ -605,14 +605,53 @@ end_loop:
 static struct rule_table *mine_np(const struct fptree *fp, int ni,
 		const char *ifname, int hic, struct drand48_data *randbuffer)
 {
+	int *itemset = calloc(ni, sizeof(itemset[0])), nits, tmp;
 	int *top_items = calloc(hic, sizeof(top_items[0]));
 	struct rule_table *rt = init_rule_table();
 	FILE *f = fopen(ifname, "r");
+	int i, j;
 
-	if (!f)
-		die("Invalid transaction support file!");
+	if (!f || fscanf(f, "(%d)", &tmp) != 1 || tmp != fp->t)
+		die("Invalid/non-matching transaction support file!");
 
 	fpt_randomly_get_top_items(fp, top_items, hic, randbuffer);
+
+	while (1) {
+		for (nits = 0; nits < ni; nits++)
+			if(fscanf(f, "%d", &itemset[nits]) != 1)
+				break;
+
+		if (fscanf(f, "%d", &tmp) == 1) {
+			/* extra items, read till end and continue to next
+			 * while-loop
+			 */
+			while(fscanf(f, "%d", &tmp) == 1);
+			goto end;
+		}
+
+		if (nits == 0) /* eof */
+			break;
+
+		tmp = 0;
+		for (i = 0; i < hic && !tmp; i++)
+			for (j = 0; j < nits && !tmp; j++)
+				if (top_items[i] == itemset[j])
+					tmp++;
+
+		if (!tmp)
+			goto end;
+
+		for (i = 0; i < hic; i++)
+			printf("%d ", top_items[i]);
+		printf("| ");
+		for (i = 0; i < nits; i++)
+			printf("%d ", itemset[i]);
+		printf("\n");
+
+end:
+		if (fscanf(f, "(%d)", &tmp) != 1)
+			die("Invalid support file :: Extra line data");
+	}
 
 	fclose(f);
 	free(top_items);
