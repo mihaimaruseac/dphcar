@@ -432,9 +432,6 @@ static void sample_rule(const struct fptree *fp, struct rule_table *rt,
 	mpfr_sub(rnd, rnd, pdf, ROUND_MODE);
 	if (mpfr_sgn(rnd) < 0)
 		output_rule_and_expansions(fp, rt, A, B, a_length, b_length, m, M);
-
-	B = B;
-	b_length = b_length;
 }
 
 #define SHORT 1 /* item -> anything, O(n^2) */
@@ -602,6 +599,21 @@ end_loop:
 	return rt;
 }
 
+static void get_rules_np(const struct fptree *fp, struct rule_table *rt,
+		int *itemset, int nits)
+{
+	int *A = calloc(1, sizeof(A[0]));
+	int i;
+
+	for (i = 0; i < nits; i++) {
+		A[0] = itemset[i];
+		itemset[i] = 0;
+		output_rule_and_expansions(fp, rt, A, itemset,
+				1, nits - 1, 0, 0);
+		itemset[i] = A[0];
+	}
+}
+
 static struct rule_table *mine_np(const struct fptree *fp, int ni,
 		const char *ifname, int hic, struct drand48_data *randbuffer)
 {
@@ -641,12 +653,10 @@ static struct rule_table *mine_np(const struct fptree *fp, int ni,
 		if (!tmp)
 			goto end;
 
-		for (i = 0; i < hic; i++)
-			printf("%d ", top_items[i]);
-		printf("| ");
-		for (i = 0; i < nits; i++)
-			printf("%d ", itemset[i]);
-		printf("\n");
+		if (nits == 1)
+			goto end;
+
+		get_rules_np(fp, rt, itemset, nits);
 
 end:
 		if (fscanf(f, "(%d)", &tmp) != 1)
