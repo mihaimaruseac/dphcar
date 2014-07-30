@@ -9,6 +9,7 @@
 #include "dp2d.h"
 #include "fp.h"
 #include "globals.h"
+#include "rule.h"
 
 /* debug defines */
 #ifndef PRINT_TRIANGLES_ITEMS

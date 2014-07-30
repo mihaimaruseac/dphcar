@@ -6,7 +6,7 @@ TARGET2 = ./test
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0
 LDFLAGS = -lm -lmpfr -lgmp
-OBJS = dp2d.o fp.o globals.o
+OBJS = dp2d.o fp.o globals.o rule.o
 
 all: $(TARGET) $(TARGET1)
 
