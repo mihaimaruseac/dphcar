@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <gmp.h>
 #include <mpfr.h>
@@ -37,13 +38,51 @@
 #define PRECISION 2048
 #define ROUND_MODE MPFR_RNDN
 
+static double quality(int x, int y, double X, double Y, double c);
+
+/**
+ * Reads `bytes` bytes from /dev/urandom to initialize random number generator
+ * state.
+ */
+static char *read_from_devurandom(int bytes)
+{
+	FILE *f = fopen("/dev/urandom", "r");
+	char *buff = malloc(bytes);
+	char *p = buff;
+	size_t read;
+
+	while (bytes) {
+		read = fread(p, 1, bytes, f);
+		p += read;
+		bytes -= read;
+	}
+
+	fclose(f);
+	return buff;
+}
+
+static void initialize_random(gmp_randstate_t state, int bytes)
+{
+	void *buff = read_from_devurandom(bytes);
+	time_t t;
+	mpz_t s;
+
+	gmp_randinit_default(state);
+	mpz_init(s);
+	mpz_import(s, bytes, 1, 1, 0, 0, buff);
+	gmp_randseed(state, s);
+	mpz_clear(s);
+	free(buff);
+
+	time(&t);
+	srand48(t);
+}
+
 struct item_count {
 	int value;
 	int real_count;
 	double noisy_count;
 };
-
-static double quality(int x, int y, double X, double Y, double c);
 
 static struct item_count *alloc_items(int sz)
 {
@@ -197,43 +236,14 @@ static void all_allowed_items(const struct fptree *fp,
 		items[i - nM] = ic[i].value;
 }
 
-static void compute_pdf(const struct fptree *fp, int m, int M,
-		double c, double epsilon,
+static void do_print_rule(const struct fptree *fp,
 		const int *A, const int *AB,
 		int a_length, int ab_length,
-		int *sup_a, int *sup_ab, double *q, mpfr_t pdf)
-{
-	*sup_a = fpt_itemset_count(fp, A, a_length);
-	*sup_ab = fpt_itemset_count(fp, AB, ab_length);
-	*q = quality(*sup_a, *sup_ab, M, m, c);
-#if RULE_ITEMSET
-	int i;
-	for (i = 0; i < ab_length; i++)
-		*q *= fpt_item_score(fp, AB[i]);
-#endif
-	mpfr_set_d(pdf, *q, ROUND_MODE);
-	mpfr_mul_d(pdf, pdf, epsilon / 2, ROUND_MODE);
-	mpfr_exp(pdf, pdf, ROUND_MODE);
-}
-
-static void print_rule(const int *A, const int *B, int a_length, int b_length)
-{
-	int i;
-
-	for (i = 0; i < a_length; i++)
-		printf("%d ", A[i]);
-	printf("-> ");
-	for (i = 0; i < b_length; i++)
-		if (B[i])
-			printf("%d ", B[i]);
-}
-
-static void do_print_rule(const struct fptree *fp,
-		const int *A, const int *B, const int *AB,
-		int a_length, int b_length, int ab_length,
 		int m, int M)
 {
+	struct itemset *a, *ab;
 	int sup_a, sup_ab;
+	struct rule *r;
 
 	sup_a = fpt_itemset_count(fp, A, a_length);
 	sup_ab = fpt_itemset_count(fp, AB, ab_length);
@@ -252,10 +262,18 @@ static void do_print_rule(const struct fptree *fp,
 		printf("b ");
 	else
 		printf("* ");
-	print_rule(A, B, a_length, b_length);
+
+	a = build_itemset(A, a_length);
+	ab = build_itemset(AB, ab_length);
+	r = build_rule_A_AB(a, ab);
+	print_rule(r);
+
 	printf(" (%d, %d) %lf", sup_a, sup_ab,
 			(sup_ab + 0.0) / (0.0 + sup_a));
 
+	free_rule(r);
+	free_itemset(a);
+	free_itemset(ab);
 }
 
 static void print_rule_and_expansions(const struct fptree *fp,
@@ -278,8 +296,7 @@ static void print_rule_and_expansions(const struct fptree *fp,
 		ab[i + a_length] = B[i];
 	}
 
-	do_print_rule(fp, a, b, ab, a_length, b_length, a_length + b_length,
-			m, M);
+	do_print_rule(fp, a, ab, a_length, a_length + b_length, m, M);
 	x[b_length - 1]++;
 
 	while (x[0] < 2) {
@@ -298,8 +315,7 @@ static void print_rule_and_expansions(const struct fptree *fp,
 		if (j == 0)
 			goto next;
 
-		do_print_rule(fp, a, b, ab, a_length, b_length,
-				a_length + b_length, m, M);
+		do_print_rule(fp, a, ab, a_length, a_length + b_length, m, M);
 
 		j = a_length;
 
@@ -310,8 +326,7 @@ static void print_rule_and_expansions(const struct fptree *fp,
 				ab[i + j] = B[i];
 			}
 
-		do_print_rule(fp, a, b, ab, a_length, b_length,
-				j + b_length, m, M);
+		do_print_rule(fp, a, ab, a_length, j + b_length, m, M);
 
 		/* remove item from a */
 		for (i = j; i < a_length; i++)
@@ -339,6 +354,25 @@ next:
 	free(ab);
 	free(b);
 	free(x);
+}
+
+static void compute_pdf(const struct fptree *fp, int m, int M,
+		double c, double epsilon,
+		const int *A, const int *AB,
+		int a_length, int ab_length,
+		int *sup_a, int *sup_ab, double *q, mpfr_t pdf)
+{
+	*sup_a = fpt_itemset_count(fp, A, a_length);
+	*sup_ab = fpt_itemset_count(fp, AB, ab_length);
+	*q = quality(*sup_a, *sup_ab, M, m, c);
+#if RULE_ITEMSET
+	int i;
+	for (i = 0; i < ab_length; i++)
+		*q *= fpt_item_score(fp, AB[i]);
+#endif
+	mpfr_set_d(pdf, *q, ROUND_MODE);
+	mpfr_mul_d(pdf, pdf, epsilon / 2, ROUND_MODE);
+	mpfr_exp(pdf, pdf, ROUND_MODE);
 }
 
 static void compute_cdf(const struct fptree *fp, int m, int M,
