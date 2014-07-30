@@ -603,9 +603,19 @@ end_loop:
 }
 
 static struct rule_table *mine_np(const struct fptree *fp, int ni,
-		const char *ifname, int hic)
+		const char *ifname, int hic, struct drand48_data *randbuffer)
 {
+	int *top_items = calloc(hic, sizeof(top_items[0]));
 	struct rule_table *rt = init_rule_table();
+	FILE *f = fopen(ifname, "r");
+
+	if (!f)
+		die("Invalid transaction support file!");
+
+	fpt_randomly_get_top_item(fp, top_items, hic, randbuffer);
+
+	fclose(f);
+	free(top_items);
 
 	return rt;
 }
@@ -648,7 +658,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	printf("%lu rules generated\n", rt->sz);
 
 	printf("Step 5: non-private data: ");
-	rtnp = mine_np(fp, ni, ifname, hic);
+	rtnp = mine_np(fp, ni, ifname, hic, &randbuffer);
 	printf("%lu rules generated\n", rtnp->sz);
 
 	printf("Step 6: generating statistics ");

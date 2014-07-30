@@ -306,6 +306,11 @@ void fpt_read_from_file(const char *fname,
 			fp->table[i].score = wM;
 		else
 			fp->table[i].score = 0;
+
+	fp->wL = wL;
+	fp->wM = wM;
+	fp->thL = thL;
+	fp->thS = thS;
 }
 
 void fpt_cleanup(const struct fptree *fp)
@@ -336,6 +341,32 @@ int fpt_item_score(const struct fptree *fp, int it)
 	if (it < 0 || it >= fp->n)
 		return 0;
 	return fp->table[fp->table[it].rpi].score;
+}
+
+void fpt_randomly_get_top_item(const struct fptree *fp,
+		int *top_items, int hic, struct drand48_data *randbuffer)
+{
+	int i, j, k;
+	long int it;
+
+	k = 0;
+	for (i = 0; i < fp->n; i++)
+		if (fp->table[i].cnt >= fp->thL)
+			k++;
+
+	// TODO: non-uniform selection?
+	for (i = 0; i < hic; i++) {
+again:
+		lrand48_r(randbuffer, &it);
+		it = it % k;
+		it = fp->table[it].val;
+
+		for (j = 0; j < i; j++)
+			if (top_items[j] == it)
+				goto again;
+
+		top_items[i] = it;
+	}
 }
 
 static int search_on_path(const struct fptree_node *n,
