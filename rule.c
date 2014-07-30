@@ -5,12 +5,35 @@
 #include "globals.h"
 #include "rule.h"
 
+static int itemset_cmp(const void *a, const void *b)
+{
+	const struct itemset *ia = a, *ib = b;
+	size_t i;
+
+	if (ia->length < ib->length)
+		return -1;
+	if (ia->length > ib->length)
+		return 1;
+
+	for (i = 0; i < ia->length; i++) {
+		if (ia->items[i] < ib->items[i])
+			return -1;
+		if (ia->items[i] > ib->items[i])
+			return 1;
+	}
+
+	return 0;
+}
+
 static int rule_cmp(const void *a, const void *b)
 {
-	const struct rule *ra = a, *rb = b;
-	ra = rb;
-	rb = ra;
-	return 1;
+	struct rule * const *ra = a, * const *rb = b;
+	struct rule *rra = *ra, *rrb = *rb;
+	int ret;
+
+	ret = itemset_cmp(rra->A, rrb->A);
+	if (ret) return ret;
+	return itemset_cmp(rra->B, rrb->B);
 }
 
 struct rule_table *init_rule_table()
@@ -171,8 +194,12 @@ void free_rule_table(struct rule_table *rt)
 	if (!rt)
 		return;
 
-	for (i = 0; i < rt->sz; i++)
+	for (i = 0; i < rt->sz; i++) {
+		// TODO: clean
+		print_rule(rt->rules[i]);
+		printf(" (%d, %d) %lf\n", rt->supA[i], rt->supAB[i], rt->c[i]);
 		free_rule(rt->rules[i]);
+	}
 
 	free(rt->supA);
 	free(rt->supAB);

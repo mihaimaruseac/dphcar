@@ -25,7 +25,7 @@
 #define PRINT_RULE_TABLE 0
 #endif
 #ifndef PRINT_RULE_RESULTS
-#define PRINT_RULE_RESULTS 1
+#define PRINT_RULE_RESULTS 0
 #endif
 #ifndef RULE_LEN_LIMIT
 #define RULE_LEN_LIMIT 1
@@ -276,6 +276,8 @@ static void do_output_rule(const struct fptree *fp,
 
 	printf(" (%d, %d) %lf", sup_a, sup_ab,
 			(sup_ab + 0.0) / (0.0 + sup_a));
+#else
+	m = M = m;
 #endif
 
 	save_rule(rt, r, sup_a, sup_ab);
