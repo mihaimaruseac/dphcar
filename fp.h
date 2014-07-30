@@ -45,7 +45,7 @@ int fpt_item_count(const struct fptree *fp, int it);
 int fpt_item_score(const struct fptree *fp, int it);
 int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen);
 
-void fpt_randomly_get_top_item(const struct fptree *fp,
+void fpt_randomly_get_top_items(const struct fptree *fp,
 		int *top_items, int hic, struct drand48_data *randbuffer);
 
 /** Debug printing. */

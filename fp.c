@@ -343,7 +343,7 @@ int fpt_item_score(const struct fptree *fp, int it)
 	return fp->table[fp->table[it].rpi].score;
 }
 
-void fpt_randomly_get_top_item(const struct fptree *fp,
+void fpt_randomly_get_top_items(const struct fptree *fp,
 		int *top_items, int hic, struct drand48_data *randbuffer)
 {
 	int i, j, k;

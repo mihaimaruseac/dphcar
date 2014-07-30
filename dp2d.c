@@ -612,7 +612,7 @@ static struct rule_table *mine_np(const struct fptree *fp, int ni,
 	if (!f)
 		die("Invalid transaction support file!");
 
-	fpt_randomly_get_top_item(fp, top_items, hic, randbuffer);
+	fpt_randomly_get_top_items(fp, top_items, hic, randbuffer);
 
 	fclose(f);
 	free(top_items);
