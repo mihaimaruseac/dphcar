@@ -39,13 +39,15 @@ static struct {
 	double wM;
 	/* weight for L set */
 	double wL;
+	/* high item count */
+	int hic;
 } args;
 
 static void usage(const char *prg)
 {
 	fprintf(stderr, "Usage: %s TFILE IFILE MINCONF EPSILON EPSILON_SHARE "
 			"NITEMS MINTHRESHOLD THRESH_S THRESH_L "
-			"WEIGHT_M WEIGHT_L\n", prg);
+			"WEIGHT_M WEIGHT_L HIGH_ITEM_COUNT\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -58,7 +60,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 12)
+	if (argc != 13)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	args.ifname = strdup(argv[2]);
@@ -80,6 +82,8 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[11], "%lf", &args.wL) != 1)
 		usage(argv[0]);
+	if (sscanf(argv[12], "%d", &args.hic) != 1)
+		usage(argv[0]);
 }
 
 int main(int argc, char **argv)
@@ -93,7 +97,8 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp, args.c, args.eps, args.eps_share, args.ni, args.minth);
+	dp2d(&fp, args.c, args.eps, args.eps_share, args.ni, args.minth,
+			args.ifname, args.hic);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);

@@ -602,13 +602,21 @@ end_loop:
 	return rt;
 }
 
+static struct rule_table *mine_np(const struct fptree *fp, int ni,
+		const char *ifname, int hic)
+{
+	struct rule_table *rt = init_rule_table();
+
+	return rt;
+}
+
 void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
-		int ni, int minth)
+		int ni, int minth, const char *ifname, int hic)
 {
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	struct rule_table *rt;
+	struct rule_table *rt, *rtnp;
 	int theta, nt;
 
 	init_rng(&randbuffer);
@@ -635,12 +643,22 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	nt = get_triangles(fp, ic, c, theta, fp->t, minth);
 	printf("%d triangles needed\n", nt);
 
-	printf("Step 4: mining rules:\n");
+	printf("Step 4: mining rules: ");
 	rt = mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t, ni);
+	printf("%lu rules generated\n", rt->sz);
+
+	printf("Step 5: non-private data: ");
+	rtnp = mine_np(fp, ni, ifname, hic);
+	printf("%lu rules generated\n", rtnp->sz);
+
+	printf("Step 6: generating statistics ");
+	// TODO: get from bash script
+	printf("\n");
 
 	/* TODO: extract statistics & baseline */
 
 	free_rule_table(rt);
+	free_rule_table(rtnp);
 	free_items(ic);
 }
 
