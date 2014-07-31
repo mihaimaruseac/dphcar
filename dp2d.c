@@ -9,6 +9,7 @@
 #include "dp2d.h"
 #include "fp.h"
 #include "globals.h"
+#include "histogram.h"
 #include "rule.h"
 
 /* debug defines */
@@ -677,9 +678,14 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	struct rule_table *rt, *rtnp;
+	struct histogram *hp, *hnp;
+	size_t i, bins;
 	int theta, nt;
 
 	init_rng(&randbuffer);
+	hp = init_histogram();
+	hnp = init_histogram();
+
 	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
 
 	printf("Running dp2D with ni=%d, minth=%d, c=%lf, eps=%lf, "
@@ -691,7 +697,6 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 
 #if PRINT_ITEM_TABLE == 1
 	printf("\n");
-	int i;
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
@@ -713,12 +718,27 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	printf("%lu rules generated\n", rtnp->sz);
 
 	printf("Step 6: generating statistics ");
-	// TODO: get from bash script
-	printf("\n");
+	for (i = 0; i < rt->sz; i++)
+		histogram_register(hp, rt->c[i]);
+	for (i = 0; i < rtnp->sz; i++)
+		histogram_register(hnp, rtnp->c[i]);
+	printf("%lu/%lu | %lu/%lu\n",
+			histogram_get_bin(hp, 0), histogram_get_all(hp),
+			histogram_get_bin(hnp, 0), histogram_get_all(hnp));
 
-	/* TODO: extract statistics & baseline */
+	printf("Final histogram:\nc_val\t%10s\t%10s\n", "priv", "real");
+	bins = histogram_get_count_bins(hp);
+	for (i = 0; i < bins; i++)
+		printf("%3.2f\t%10lu\t%10lu\n",
+				histogram_bin_bound(hp, i),
+				histogram_get_bin(hp, i),
+				histogram_get_bin(hnp, i));
+	printf("Total\t%10lu\t%10lu\n",
+			histogram_get_all(hp), histogram_get_all(hnp));
 
 	free(top_items);
+	free_histogram(hp);
+	free_histogram(hnp);
 	free_rule_table(rt);
 	free_rule_table(rtnp);
 	free_items(ic);
