@@ -24,10 +24,16 @@ void histogram_register(struct histogram *h, double val)
 {
 	int i;
 
-	for (i = 0; i < c_num_values; i++)
-		if (val > c_values[i])
-			h->values[i]++;
+	/* get rid of nan's  and perfect 0's */
+	if (val != val || val == 0)
+		return;
+
 	h->total++;
+	for (i = 0; i < c_num_values; i++)
+		if (val > c_values[i]) {
+			h->values[i]++;
+			return;
+		}
 }
 
 size_t histogram_get_bin(struct histogram *h, int bin)
