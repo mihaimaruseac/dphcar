@@ -615,10 +615,9 @@ static void get_rules_np(const struct fptree *fp, struct rule_table *rt,
 }
 
 static struct rule_table *mine_np(const struct fptree *fp, int ni,
-		const char *ifname, int hic, struct drand48_data *randbuffer)
+		const char *ifname, int *top_items, int hic)
 {
 	int *itemset = calloc(ni, sizeof(itemset[0])), nits, tmp;
-	int *top_items = calloc(hic, sizeof(top_items[0]));
 	struct rule_table *rt = init_rule_table();
 	FILE *f = fopen(ifname, "r");
 	int i, j;
@@ -626,7 +625,6 @@ static struct rule_table *mine_np(const struct fptree *fp, int ni,
 	if (!f || fscanf(f, "(%d)", &tmp) != 1 || tmp != fp->t)
 		die("Invalid/non-matching transaction support file!");
 
-	fpt_randomly_get_top_items(fp, top_items, hic, randbuffer);
 
 	while (1) {
 		for (nits = 0; nits < ni; nits++)
@@ -672,6 +670,7 @@ end:
 void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 		int ni, int minth, const char *ifname, int hic)
 {
+	int *top_items = calloc(hic, sizeof(top_items[0]));
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
@@ -679,6 +678,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	int theta, nt;
 
 	init_rng(&randbuffer);
+	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
 
 	printf("Running dp2D with ni=%d, minth=%d, c=%lf, eps=%lf, "
 			"eps_share=%lf\n", ni, minth, c, eps, eps_share);
@@ -707,7 +707,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	printf("%lu rules generated\n", rt->sz);
 
 	printf("Step 5: non-private data: ");
-	rtnp = mine_np(fp, ni, ifname, hic, &randbuffer);
+	rtnp = mine_np(fp, ni, ifname, top_items, hic);
 	printf("%lu rules generated\n", rtnp->sz);
 
 	printf("Step 6: generating statistics ");
