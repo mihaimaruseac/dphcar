@@ -612,6 +612,8 @@ static void get_rules_np(const struct fptree *fp, struct rule_table *rt,
 				1, nits - 1, 0, 0);
 		itemset[i] = A[0];
 	}
+
+	free(A);
 }
 
 static struct rule_table *mine_np(const struct fptree *fp, int ni,
@@ -662,7 +664,7 @@ end:
 	}
 
 	fclose(f);
-	free(top_items);
+	free(itemset);
 
 	return rt;
 }
@@ -716,6 +718,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 
 	/* TODO: extract statistics & baseline */
 
+	free(top_items);
 	free_rule_table(rt);
 	free_rule_table(rtnp);
 	free_items(ic);

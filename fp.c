@@ -305,10 +305,13 @@ void fpt_read_from_file(const char *fname,
 
 	fclose(f);
 
+	fp->table->k = 0;
 	for (i = 0; i < fp->n; i++)
-		if (fp->table[i].cnt >= thL)
-			fp->table[i].score = wL;
-		else if (fp->table[i].cnt > thS)
+		if (fp->table[i].cnt >= thL) {
+			/* medium weight, wL only for query item */
+			fp->table[i].score = wM;
+			fp->table->k++;
+		} else if (fp->table[i].cnt > thS)
 			fp->table[i].score = wM;
 		else
 			fp->table[i].score = 0;
@@ -352,26 +355,21 @@ int fpt_item_score(const struct fptree *fp, int it)
 void fpt_randomly_get_top_items(const struct fptree *fp,
 		int *top_items, int hic, struct drand48_data *randbuffer)
 {
-	int i, j, k;
+	int i, j;
 	long int it;
-
-	k = 0;
-	for (i = 0; i < fp->n; i++)
-		if (fp->table[i].cnt >= fp->table->thL)
-			k++;
 
 	// TODO: non-uniform selection?
 	for (i = 0; i < hic; i++) {
 again:
 		lrand48_r(randbuffer, &it);
-		it = it % k;
-		it = fp->table[it].val;
+		it = it % fp->table->k;
 
 		for (j = 0; j < i; j++)
-			if (top_items[j] == it)
+			if (top_items[j] == fp->table[it].val)
 				goto again;
 
-		top_items[i] = it;
+		fp->table[it].score = fp->table->wL;
+		top_items[i] = fp->table[it].val;
 	}
 }
 
