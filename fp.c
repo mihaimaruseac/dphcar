@@ -37,6 +37,12 @@ struct table {
 	int rpi;
 	/* item score */
 	double score;
+	/* top k items pass the thL threshold */
+	int k;
+	/* the thresholds */
+	int thL, thS;
+	/* the weights */
+	double wM, wL;
 };
 
 /* sort table entries in descending order */
@@ -307,10 +313,10 @@ void fpt_read_from_file(const char *fname,
 		else
 			fp->table[i].score = 0;
 
-	fp->wL = wL;
-	fp->wM = wM;
-	fp->thL = thL;
-	fp->thS = thS;
+	fp->table->wL = wL;
+	fp->table->wM = wM;
+	fp->table->thL = thL;
+	fp->table->thS = thS;
 }
 
 void fpt_cleanup(const struct fptree *fp)
@@ -351,7 +357,7 @@ void fpt_randomly_get_top_items(const struct fptree *fp,
 
 	k = 0;
 	for (i = 0; i < fp->n; i++)
-		if (fp->table[i].cnt >= fp->thL)
+		if (fp->table[i].cnt >= fp->table->thL)
 			k++;
 
 	// TODO: non-uniform selection?

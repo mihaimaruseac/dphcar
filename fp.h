@@ -21,9 +21,6 @@ struct fptree {
 	struct table *table;
 	/* root of the tree, opaque */
 	struct fptree_node *tree;
-	/* copied from args */
-	int thS, thL;
-	double wM, wL;
 };
 
 /**
