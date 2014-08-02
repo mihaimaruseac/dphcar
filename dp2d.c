@@ -283,8 +283,10 @@ static void do_output_rule(const struct fptree *fp,
 
 	if (rt)
 		save_rule(rt, r, sup_a, sup_ab);
-	else /* if (h) */
+	else  {/* if (h) */
 		histogram_register(h, (0.0 + sup_ab) / (0.0 + sup_a));
+		free_rule(r);
+	}
 
 	free_itemset(a);
 	free_itemset(ab);
