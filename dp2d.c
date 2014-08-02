@@ -281,7 +281,7 @@ static void do_output_rule(const struct fptree *fp,
 	m = M = m;
 #endif
 
-	if (r)
+	if (rt)
 		save_rule(rt, r, sup_a, sup_ab);
 	else /* if (h) */
 		histogram_register(h, (0.0 + sup_ab) / (0.0 + sup_a));
