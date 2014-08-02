@@ -241,7 +241,7 @@ static void all_allowed_items(const struct fptree *fp,
 }
 
 static void do_output_rule(const struct fptree *fp,
-		struct rule_table *rt,
+		struct rule_table *rt, struct histogram *h,
 		const int *A, const int *AB,
 		int a_length, int ab_length,
 		int m, int M)
@@ -281,14 +281,17 @@ static void do_output_rule(const struct fptree *fp,
 	m = M = m;
 #endif
 
-	save_rule(rt, r, sup_a, sup_ab);
+	if (r)
+		save_rule(rt, r, sup_a, sup_ab);
+	else /* if (h) */
+		histogram_register(h, (0.0 + sup_ab) / (0.0 + sup_a));
 
 	free_itemset(a);
 	free_itemset(ab);
 }
 
 static void output_rule_and_expansions(const struct fptree *fp,
-		struct rule_table *rt,
+		struct rule_table *rt, struct histogram *h,
 		const int *A, const int *B,
 		int a_length, int b_length, int m, int M)
 {
@@ -297,6 +300,11 @@ static void output_rule_and_expansions(const struct fptree *fp,
 	int *b = calloc(a_length + b_length, sizeof(*b));
 	char *x = calloc(b_length, sizeof(*b));
 	int i, j = 0;
+
+	if (rt == NULL && h == NULL)
+		die("Either rule table or histogram must be non NULL");
+	if (rt != NULL && h != NULL)
+		die("Either rule table or histogram must be NULL");
 
 	for (i = 0; i < a_length; i++) {
 		a[i] = A[i];
@@ -308,7 +316,7 @@ static void output_rule_and_expansions(const struct fptree *fp,
 		ab[i + a_length] = B[i];
 	}
 
-	do_output_rule(fp, rt, a, ab, a_length, a_length + b_length, m, M);
+	do_output_rule(fp, rt, h, a, ab, a_length, a_length + b_length, m, M);
 	x[b_length - 1]++;
 
 	while (x[0] < 2) {
@@ -327,7 +335,7 @@ static void output_rule_and_expansions(const struct fptree *fp,
 		if (j == 0)
 			goto next;
 
-		do_output_rule(fp, rt, a, ab, a_length, a_length + b_length, m, M);
+		do_output_rule(fp, rt, h, a, ab, a_length, a_length + b_length, m, M);
 
 		j = a_length;
 
@@ -338,7 +346,7 @@ static void output_rule_and_expansions(const struct fptree *fp,
 				ab[i + j] = B[i];
 			}
 
-		do_output_rule(fp, rt, a, ab, a_length, j + b_length, m, M);
+		do_output_rule(fp, rt, h, a, ab, a_length, j + b_length, m, M);
 
 		/* remove item from a */
 		for (i = j; i < a_length; i++)
@@ -432,7 +440,7 @@ static void sample_rule(const struct fptree *fp, struct rule_table *rt,
 			&sup_a, &sup_ab, &q, pdf);
 	mpfr_sub(rnd, rnd, pdf, ROUND_MODE);
 	if (mpfr_sgn(rnd) < 0)
-		output_rule_and_expansions(fp, rt, A, B, a_length, b_length, m, M);
+		output_rule_and_expansions(fp, rt, NULL, A, B, a_length, b_length, m, M);
 }
 
 #define SHORT 1 /* item -> anything, O(n^2) */
@@ -600,8 +608,8 @@ end_loop:
 	return rt;
 }
 
-static void get_rules_np(const struct fptree *fp, struct rule_table *rt,
-		int *itemset, int nits)
+static void get_rules_np(const struct fptree *fp,
+		int *itemset, int nits, struct histogram *hnp)
 {
 	int *A = calloc(1, sizeof(A[0]));
 	int i;
@@ -609,7 +617,7 @@ static void get_rules_np(const struct fptree *fp, struct rule_table *rt,
 	for (i = 0; i < nits; i++) {
 		A[0] = itemset[i];
 		itemset[i] = 0;
-		output_rule_and_expansions(fp, rt, A, itemset,
+		output_rule_and_expansions(fp, NULL, hnp, A, itemset,
 				1, nits - 1, 0, 0);
 		itemset[i] = A[0];
 	}
@@ -617,11 +625,11 @@ static void get_rules_np(const struct fptree *fp, struct rule_table *rt,
 	free(A);
 }
 
-static struct rule_table *mine_np(const struct fptree *fp, int ni,
-		const char *ifname, int *top_items, int hic)
+static void mine_np(const struct fptree *fp, int ni,
+		const char *ifname, int *top_items, int hic,
+		struct histogram *hnp)
 {
 	int *itemset = calloc(ni, sizeof(itemset[0])), nits, tmp;
-	struct rule_table *rt = init_rule_table();
 	FILE *f = fopen(ifname, "r");
 	int i, j;
 
@@ -657,7 +665,7 @@ static struct rule_table *mine_np(const struct fptree *fp, int ni,
 		if (nits == 1)
 			goto end;
 
-		get_rules_np(fp, rt, itemset, nits);
+		get_rules_np(fp, itemset, nits, hnp);
 
 end:
 		if (fscanf(f, "(%d)", &tmp) != 1)
@@ -666,8 +674,6 @@ end:
 
 	fclose(f);
 	free(itemset);
-
-	return rt;
 }
 
 void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
@@ -677,7 +683,7 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	struct rule_table *rt, *rtnp;
+	struct rule_table *rt;
 	struct histogram *hp, *hnp;
 	size_t i, bins;
 	int theta, nt;
@@ -714,14 +720,12 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	printf("%lu rules generated\n", rt->sz);
 
 	printf("Step 5: non-private data: ");
-	rtnp = mine_np(fp, ni, ifname, top_items, hic);
-	printf("%lu rules generated\n", rtnp->sz);
+	mine_np(fp, ni, ifname, top_items, hic, hnp);
+	printf("%lu rules generated\n", histogram_get_all(hnp));
 
 	printf("Step 6: generating statistics ");
 	for (i = 0; i < rt->sz; i++)
 		histogram_register(hp, rt->c[i]);
-	for (i = 0; i < rtnp->sz; i++)
-		histogram_register(hnp, rtnp->c[i]);
 	printf("%lu/%lu | %lu/%lu\n",
 			histogram_get_bin(hp, 0), histogram_get_all(hp),
 			histogram_get_bin(hnp, 0), histogram_get_all(hnp));
@@ -740,7 +744,6 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	free_histogram(hp);
 	free_histogram(hnp);
 	free_rule_table(rt);
-	free_rule_table(rtnp);
 	free_items(ic);
 }
 
