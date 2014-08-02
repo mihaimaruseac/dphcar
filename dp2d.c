@@ -654,12 +654,14 @@ static void mine_np(const struct fptree *fp, int ni,
 			break;
 
 		tmp = 0;
-		for (i = 0; i < hic && !tmp; i++)
-			for (j = 0; j < nits && !tmp; j++)
-				if (top_items[i] == itemset[j])
+		for (i = 0; i < hic; i++)
+			for (j = 0; j < nits; j++)
+				if (top_items[i] == itemset[j]) {
 					tmp++;
+					break;
+				}
 
-		if (!tmp)
+		if (tmp != hic)
 			goto end;
 
 		if (nits == 1)
