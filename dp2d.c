@@ -552,7 +552,7 @@ static struct rule_table *mine(const struct fptree *fp,
 	mpfr_init2(pdf, PRECISION);
 	mpfr_init2(cdf, PRECISION);
 	mpfr_init2(rnd, PRECISION);
-	initialize_random(rnd_state, PRECISION * 200 * num_triangles);
+	initialize_random(rnd_state, PRECISION * num_triangles);
 
 	for (c_triangle = 0; c_triangle < num_triangles; c_triangle++) {
 		/* TODO: split based on triangles */
