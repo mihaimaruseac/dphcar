@@ -35,10 +35,10 @@
 #define RULE_LEN_LIMITED_STEP 100
 #endif
 #ifndef RULE_ITEMSET
-#define RULE_ITEMSET 1
+#define RULE_ITEMSET 0
 #endif
 #ifndef UNIFORM_SAMPLE
-#define UNIFORM_SAMPLE 0
+#define UNIFORM_SAMPLE 1
 #endif
 
 #define PRECISION 2048
