@@ -26,9 +26,7 @@ struct fptree {
 /**
  * Read a transaction file and construct a fp-tree from it.
  */
-void fpt_read_from_file(const char *fname,
-		int thS, int thL, double wM, double wL,
-		struct fptree *fp);
+void fpt_read_from_file(const char *fname, struct fptree *fp);
 
 /**
  * Cleanup the data structures used in a fp-tree.
@@ -39,11 +37,7 @@ int fpt_height(const struct fptree *fp);
 int fpt_nodes(const struct fptree *fp);
 
 int fpt_item_count(const struct fptree *fp, int it);
-int fpt_item_score(const struct fptree *fp, int it);
 int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen);
-
-void fpt_randomly_get_top_items(const struct fptree *fp,
-		int *top_items, int hic, struct drand48_data *randbuffer);
 
 /** Debug printing. */
 void fpt_tree_print(const struct fptree *fp);

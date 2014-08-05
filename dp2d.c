@@ -707,7 +707,9 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	hp = init_histogram();
 	hnp = init_histogram();
 
+#if 0
 	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
+#endif
 
 	printf("Running dp2D with ni=%d, minth=%d, c=%lf, eps=%lf, "
 			"eps_share=%lf\n", ni, minth, c, eps, eps_share);

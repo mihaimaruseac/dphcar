@@ -35,14 +35,6 @@ struct table {
 	struct fptree_node *lst;
 	/* reverse permutation index */
 	int rpi;
-	/* item score */
-	double score;
-	/* top k items pass the thL threshold */
-	int k;
-	/* the thresholds */
-	int thL, thS;
-	/* the weights */
-	double wM, wL;
 };
 
 /* sort table entries in descending order */
@@ -282,12 +274,9 @@ void fpt_table_print(const struct fptree *fp)
 	}
 }
 
-void fpt_read_from_file(const char *fname,
-		int thS, int thL, double wM, double wL,
-		struct fptree *fp)
+void fpt_read_from_file(const char *fname, struct fptree *fp)
 {
 	FILE *f = fopen(fname, "r");
-	int i;
 
 	if (!f)
 		die("Invalid transaction filename %s", fname);
@@ -304,22 +293,6 @@ void fpt_read_from_file(const char *fname,
 	printf("OK\n");
 
 	fclose(f);
-
-	fp->table->k = 0;
-	for (i = 0; i < fp->n; i++)
-		if (fp->table[i].cnt >= thL) {
-			/* medium weight, wL only for query item */
-			fp->table[i].score = wM;
-			fp->table->k++;
-		} else if (fp->table[i].cnt > thS)
-			fp->table[i].score = wM;
-		else
-			fp->table[i].score = 0;
-
-	fp->table->wL = wL;
-	fp->table->wM = wM;
-	fp->table->thL = thL;
-	fp->table->thS = thS;
 }
 
 void fpt_cleanup(const struct fptree *fp)
@@ -343,34 +316,6 @@ int fpt_item_count(const struct fptree *fp, int it)
 	if (it < 0 || it >= fp->n)
 		return 0;
 	return fp->table[fp->table[it].rpi].cnt;
-}
-
-int fpt_item_score(const struct fptree *fp, int it)
-{
-	if (it < 0 || it >= fp->n)
-		return 0;
-	return fp->table[fp->table[it].rpi].score;
-}
-
-void fpt_randomly_get_top_items(const struct fptree *fp,
-		int *top_items, int hic, struct drand48_data *randbuffer)
-{
-	int i, j;
-	long int it;
-
-	// TODO: non-uniform selection?
-	for (i = 0; i < hic; i++) {
-again:
-		lrand48_r(randbuffer, &it);
-		it = it % fp->table->k;
-
-		for (j = 0; j < i; j++)
-			if (top_items[j] == fp->table[it].val)
-				goto again;
-
-		fp->table[it].score = fp->table->wL;
-		top_items[i] = fp->table[it].val;
-	}
 }
 
 static int search_on_path(const struct fptree_node *n,
