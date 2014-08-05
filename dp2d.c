@@ -37,6 +37,9 @@
 #ifndef RULE_ITEMSET
 #define RULE_ITEMSET 1
 #endif
+#ifndef UNIFORM_SAMPLE
+#define UNIFORM_SAMPLE 0
+#endif
 
 #define PRECISION 2048
 #define ROUND_MODE MPFR_RNDN
@@ -409,7 +412,11 @@ static void compute_cdf(const struct fptree *fp, struct rule_table *rt,
 
 	compute_pdf(fp, m, M, c, epsilon, A, AB, a_length, ab_length,
 			&sup_a, &sup_ab, &q, pdf);
+#if UNIFORM_SAMPLE
+	mpfr_add_ui(cdf, cdf, 1, ROUND_MODE);
+#else
 	mpfr_add(cdf, cdf, pdf, ROUND_MODE);
+#endif
 
 #if PRINT_RULE_TABLE == 1
 	printf("\n");
@@ -440,7 +447,11 @@ static void sample_rule(const struct fptree *fp, struct rule_table *rt,
 
 	compute_pdf(fp, m, M, c, epsilon, A, AB, a_length, ab_length,
 			&sup_a, &sup_ab, &q, pdf);
+#if UNIFORM_SAMPLE
+	mpfr_sub_ui(rnd, rnd, 1, ROUND_MODE);
+#else
 	mpfr_sub(rnd, rnd, pdf, ROUND_MODE);
+#endif
 	if (mpfr_sgn(rnd) < 0)
 		output_rule_and_expansions(fp, rt, NULL, A, B, a_length, b_length, m, M);
 }
