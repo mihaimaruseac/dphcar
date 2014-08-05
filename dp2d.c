@@ -85,6 +85,7 @@ static void initialize_random(gmp_randstate_t state, int bytes)
 	mpz_clear(s);
 	free(buff);
 }
+#endif
 
 struct item_count {
 	int value;
@@ -126,6 +127,7 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
+#if 0
 static int get_first_theta_value(const struct fptree *fp,
 		const struct item_count *ic, int ni, double c, double try)
 {
@@ -698,15 +700,19 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 {
 #if 0
 	int *top_items = calloc(hic, sizeof(top_items[0]));
+#endif
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
+#if 0
 	struct rule_table *rt;
 	struct histogram *hp, *hnp;
 	size_t i, bins;
 	int theta, nt;
+#endif
 
 	init_rng(&randbuffer);
+#if 0
 	hp = init_histogram();
 	hnp = init_histogram();
 #endif
@@ -718,7 +724,6 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 	printf("Running dp2D with "/*ni=%d, minth=%d, c=%lf, */"eps=%lf, "
 			"eps_share=%lf\n", /*ni, minth, c,*/ eps, eps_share);
 
-#if 0
 	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n",
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
@@ -729,6 +734,7 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
+#if 0
 	printf("Step 2: get min support for %d items: ", ni);
 	theta = get_first_theta_value(fp, ic, ni, c, c * fp->t);
 	printf("%d\n", theta);
@@ -766,8 +772,8 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 	free_histogram(hp);
 	free_histogram(hnp);
 	free_rule_table(rt);
-	free_items(ic);
 #endif
+	free_items(ic);
 }
 
 #if 0
