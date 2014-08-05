@@ -696,7 +696,7 @@ end:
 #endif
 
 void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
-		double mu, double mis)
+		double mu, int mis, int k)
 {
 #if 0
 	int *top_items = calloc(hic, sizeof(top_items[0]));
@@ -725,7 +725,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	printf("Running dp2D with "/*ni=%d, */"minth=%d, "/*c=%lf, */"eps=%lf, "
 			"eps_share=%lf\n", /*ni, */minth, /*c,*/ eps, eps_share);
 
-	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n",
+	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
 
