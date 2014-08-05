@@ -715,10 +715,10 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
 #endif
 
-#if 0
-	printf("Running dp2D with ni=%d, minth=%d, c=%lf, eps=%lf, "
-			"eps_share=%lf\n", ni, minth, c, eps, eps_share);
+	printf("Running dp2D with "/*ni=%d, minth=%d, c=%lf, */"eps=%lf, "
+			"eps_share=%lf\n", /*ni, minth, c,*/ eps, eps_share);
 
+#if 0
 	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n",
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
