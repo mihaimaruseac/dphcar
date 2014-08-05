@@ -791,16 +791,24 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 #if PRINT_RS_TRACE
 			printf("Adding rule on %lu\n", *rs);
 #endif
+			reservoir[*rs].r = r;
+			reservoir[*rs].v = v;
+			*rs = *rs + 1;
 		} else if (v < reservoir[k-1].v) {
 #if PRINT_RS_TRACE
 			printf("Inserting into reservoir\n");
+			/* TODO */
+			free_rule(reservoir[k-1].r);
+			reservoir[k-1].r = r;
+			reservoir[k-1].v = v;
 #endif
+		} else {
+			free_rule(r);
 		}
 #if 0
 		f(fp, rt, m, M, c, epsilon, A, B, AB,
 			a_length, b_length, ab_length, arg1, arg2);
 #endif
-		free_rule(r);
 		free_itemset(iA);
 		free_itemset(iAB);
 	}
