@@ -23,11 +23,11 @@ static struct {
 	double eps;
 	/* fraction of epsilon for first step */
 	double eps_share;
+	/* minimum threshold */
+	int minth;
 #if 0
 	/* number of items in the first set */
 	int ni;
-	/* minimum threshold */
-	int minth;
 	/* threshold for S set */
 	int thS;
 	/* threshold for L set */
@@ -56,17 +56,17 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 4)
+	if (argc != 5)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (sscanf(argv[2], "%lf", &args.eps) != 1)
 		usage(argv[0]);
 	if (sscanf(argv[3], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
 		usage(argv[0]);
+	if (sscanf(argv[4], "%d", &args.minth) != 1)
+		usage(argv[0]);
 #if 0
 	if (sscanf(argv[6], "%d", &args.ni) != 1)
-		usage(argv[0]);
-	if (sscanf(argv[7], "%d", &args.minth) != 1)
 		usage(argv[0]);
 	if (sscanf(argv[8], "%d", &args.thS) != 1)
 		usage(argv[0]);
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp, /*args.c,*/ args.eps, args.eps_share/*, args.ni, args.minth,*/
+	dp2d(&fp, /*args.c,*/ args.eps, args.eps_share,/* args.ni,*/ args.minth/*,*/
 			/*args.ifname, args.hic*/);
 
 	fpt_cleanup(&fp);

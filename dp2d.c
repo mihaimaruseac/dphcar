@@ -695,8 +695,8 @@ end:
 }
 #endif
 
-void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
-		int ni, int minth, const char *ifname, int hic*/)
+void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share,
+		/*int ni, */int minth/*, const char *ifname, int hic*/)
 {
 #if 0
 	int *top_items = calloc(hic, sizeof(top_items[0]));
@@ -722,8 +722,8 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
 #endif
 
-	printf("Running dp2D with "/*ni=%d, minth=%d, c=%lf, */"eps=%lf, "
-			"eps_share=%lf\n", /*ni, minth, c,*/ eps, eps_share);
+	printf("Running dp2D with "/*ni=%d, */"minth=%d, "/*c=%lf, */"eps=%lf, "
+			"eps_share=%lf\n", /*ni, */minth, /*c,*/ eps, eps_share);
 
 	printf("Step 1: compute noisy counts for items: eps_1 = %lf\n",
 			epsilon_step1);
