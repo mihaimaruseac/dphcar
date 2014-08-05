@@ -24,6 +24,10 @@
 #ifndef PRINT_RULE_DOMAIN
 #define PRINT_RULE_DOMAIN 1
 #endif
+/* print actions to the reservoir */
+#ifndef PRINT_RS_TRACE
+#define PRINT_RS_TRACE 1
+#endif
 #if 0
 /* debug defines */
 #ifndef PRINT_TRIANGLES_ITEMS
@@ -50,12 +54,19 @@
 #ifndef UNIFORM_SAMPLE
 #define UNIFORM_SAMPLE 1
 #endif
+#endif
 
+#if 0
 #define PRECISION 2048
 #define ROUND_MODE MPFR_RNDN
+#endif
 
-static double quality(int x, int y, double X, double Y, double c);
+static double quality(int x, int y)
+{
+	return y - x;
+}
 
+#if 0
 /**
  * Reads `bytes` bytes from /dev/urandom to initialize random number generator
  * state.
@@ -709,8 +720,8 @@ end:
 #endif
 
 static void generate_and_add_all_rules(const struct fptree *fp,
-		const int *items, size_t num_items,
-		size_t *rs, struct reservoir *reservoir,
+		const int *items, size_t num_items, double eps,
+		size_t *rs, struct reservoir *reservoir, size_t k,
 		struct drand48_data *randbuffer)
 {
 #define RULE_A 1
@@ -721,7 +732,9 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
 	unsigned char *ABi;
+	int sup_a, sup_ab;
 	int *A, *B, *AB;
+	double q, u, v;
 
 	ABi = calloc(num_items, sizeof(ABi[0]));
 	AB = calloc(num_items, sizeof(AB[0]));
@@ -756,17 +769,33 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		if (a_length == 0) continue;
 		if (b_length == 0) continue;
 
-		// TODO: print rule first
+		/* build new rule and compute stats */
+		sup_a = fpt_itemset_count(fp, A, a_length);
+		sup_ab = fpt_itemset_count(fp, AB, ab_length);
 		iA = build_itemset(A, a_length);
 		iAB = build_itemset(AB, ab_length);
 		r = build_rule_A_AB(iA, iAB);
+		q = quality(sup_a, sup_ab);
+		drand48_r(randbuffer, &u);
+		v = eps * q * log(log(1/u)) / 2;
 
-#if PRINT_RULE_DOMAIN
+#if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
+		printf("\tRule: ");
 		print_rule(r);
-		// TODO: supports and quality
-		printf("\n");
+		printf(" %d/%d (%3.2lf) %5.2lf %5.2lf %5.2lf\n",
+				sup_ab, sup_a, (sup_ab + 0.0) / (sup_a + 0.0),
+				q, u, v);
 #endif
 
+		if (*rs < k) {
+#if PRINT_RS_TRACE
+			printf("Adding rule on %lu\n", *rs);
+#endif
+		} else if (v < reservoir[k-1].v) {
+#if PRINT_RS_TRACE
+			printf("Inserting into reservoir\n");
+#endif
+		}
 #if 0
 		f(fp, rt, m, M, c, epsilon, A, B, AB,
 			a_length, b_length, ab_length, arg1, arg2);
@@ -828,7 +857,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	fm = fM = 0;
 	fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
 	while (fm != fM) {
-#if PRINT_ITEM_DOMAIN || PRINT_RULE_DOMAIN
+#if PRINT_ITEM_DOMAIN || PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		printf("Domain: %lu-%lu:\n", fm, fM);
 #endif
 
@@ -841,13 +870,12 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 			items[i - fM] = ic[i].value;
 		}
 
-#if PRINT_ITEM_DOMAIN || PRINT_RULE_DOMAIN
+#if PRINT_ITEM_DOMAIN || PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		printf("\n");
 #endif
 
-		/* TODO: generate and keep the rules in this domain */
-		generate_and_add_all_rules(fp, items, 1 + fm - fM,
-				&rs, reservoir, &randbuffer);
+		generate_and_add_all_rules(fp, items, 1 + fm - fM, eps,
+				&rs, reservoir, k, &randbuffer);
 
 		fM++;
 		fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
