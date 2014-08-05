@@ -24,13 +24,13 @@ static struct {
 	/* fraction of epsilon for first step */
 	double eps_share;
 	/* minimum threshold */
-	int minth;
+	size_t minth;
 	/* max spread */
 	double mu;
 	/* max item spread */
-	int mis;
+	size_t mis;
 	/* number of rules to extract */
-	int k;
+	size_t k;
 } args;
 
 static void usage(const char *prg)
@@ -55,13 +55,13 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[3], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
 		usage(argv[0]);
-	if (sscanf(argv[4], "%d", &args.minth) != 1 || args.minth < 0)
+	if (sscanf(argv[4], "%lu", &args.minth) != 1)
 		usage(argv[0]);
 	if (sscanf(argv[5], "%lf", &args.mu) != 1 || args.mu < 0 || args.mu >= 1)
 		usage(argv[0]);
-	if (sscanf(argv[6], "%d", &args.mis) != 1 || args.mis < 2)
+	if (sscanf(argv[6], "%lu", &args.mis) != 1 || args.mis < 2)
 		usage(argv[0]);
-	if (sscanf(argv[7], "%d", &args.k) != 1 || args.k < 0)
+	if (sscanf(argv[7], "%lu", &args.k) != 1)
 		usage(argv[0]);
 }
 

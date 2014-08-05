@@ -714,13 +714,13 @@ static size_t update_fm(size_t fm, size_t fM, int mis, double mu,
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
-		double mu, int mis, int k)
+		double mu, size_t mis, size_t k)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	size_t i, fm, fM;
+	size_t i, fm, fM, rs;
 #if 0
 	struct rule_table *rt;
 	int theta, nt;
@@ -729,7 +729,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	init_rng(&randbuffer);
 
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, mu=%lf, "
-			"mis=%d, k=%d\n", minth, eps, eps_share, mu, mis, k);
+			"mis=%lu, k=%lu\n", minth, eps, eps_share, mu, mis, k);
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -742,6 +742,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 #endif
 
 	/* select mining domains */
+	rs = 0; /* empty reservoir */
 	fm = fM = 0;
 	fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
 	while (fm != fM) {
