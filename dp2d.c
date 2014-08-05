@@ -757,12 +757,9 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		if (b_length == 0) continue;
 
 		// TODO: print rule first
-		free_rule(r);
 		iA = build_itemset(A, a_length);
 		iAB = build_itemset(AB, ab_length);
 		r = build_rule_A_AB(iA, iAB);
-		free_itemset(iA);
-		free_itemset(iAB);
 
 #if PRINT_RULE_DOMAIN
 		print_rule(r);
@@ -774,9 +771,11 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		f(fp, rt, m, M, c, epsilon, A, B, AB,
 			a_length, b_length, ab_length, arg1, arg2);
 #endif
+		free_rule(r);
+		free_itemset(iA);
+		free_itemset(iAB);
 	}
 
-	free_rule(r);
 	free(ABi);
 	free(AB);
 	free(A);
