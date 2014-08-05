@@ -7,7 +7,7 @@
 
 struct fptree;
 
-void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
-		int ni, int minth, const char *ifname, int hic);
+void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
+		int ni, int minth, const char *ifname, int hic*/);
 
 #endif

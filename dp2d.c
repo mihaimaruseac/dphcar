@@ -12,6 +12,7 @@
 #include "histogram.h"
 #include "rule.h"
 
+#if 0
 /* debug defines */
 #ifndef PRINT_TRIANGLES_ITEMS
 #define PRINT_TRIANGLES_ITEMS 0
@@ -690,10 +691,12 @@ end:
 	fclose(f);
 	free(itemset);
 }
+#endif
 
-void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
-		int ni, int minth, const char *ifname, int hic)
+void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
+		int ni, int minth, const char *ifname, int hic*/)
 {
+#if 0
 	int *top_items = calloc(hic, sizeof(top_items[0]));
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
@@ -706,11 +709,13 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	init_rng(&randbuffer);
 	hp = init_histogram();
 	hnp = init_histogram();
+#endif
 
 #if 0
 	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
 #endif
 
+#if 0
 	printf("Running dp2D with ni=%d, minth=%d, c=%lf, eps=%lf, "
 			"eps_share=%lf\n", ni, minth, c, eps, eps_share);
 
@@ -762,8 +767,10 @@ void dp2d(const struct fptree *fp, double c, double eps, double eps_share,
 	free_histogram(hnp);
 	free_rule_table(rt);
 	free_items(ic);
+#endif
 }
 
+#if 0
 #define DISPLACEMENT 1
 #define DISTANCE 2
 #define NEW 3
@@ -847,3 +854,4 @@ static double quality(int x, int y, double X, double Y, double c)
 #undef DISPLACEMENT
 #undef DISTANCE
 #undef METHOD
+#endif

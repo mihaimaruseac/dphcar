@@ -19,15 +19,11 @@
 static struct {
 	/* filename containing the transactions */
 	char *tfname;
-#if 0
-	/* filename containing the item scores */
-	char *ifname;
-	/* minimum confidence level */
-	double c;
 	/* global value for epsilon */
 	double eps;
 	/* fraction of epsilon for first step */
 	double eps_share;
+#if 0
 	/* number of items in the first set */
 	int ni;
 	/* minimum threshold */
@@ -60,17 +56,14 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 2)
+	if (argc != 4)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
+	if (sscanf(argv[2], "%lf", &args.eps) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[3], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
+		usage(argv[0]);
 #if 0
-	args.ifname = strdup(argv[2]);
-	if (sscanf(argv[3], "%lf", &args.c) != 1 || args.c < 0 || args.c >= 1)
-		usage(argv[0]);
-	if (sscanf(argv[4], "%lf", &args.eps) != 1)
-		usage(argv[0]);
-	if (sscanf(argv[5], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
-		usage(argv[0]);
 	if (sscanf(argv[6], "%d", &args.ni) != 1)
 		usage(argv[0]);
 	if (sscanf(argv[7], "%d", &args.minth) != 1)
@@ -98,16 +91,11 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-#if 0
-	dp2d(&fp, args.c, args.eps, args.eps_share, args.ni, args.minth,
-			args.ifname, args.hic);
-#endif
+	dp2d(&fp, /*args.c,*/ args.eps, args.eps_share/*, args.ni, args.minth,*/
+			/*args.ifname, args.hic*/);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);
-#if 0
-	free(args.ifname);
-#endif
 
 	return 0;
 }
