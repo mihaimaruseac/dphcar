@@ -15,6 +15,9 @@
 #ifndef PRINT_ITEM_TABLE
 #define PRINT_ITEM_TABLE 0
 #endif
+#ifndef PRINT_ITEM_DOMAIN
+#define PRINT_ITEM_DOMAIN 1
+#endif
 #if 0
 /* debug defines */
 #ifndef PRINT_TRIANGLES_ITEMS
@@ -695,6 +698,17 @@ end:
 }
 #endif
 
+static size_t update_fm(size_t fm, size_t fM, int mis, double mu,
+		size_t n, int minth, struct item_count *ic)
+{
+	while (fm < n /* don't exit the buffer */
+		&& ic[fm].noisy_count >= minth /* don't pass below threshold */
+		&& fm < fM + mis /* number of items condition */
+		&& ic[fm].noisy_count >= mu * ic[fM].noisy_count /* spread */)
+		fm++;
+	return fm;
+}
+
 void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 		double mu, int mis, int k)
 {
@@ -704,7 +718,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	size_t i = i;
+	size_t i, fm, fM;
 #if 0
 	struct rule_table *rt;
 	struct histogram *hp, *hnp;
@@ -722,8 +736,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
 #endif
 
-	printf("Running dp2D with "/*ni=%d, */"minth=%d, "/*c=%lf, */"eps=%lf, "
-			"eps_share=%lf\n", /*ni, */minth, /*c,*/ eps, eps_share);
+	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, mu=%lf, "
+			"mis=%d, k=%d\n", minth, eps, eps_share, mu, mis, k);
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -734,6 +748,24 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
+
+	/* select mining domains */
+	fm = fM = 0;
+	fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
+	while (fm != fM) {
+#if PRINT_ITEM_DOMAIN
+		printf("Domain: %lu-%lu:\n", fm, fM);
+		for (i = fM; i <= fm; i++)
+			printf("\t%d %d %lf\n", ic[i].value,
+					ic[i].real_count, ic[i].noisy_count);
+		printf("\n");
+#endif
+
+		/* TODO: generate and keep the rules in this domain */
+
+		fM++;
+		fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
+	}
 
 #if 0
 	printf("Step 2: get min support for %d items: ", ni);
