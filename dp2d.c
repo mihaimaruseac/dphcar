@@ -757,10 +757,12 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		if (b_length == 0) continue;
 
 		// TODO: print rule first
-		free(r);
+		free_rule(r);
 		iA = build_itemset(A, a_length);
 		iAB = build_itemset(AB, ab_length);
 		r = build_rule_A_AB(iA, iAB);
+		free_itemset(iA);
+		free_itemset(iAB);
 
 #if PRINT_RULE_DOMAIN
 		print_rule(r);
@@ -774,7 +776,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 #endif
 	}
 
-	free(r);
+	free_rule(r);
 	free(ABi);
 	free(AB);
 	free(A);
@@ -800,7 +802,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
-	int *items = calloc(mis, sizeof(items[0]));
+	int *items = calloc(mis + 1, sizeof(items[0]));
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	size_t i, fm, fM, rs;
