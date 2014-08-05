@@ -19,6 +19,7 @@
 static struct {
 	/* filename containing the transactions */
 	char *tfname;
+#if 0
 	/* filename containing the item scores */
 	char *ifname;
 	/* minimum confidence level */
@@ -41,13 +42,12 @@ static struct {
 	double wL;
 	/* high item count */
 	int hic;
+#endif
 } args;
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE IFILE MINCONF EPSILON EPSILON_SHARE "
-			"NITEMS MINTHRESHOLD THRESH_S THRESH_L "
-			"WEIGHT_M WEIGHT_L HIGH_ITEM_COUNT\n", prg);
+	fprintf(stderr, "Usage: %s TFILE\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -60,9 +60,10 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 13)
+	if (argc != 2)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
+#if 0
 	args.ifname = strdup(argv[2]);
 	if (sscanf(argv[3], "%lf", &args.c) != 1 || args.c < 0 || args.c >= 1)
 		usage(argv[0]);
@@ -84,6 +85,7 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[12], "%d", &args.hic) != 1)
 		usage(argv[0]);
+#endif
 }
 
 int main(int argc, char **argv)
@@ -92,6 +94,7 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv);
 
+#if 0
 	fpt_read_from_file(args.tfname, args.thS, args.thL, args.wM, args.wL,
 			&fp);
 	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
@@ -101,8 +104,11 @@ int main(int argc, char **argv)
 			args.ifname, args.hic);
 
 	fpt_cleanup(&fp);
+#endif
 	free(args.tfname);
+#if 0
 	free(args.ifname);
+#endif
 
 	return 0;
 }
