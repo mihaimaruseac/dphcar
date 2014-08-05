@@ -96,14 +96,18 @@ struct item_count {
 	double noisy_count;
 };
 
-static struct item_count *alloc_items(int sz)
-{
-	return calloc(sz, sizeof(struct item_count));
-}
+struct reservoir {
+	struct rule *r;
+	double v;
+};
 
-static void free_items(const struct item_count *ic)
+static void free_reservoir_array(struct reservoir *reservoir, int size)
 {
-	free((void*)ic);
+	int i;
+
+	for (i = 0 ; i < size; i++)
+		free_rule(reservoir[i].r);
+	free(reservoir);
 }
 
 static int ic_noisy_cmp(const void *a, const void *b)
@@ -712,7 +716,8 @@ static size_t update_fm(size_t fm, size_t fM, int mis, double mu,
 void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 		double mu, int mis, int k)
 {
-	struct item_count *ic = alloc_items(fp->n);
+	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
+	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	size_t i, fm, fM;
@@ -754,6 +759,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 		fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
 	}
 
+	/* TODO: compute min c inside the array of results (simulate outputing rules) */
+
 #if 0
 	printf("Step 4: mining rules: ");
 	rt = mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t, ni);
@@ -764,7 +771,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	free_histogram(hnp);
 	free_rule_table(rt);
 #endif
-	free_items(ic);
+	free_reservoir_array(reservoir, k);
+	free(ic);
 }
 
 #if 0
