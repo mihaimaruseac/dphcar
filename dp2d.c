@@ -718,6 +718,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	int *items = calloc(mis, sizeof(items[0]));
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	size_t i, fm, fM, rs;
@@ -731,9 +732,11 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, mu=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mu, mis, k);
 
-	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
+	printf("Step 1: compute noisy counts for items with eps_1 = %lf: ",
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
+	eps = (eps - epsilon_step1) / k;
+	printf("remaining eps (per rule): %lf\n", eps);
 
 #if PRINT_ITEM_TABLE
 	printf("\n");
@@ -746,11 +749,20 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	fm = fM = 0;
 	fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
 	while (fm != fM) {
-#if PRINT_ITEM_DOMAIN
+#if PRINT_ITEM_DOMAIN || PRINT_RULE_DOMAIN
 		printf("Domain: %lu-%lu:\n", fm, fM);
-		for (i = fM; i <= fm; i++)
+#endif
+
+		/* extract items from which to generate rules */
+		for (i = fM; i <= fm; i++) {
+#if PRINT_ITEM_DOMAIN
 			printf("\t%d %d %lf\n", ic[i].value,
 					ic[i].real_count, ic[i].noisy_count);
+#endif
+			items[i - fM] = ic[i].value;
+		}
+
+#if PRINT_ITEM_DOMAIN || PRINT_RULE_DOMAIN
 		printf("\n");
 #endif
 
@@ -773,6 +785,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	free_rule_table(rt);
 #endif
 	free_reservoir_array(reservoir, k);
+	free(items);
 	free(ic);
 }
 
