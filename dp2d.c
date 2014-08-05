@@ -12,11 +12,17 @@
 #include "histogram.h"
 #include "rule.h"
 
+/* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
 #define PRINT_ITEM_TABLE 0
 #endif
+/* print the items considered for each rule generation step */
 #ifndef PRINT_ITEM_DOMAIN
 #define PRINT_ITEM_DOMAIN 1
+#endif
+/* print the rules generated at each step and their quality */
+#ifndef PRINT_RULE_DOMAIN
+#define PRINT_RULE_DOMAIN 1
 #endif
 #if 0
 /* debug defines */
@@ -702,6 +708,82 @@ end:
 }
 #endif
 
+static void generate_and_add_all_rules(const struct fptree *fp,
+		const int *items, size_t num_items,
+		size_t *rs, struct reservoir *reservoir,
+		struct drand48_data *randbuffer)
+{
+#define RULE_A 1
+#define RULE_B 2
+#define RULE_END 3
+
+	size_t i, a_length, b_length, ab_length;
+	struct itemset *iA, *iAB;
+	struct rule *r = NULL;
+	unsigned char *ABi;
+	int *A, *B, *AB;
+
+	ABi = calloc(num_items, sizeof(ABi[0]));
+	AB = calloc(num_items, sizeof(AB[0]));
+	A = calloc(num_items, sizeof(A[0]));
+	B = calloc(num_items, sizeof(B[0]));
+
+	ABi[num_items - 1] = 1;
+	ABi[num_items - 2] = 1;
+
+	/* O(3^num_items) !!!! */
+	while (1) {
+		ABi[num_items - 1]++;
+		a_length = b_length = ab_length = 0;
+
+		for (i = num_items - 1; i > 0; i--)
+			if (ABi[i] == RULE_END) {
+				ABi[i] = 0;
+				ABi[i-1]++;
+		}
+
+		if (ABi[0] == RULE_END) break;
+
+		for (i = 0; i < num_items; i++)
+			if (ABi[i]) {
+				AB[ab_length++] = items[i];
+				switch (ABi[i]) {
+				case RULE_B: B[b_length++] = items[i]; break;
+				case RULE_A: A[a_length++] = items[i]; break;
+				}
+			}
+
+		if (a_length == 0) continue;
+		if (b_length == 0) continue;
+
+		// TODO: print rule first
+		free(r);
+		iA = build_itemset(A, a_length);
+		iAB = build_itemset(AB, ab_length);
+		r = build_rule_A_AB(iA, iAB);
+
+#if PRINT_RULE_DOMAIN
+		print_rule(r);
+		// TODO: supports and quality
+		printf("\n");
+#endif
+
+#if 0
+		f(fp, rt, m, M, c, epsilon, A, B, AB,
+			a_length, b_length, ab_length, arg1, arg2);
+#endif
+	}
+
+	free(r);
+	free(ABi);
+	free(AB);
+	free(A);
+	free(B);
+
+#undef RULE_A
+#undef RULE_B
+#undef RULE_END
+}
 static size_t update_fm(size_t fm, size_t fM, int mis, double mu,
 		size_t n, int minth, struct item_count *ic)
 {
@@ -722,10 +804,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	size_t i, fm, fM, rs;
-#if 0
-	struct rule_table *rt;
-	int theta, nt;
-#endif
 
 	init_rng(&randbuffer);
 
@@ -767,6 +845,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 #endif
 
 		/* TODO: generate and keep the rules in this domain */
+		generate_and_add_all_rules(fp, items, 1 + fm - fM,
+				&rs, reservoir, &randbuffer);
 
 		fM++;
 		fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
@@ -774,16 +854,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 
 	/* TODO: compute min c inside the array of results (simulate outputing rules) */
 
-#if 0
-	printf("Step 4: mining rules: ");
-	rt = mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t, ni);
-	printf("%lu rules generated\n", rt->sz);
-
-	free(top_items);
-	free_histogram(hp);
-	free_histogram(hnp);
-	free_rule_table(rt);
-#endif
 	free_reservoir_array(reservoir, k);
 	free(items);
 	free(ic);
