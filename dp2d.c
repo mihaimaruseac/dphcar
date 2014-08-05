@@ -18,15 +18,19 @@
 #endif
 /* print the items considered for each rule generation step */
 #ifndef PRINT_ITEM_DOMAIN
-#define PRINT_ITEM_DOMAIN 1
+#define PRINT_ITEM_DOMAIN 0
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
-#define PRINT_RULE_DOMAIN 1
+#define PRINT_RULE_DOMAIN 0
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 1
+#define PRINT_RS_TRACE 0
+#endif
+/* print the returned rules */
+#ifndef PRINT_FINAL_RULES
+#define PRINT_FINAL_RULES 1
 #endif
 
 static double quality(int x, int y)
@@ -42,6 +46,7 @@ struct item_count {
 
 struct reservoir {
 	struct rule *r;
+	double c;
 	double v;
 };
 
@@ -89,7 +94,8 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 	size_t i;
 
 	for (i = 0; i < rs; i++) {
-		printf("\t%lu\t% 11.5lf | ", i, reservoir[i].v);
+		printf("\t%lu\t%3.2lf\t% 11.5lf | ", i,
+				reservoir[i].c, reservoir[i].v);
 		print_rule(reservoir[i].r);
 		printf("\n");
 	}
@@ -108,9 +114,9 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
 	unsigned char *ABi;
+	double q, u, v, c;
 	int sup_a, sup_ab;
 	int *A, *B, *AB;
-	double q, u, v;
 
 	ABi = calloc(num_items, sizeof(ABi[0]));
 	AB = calloc(num_items, sizeof(AB[0]));
@@ -154,18 +160,19 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		q = quality(sup_a, sup_ab);
 		drand48_r(randbuffer, &u);
 		v = eps * q * log(log(1/u)) / 2;
+		c = (sup_ab + 0.0) / (sup_a + 0.0);
 
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		printf("\tRule: ");
 		print_rule(r);
-		printf(" %d/%d (%3.2lf) %5.2lf %5.2lf %5.2lf\n",
-				sup_ab, sup_a, (sup_ab + 0.0) / (sup_a + 0.0),
-				q, u, v);
+		printf(" %d/%d (%3.2lf) %5.2lf %5.2lf %5.2lf\n", 
+				sup_a, sup_ab, c, q, u, v);
 #endif
 
 		if (*rs < k) {
 			reservoir[*rs].r = r;
 			reservoir[*rs].v = v;
+			reservoir[*rs].c = c;
 			*rs = *rs + 1;
 
 			if (*rs == k) {
@@ -179,6 +186,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 			free_rule(reservoir[k-1].r);
 			reservoir[k-1].r = r;
 			reservoir[k-1].v = v;
+			reservoir[k-1].c = c;
 			qsort(reservoir, k, sizeof(reservoir[0]), reservoir_cmp);
 #if PRINT_RS_TRACE
 			printf("Inserted into reservoir, now:\n");
@@ -221,23 +229,25 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	size_t i, fm, fM, rs;
+	double maxc, minc;
 
 	init_rng(&randbuffer);
 
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, mu=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mu, mis, k);
 
-	printf("Step 1: compute noisy counts for items with eps_1 = %lf: ",
+	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
-	eps = (eps - epsilon_step1) / k;
-	printf("remaining eps (per rule): %lf\n", eps);
 
 #if PRINT_ITEM_TABLE
 	printf("\n");
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
+
+	eps = (eps - epsilon_step1) / k;
+	printf("Step 2: mining with remaining eps (per rule): %lf\n", eps);
 
 	/* select mining domains */
 	rs = 0; /* empty reservoir */
@@ -269,6 +279,18 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	}
 
 	/* TODO: compute min c inside the array of results (simulate outputing rules) */
+#if PRINT_FINAL_RULES
+	print_reservoir(reservoir, k);
+#endif
+
+	minc = 1; maxc = 0;
+	for (i = 0; i < k; i++) {
+		if (reservoir[i].c < minc)
+			minc = reservoir[i].c;
+		if (reservoir[i].c > maxc)
+			maxc = reservoir[i].c;
+	}
+	printf("minconf: %3.2lf, maxconf: %3.2lf\n", minc, maxc);
 
 	free_reservoir_array(reservoir, k);
 	free(items);
