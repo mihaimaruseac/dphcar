@@ -1,20 +1,14 @@
 .PHONY: all clean
 
-#TARGET = ./dphcar
-TARGET1 = ./dph
-TARGET2 = ./test
+TARGET = ./dph
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0
 LDFLAGS = -lm -lmpfr -lgmp
 OBJS = dp2d.o fp.o globals.o rule.o histogram.o
 
-all: $(TARGET) $(TARGET1)
+all: $(TARGET)
 
-#$(TARGET): $(OBJS)
-
-$(TARGET1): $(OBJS)
-
-$(TARGET2): $(OBJS)
+$(TARGET): $(OBJS)
 
 clean:
-	@$(RM) $(OBJS) $(TARGET) $(TARGET1) $(TARGET2)
+	@$(RM) $(OBJS) $(TARGET)
