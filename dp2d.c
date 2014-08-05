@@ -712,29 +712,16 @@ static size_t update_fm(size_t fm, size_t fM, int mis, double mu,
 void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 		double mu, int mis, int k)
 {
-#if 0
-	int *top_items = calloc(hic, sizeof(top_items[0]));
-#endif
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	size_t i, fm, fM;
 #if 0
 	struct rule_table *rt;
-	struct histogram *hp, *hnp;
-	size_t i, bins;
 	int theta, nt;
 #endif
 
 	init_rng(&randbuffer);
-#if 0
-	hp = init_histogram();
-	hnp = init_histogram();
-#endif
-
-#if 0
-	fpt_randomly_get_top_items(fp, top_items, hic, &randbuffer);
-#endif
 
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, mu=%lf, "
 			"mis=%d, k=%d\n", minth, eps, eps_share, mu, mis, k);
@@ -768,38 +755,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	}
 
 #if 0
-	printf("Step 2: get min support for %d items: ", ni);
-	theta = get_first_theta_value(fp, ic, ni, c, c * fp->t);
-	printf("%d\n", theta);
-
-	printf("Step 3: get triangles: ");
-	nt = get_triangles(fp, ic, c, theta, fp->t, minth);
-	printf("%d triangles needed\n", nt);
-
 	printf("Step 4: mining rules: ");
 	rt = mine(fp, ic, c, eps - epsilon_step1, nt, theta, fp->t, ni);
 	printf("%lu rules generated\n", rt->sz);
-
-	printf("Step 5: non-private data: ");
-	mine_np(fp, ni, ifname, top_items, hic, hnp);
-	printf("%lu rules generated\n", histogram_get_all(hnp));
-
-	printf("Step 6: generating statistics ");
-	for (i = 0; i < rt->sz; i++)
-		histogram_register(hp, rt->c[i]);
-	printf("%lu/%lu | %lu/%lu\n",
-			histogram_get_bin(hp, 0), histogram_get_all(hp),
-			histogram_get_bin(hnp, 0), histogram_get_all(hnp));
-
-	printf("Final histogram:\nc_val\t%10s\t%10s\n", "priv", "real");
-	bins = histogram_get_count_bins(hp);
-	for (i = 0; i < bins; i++)
-		printf("%3.2f\t%10lu\t%10lu\n",
-				histogram_bin_bound(hp, i),
-				histogram_get_bin(hp, i),
-				histogram_get_bin(hnp, i));
-	printf("Total\t%10lu\t%10lu\n",
-			histogram_get_all(hp), histogram_get_all(hnp));
 
 	free(top_items);
 	free_histogram(hp);
