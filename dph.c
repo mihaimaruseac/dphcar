@@ -25,6 +25,10 @@ static struct {
 	double eps_share;
 	/* minimum threshold */
 	int minth;
+	/* max spread */
+	double mu;
+	/* max item spread */
+	int mis;
 #if 0
 	/* number of items in the first set */
 	int ni;
@@ -43,7 +47,7 @@ static struct {
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE\n", prg);
+	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MINTH MU MIS\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -56,7 +60,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 5)
+	if (argc != 7)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (sscanf(argv[2], "%lf", &args.eps) != 1)
@@ -64,6 +68,10 @@ static void parse_arguments(int argc, char **argv)
 	if (sscanf(argv[3], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
 		usage(argv[0]);
 	if (sscanf(argv[4], "%d", &args.minth) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[5], "%lf", &args.mu) != 1 || args.mu < 0 || args.mu >= 1)
+		usage(argv[0]);
+	if (sscanf(argv[6], "%d", &args.mis) != 1)
 		usage(argv[0]);
 #if 0
 	if (sscanf(argv[6], "%d", &args.ni) != 1)
@@ -91,8 +99,8 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp, /*args.c,*/ args.eps, args.eps_share,/* args.ni,*/ args.minth/*,*/
-			/*args.ifname, args.hic*/);
+	dp2d(&fp, args.eps, args.eps_share, args.minth, args.mu, args.mis);
+			/*args.ifname, args.hic);*/
 
 	fpt_cleanup(&fp);
 	free(args.tfname);

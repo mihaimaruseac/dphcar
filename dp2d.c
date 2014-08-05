@@ -695,8 +695,8 @@ end:
 }
 #endif
 
-void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share,
-		/*int ni, */int minth/*, const char *ifname, int hic*/)
+void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
+		double mu, double mis)
 {
 #if 0
 	int *top_items = calloc(hic, sizeof(top_items[0]));
