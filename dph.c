@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 	parse_arguments(argc, argv);
 
 	fpt_read_from_file(args.tfname, &fp);
-	printf("fp-tree: items: %d, transactions: %d, nodes: %d, depth: %d\n",
+	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
 	dp2d(&fp, /*args.c,*/ args.eps, args.eps_share/*, args.ni, args.minth,*/

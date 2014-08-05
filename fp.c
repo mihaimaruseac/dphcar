@@ -26,15 +26,15 @@ struct fptree_node {
 
 struct table {
 	/* item value */
-	int val;
+	size_t val;
 	/* count of item */
-	int cnt;
+	size_t cnt;
 	/* pointer to first node in item-chain in tree */
 	struct fptree_node *fst;
 	/* pointer to last node in item-chain in tree */
 	struct fptree_node *lst;
 	/* reverse permutation index */
-	int rpi;
+	size_t rpi;
 };
 
 /* sort table entries in descending order */
@@ -49,7 +49,7 @@ static int fptable_cmp(const void *a, const void *b)
 
 static void single_item_stat(FILE *f, struct fptree *fp)
 {
-	int x, sa = INITIAL_SIZE, *xs, i;
+	size_t x, sa = INITIAL_SIZE, *xs, i;
 	char line[LINELENGTH];
 
 	fp->t = fp->n = 0;
@@ -61,8 +61,8 @@ static void single_item_stat(FILE *f, struct fptree *fp)
 	fseek(f, 0, SEEK_SET);
 	xs = calloc(sa, sizeof(xs[0]));
 
-	while (fscanf(f, "%d", &x) == 1) {
-		if (x > fp->n)
+	while (fscanf(f, "%lu", &x) == 1) {
+		if ((size_t)x > fp->n)
 			fp->n = x;
 		if (x >= sa) {
 			i = sa;
@@ -264,7 +264,7 @@ void fpt_table_print(const struct fptree *fp)
 	int i;
 
 	for (i = 0; i < n; i++) {
-		printf("%d] %d %d %d | %p -> %p |", i, table[i].val, table[i].cnt, table[i].rpi, table[i].fst, table[i].lst);
+		printf("%d] %lu %lu %lu | %p -> %p |", i, table[i].val, table[i].cnt, table[i].rpi, table[i].fst, table[i].lst);
 		p = table[i].fst;
 		while (p != table[i].lst) {
 			printf(" %p", p);
@@ -313,7 +313,7 @@ int fpt_nodes(const struct fptree *fp)
 
 int fpt_item_count(const struct fptree *fp, int it)
 {
-	if (it < 0 || it >= fp->n)
+	if (it < 0 || (size_t)it >= fp->n)
 		return 0;
 	return fp->table[fp->table[it].rpi].cnt;
 }

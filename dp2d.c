@@ -12,6 +12,9 @@
 #include "histogram.h"
 #include "rule.h"
 
+#ifndef PRINT_ITEM_TABLE
+#define PRINT_ITEM_TABLE 0
+#endif
 #if 0
 /* debug defines */
 #ifndef PRINT_TRIANGLES_ITEMS
@@ -19,9 +22,6 @@
 #endif
 #ifndef PRINT_TRIANGLE_CONTENT
 #define PRINT_TRIANGLE_CONTENT 0
-#endif
-#ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 0
 #endif
 #ifndef PRINT_RULE_TABLE
 #define PRINT_RULE_TABLE 0
@@ -112,7 +112,7 @@ static int ic_noisy_cmp(const void *a, const void *b)
 static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
@@ -704,6 +704,7 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 	struct item_count *ic = alloc_items(fp->n);
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
+	size_t i = i;
 #if 0
 	struct rule_table *rt;
 	struct histogram *hp, *hnp;
@@ -728,7 +729,7 @@ void dp2d(const struct fptree *fp, /*double c,*/ double eps, double eps_share/*,
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
 
-#if PRINT_ITEM_TABLE == 1
+#if PRINT_ITEM_TABLE
 	printf("\n");
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);

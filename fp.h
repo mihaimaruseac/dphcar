@@ -14,9 +14,9 @@ struct fptree_node;
  */
 struct fptree {
 	/* number of items */
-	int n;
+	size_t n;
 	/* number of transactions */
-	int t;
+	size_t t;
 	/* header table for the tree, opaque */
 	struct table *table;
 	/* root of the tree, opaque */
