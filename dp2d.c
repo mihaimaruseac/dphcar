@@ -30,7 +30,7 @@
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 1
+#define PRINT_FINAL_RULES 0
 #endif
 
 static double quality(int x, int y)
@@ -231,6 +231,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	int *items = calloc(mis + 1, sizeof(items[0]));
+	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
 	size_t i, fm, fM, rs;
@@ -294,10 +295,15 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 			minc = reservoir[i].c;
 		if (reservoir[i].c > maxc)
 			maxc = reservoir[i].c;
+		histogram_register(h, reservoir[i].c);
 	}
 	printf("minconf: %3.2lf, maxconf: %3.2lf\n", minc, maxc);
 
+	printf("Final histogram:\n");
+	histogram_dump(h, 1, "\t");
+
 	free_reservoir_array(reservoir, k);
+	free_histogram(h);
 	free(items);
 	free(ic);
 }
