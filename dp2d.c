@@ -35,7 +35,12 @@
 
 static double quality(int x, int y)
 {
+#if 0
 	return y - x;
+#else
+	if (x < 1000) x = 1000;
+	return (y + 0.0) / (0.0 +  x);
+#endif
 }
 
 struct item_count {
