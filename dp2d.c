@@ -164,7 +164,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		r = build_rule_A_AB(iA, iAB);
 		q = quality(sup_a, sup_ab);
 		drand48_r(randbuffer, &u);
-		v = eps * q * log(log(1/u)) / 2;
+		v = eps * q / 2 + log(log(1/u));
 		c = (sup_ab + 0.0) / (sup_a + 0.0);
 
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
