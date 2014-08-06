@@ -257,6 +257,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 
 	/* select mining domains */
 	rs = 0; /* empty reservoir */
+#if 0
 	fm = fM = 0;
 	fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
 	while (fm != fM) {
@@ -283,8 +284,23 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 		fM++;
 		fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
 	}
+#else
+	size_t j1, j2;
+	for (fm = 0; fm < fp->n && ic[fm].noisy_count > minth; fm++)
+		for (fM = fm + 1; fM < fp->n && ic[fM].noisy_count > minth; fM++)
+			for (i = fM + 1; i < fp->n && ic[i].noisy_count > minth; i++)
+			for (j1 = i + 1; j1 < fp->n && ic[j1].noisy_count > minth; j1++)
+			for (j2 = j1 + 1; j2 < fp->n && ic[j2].noisy_count > minth; j2++) {
+			items[0] = ic[fm].value;
+			items[1] = ic[fM].value;
+			items[2] = ic[i].value;
+			items[3] = ic[j1].value;
+			items[4] = ic[j2].value;
+			generate_and_add_all_rules(fp, items, 5, eps,
+					&rs, reservoir, k, &randbuffer);
+		}
+#endif
 
-	/* TODO: compute min c inside the array of results (simulate outputing rules) */
 #if PRINT_FINAL_RULES
 	print_reservoir(reservoir, k);
 #endif
