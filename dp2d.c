@@ -164,7 +164,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		r = build_rule_A_AB(iA, iAB);
 		q = quality(sup_a, sup_ab);
 		drand48_r(randbuffer, &u);
-		v = eps * q / 2 + log(log(1/u));
+		v = log(log(1/u)) - eps * q / 2;
 		c = (sup_ab + 0.0) / (sup_a + 0.0);
 
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
@@ -257,7 +257,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 
 	/* select mining domains */
 	rs = 0; /* empty reservoir */
-#if 0
+#if 1
 	fm = fM = 0;
 	fm = update_fm(fm, fM, mis, mu, fp->n, minth, ic);
 	while (fm != fM) {
