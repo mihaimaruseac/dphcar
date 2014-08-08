@@ -38,8 +38,12 @@ static double quality(int x, int y)
 #if 0
 	return y - x;
 #else
+	double c;
+
 	if (x < 1000) x = 1000;
-	return (y + 0.0) / (0.0 +  x);
+	c = (y + 0.0) / (x + 0.0);
+
+	return 1000 * pow(c, 1);
 #endif
 }
 
@@ -170,7 +174,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		printf("\tRule: ");
 		print_rule(r);
-		printf(" %d/%d (%3.2lf) %5.2lf %5.2lf %5.2lf\n", 
+		printf(" %d/%d (%3.2lf) %5.4lf %5.4lf %5.4lf\n",
 				sup_a, sup_ab, c, q, u, v);
 #endif
 
