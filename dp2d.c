@@ -31,16 +31,12 @@
 
 static double quality(int x, int y)
 {
-#if 0
-	return y - x;
-#else
 	double c;
 
 	if (x < 1000) x = 1000;
 	c = (y + 0.0) / (x + 0.0);
 
 	return 1000 * pow(c, 1);
-#endif
 }
 
 struct item_count {
