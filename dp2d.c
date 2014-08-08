@@ -249,7 +249,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 
 	/* initial items */
 	for (fm = 0; fm < mis; fm++)
-		items[fm] = ic[fm].value;
+		items[mis - fm - 1] = ic[fm].value;
 
 	while (fm < fp->n) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
@@ -262,9 +262,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 		generate_and_add_all_rules(fp, items, mis, eps,
 				&rs, reservoir, k, &randbuffer);
 
-		for (i = 0; i < mis - 1; i++)
-			items[i] = items[i+1];
-		items[mis - 1] = ic[fm++].value;
+		for (i = mis - 1; i > 0; i--)
+			items[i] = items[i-1];
+		items[0] = ic[fm++].value;
 		if (ic[fm-1].noisy_count < minth)
 			break;
 	}
