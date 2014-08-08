@@ -29,11 +29,13 @@ static struct {
 	size_t mis;
 	/* number of rules to extract */
 	size_t k;
+	/* random seed */
+	long int seed;
 } args;
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MINTH MIS K\n", prg);
+	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MINTH MIS K [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -46,7 +48,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 7)
+	if (argc < 7 || argc > 8)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (sscanf(argv[2], "%lf", &args.eps) != 1 || args.eps < 0)
@@ -59,6 +61,11 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[6], "%lu", &args.k) != 1)
 		usage(argv[0]);
+	if (argc == 8) {
+		if (sscanf(argv[7], "%ld", &args.seed) != 1)
+			usage(argv[0]);
+	} else
+		args.seed = 42;
 }
 
 int main(int argc, char **argv)
@@ -71,7 +78,8 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	dp2d(&fp, args.eps, args.eps_share, args.minth, args.mis, args.k);
+	dp2d(&fp, args.eps, args.eps_share, args.minth, args.mis,
+			args.k, args.seed);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);

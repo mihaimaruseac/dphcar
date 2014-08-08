@@ -200,7 +200,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
-		size_t mis, size_t k)
+		size_t mis, size_t k, long int seed)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
@@ -211,7 +211,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	size_t i, fm, rs, st;
 	double maxc, minc;
 
-	init_rng(&randbuffer);
+	init_rng(seed, &randbuffer);
 
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);

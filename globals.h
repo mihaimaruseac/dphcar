@@ -20,7 +20,7 @@ int int_cmp_r(const void *a, const void *b);
 int double_cmp(const void *a, const void *b);
 int double_cmp_r(const void *a, const void *b);
 
-void init_rng(struct drand48_data *buffer);
+void init_rng(long int seed, struct drand48_data *buffer);
 
 /* Laplace mechanism */
 double laplace_mechanism(double x, double eps, double sens,

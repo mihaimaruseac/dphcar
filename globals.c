@@ -6,12 +6,12 @@
 
 #include "globals.h"
 
-void init_rng(struct drand48_data *buffer)
+void init_rng(long int seed, struct drand48_data *buffer)
 {
 	struct timeval now;
 
 	gettimeofday(&now, NULL);
-	srand48_r(42, buffer);
+	srand48_r(seed, buffer);
 	//srand48_r(now.tv_usec + now.tv_sec, buffer);
 }
 
