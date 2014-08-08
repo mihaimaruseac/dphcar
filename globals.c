@@ -12,7 +12,6 @@ void init_rng(long int seed, struct drand48_data *buffer)
 
 	gettimeofday(&now, NULL);
 	srand48_r(seed, buffer);
-	//srand48_r(now.tv_usec + now.tv_sec, buffer);
 }
 
 int int_cmp(const void *a, const void *b)
