@@ -85,6 +85,35 @@ void save_rule(struct rule_table *rt, const struct rule *r,
 	rt->sz = s;
 }
 
+void save_rule2(struct rule_table *rt, const struct rule *r, double c)
+{
+	size_t ix, s = rt->sz;
+	struct rule **p;
+
+	if (rt->sz == rt->av) {
+#define INCREASE_RATE 2
+		rt->av *= INCREASE_RATE;
+#undef INCREASE_RATE
+		rt->rules = realloc(rt->rules, rt->av * sizeof(rt->rules[0]));
+		rt->supA = realloc(rt->supA, rt->av * sizeof(rt->supA[0]));
+		rt->supAB = realloc(rt->supAB, rt->av * sizeof(rt->supAB[0]));
+		rt->c = realloc(rt->c, rt->av * sizeof(rt->c[0]));
+	}
+
+	p = lsearch(&r, rt->rules, &s, sizeof(r), rule_cmp);
+	ix = p - &rt->rules[0];
+
+	if (s == rt->sz) {
+		/* no free! */
+	} else {
+		rt->supA[ix] = 0;
+		rt->supAB[ix] = 0;
+		rt->c[ix] = c;
+	}
+
+	rt->sz = s;
+}
+
 void print_rule(const struct rule *r)
 {
 	size_t i;
@@ -199,6 +228,18 @@ void free_rule_table(struct rule_table *rt)
 
 	for (i = 0; i < rt->sz; i++)
 		free_rule(rt->rules[i]);
+
+	free(rt->supA);
+	free(rt->supAB);
+	free(rt->c);
+	free(rt->rules);
+	free(rt);
+}
+
+void free_rule_table2(struct rule_table *rt)
+{
+	if (!rt)
+		return;
 
 	free(rt->supA);
 	free(rt->supAB);

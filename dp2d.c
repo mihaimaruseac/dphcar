@@ -201,6 +201,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	int *items = calloc(mis + 1, sizeof(items[0]));
+	struct rule_table *rt = init_rule_table();
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
@@ -257,19 +258,24 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 #endif
 
 	minc = 1; maxc = 0;
-	for (i = 0; i < k; i++) {
+	for (i = 0; i < rs; i++) {
 		if (reservoir[i].c < minc)
 			minc = reservoir[i].c;
 		if (reservoir[i].c > maxc)
 			maxc = reservoir[i].c;
-		histogram_register(h, reservoir[i].c);
+		save_rule2(rt, reservoir[i].r, reservoir[i].c);
+		//histogram_register(h, reservoir[i].c);
 	}
-	printf("minconf: %3.2lf, maxconf: %3.2lf\n", minc, maxc);
+	for (i = 0; i < rt->sz; i++)
+		histogram_register(h, rt->c[i]);
+	printf("Rules saved: %lu/%lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+			rt->sz, rs, minc, maxc);
 
 	printf("Final histogram:\n");
 	histogram_dump(h, 1, "\t");
 
 	free_reservoir_array(reservoir, k);
+	free_rule_table2(rt);
 	free_histogram(h);
 	free(items);
 	free(ic);

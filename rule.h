@@ -23,6 +23,7 @@ struct rule_table *init_rule_table();
 
 void save_rule(struct rule_table *rt, const struct rule *r,
 		int supA, int supAB);
+void save_rule2(struct rule_table *rt, const struct rule *r, double c);
 
 void print_rule(const struct rule *r);
 
@@ -36,6 +37,7 @@ struct itemset *build_itemset(const int *items, size_t length);
 void free_rule(struct rule *r);
 void free_itemset(struct itemset *its);
 void free_rule_table(struct rule_table *rt);
+void free_rule_table2(struct rule_table *rt);
 
 #endif
 
