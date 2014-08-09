@@ -162,7 +162,7 @@ static void process_rule(const struct fptree *fp,
 
 static void generate_and_add_all_rules(const struct fptree *fp,
 		const int *items, size_t num_items, size_t st, double eps,
-		size_t *rs,
+		size_t *rs, size_t *rs2,
 		struct reservoir *reservoir, struct reservoir *reservoir2,
 		size_t k, struct drand48_data *randbuffer)
 {
@@ -170,6 +170,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	int *A, *AB;
 	double u;
 
+	k /= 2;
 	A = calloc(num_items, sizeof(A[0]));
 	AB = calloc(num_items, sizeof(AB[0]));
 
@@ -191,7 +192,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 			process_rule(fp, AB, ab_length, A, a_length,
 					eps, rs, reservoir, k, u);
 			process_rule(fp, AB, ab_length, A, a_length,
-					eps, rs, reservoir2, k, 1 - u);
+					eps, rs2, reservoir2, k, 1 - u);
 		}
 	}
 
@@ -210,7 +211,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	size_t i, fm, rs, st;
+	size_t i, fm, rs, rs2, st;
 	double maxc, minc;
 
 	init_rng(seed, &randbuffer);
@@ -233,6 +234,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 
 	/* select mining domains */
 	rs = 0; /* empty reservoir */
+	rs2 = 0; /* empty reservoir */
 	st = 3;
 
 	/* initial items */
@@ -248,7 +250,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 #endif
 
 		generate_and_add_all_rules(fp, items, mis, st, eps,
-				&rs, reservoir, reservoir2, k, &randbuffer);
+				&rs, &rs2, reservoir, reservoir2,
+				k, &randbuffer);
 		st = (1 << (mis - 1)) + 1;
 
 		for (i = 0; i < mis - 1; i++)
@@ -269,6 +272,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 		if (reservoir[i].c > maxc)
 			maxc = reservoir[i].c;
 		save_rule2(rt, reservoir[i].r, reservoir[i].c);
+	}
+	for (i = 0; i < rs2; i++) {
 		if (reservoir2[i].c < minc)
 			minc = reservoir2[i].c;
 		if (reservoir2[i].c > maxc)
@@ -284,7 +289,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 	printf("Final histogram:\n");
 	histogram_dump(h, 1, "\t");
 
-	free_reservoir_array(reservoir, k);
+	free_reservoir_array(reservoir, k/2);
 	//free_reservoir_array(reservoir2, k); don't free this since we might have shared rules :(
 	free_rule_table2(rt);
 	free_histogram(h);
