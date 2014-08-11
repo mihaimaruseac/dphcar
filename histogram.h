@@ -12,7 +12,8 @@ double histogram_bin_bound(struct histogram *h, int bin);
 size_t histogram_get_all(struct histogram *h);
 int histogram_get_count_bins(struct histogram *h);
 
-void histogram_dump(struct histogram *h, int cumulative, const char *header);
+void histogram_dump(FILE *f, struct histogram *h, int cumulative,
+		const char *header);
 
 void free_histogram(struct histogram *h);
 

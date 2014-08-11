@@ -62,19 +62,20 @@ int histogram_get_count_bins(struct histogram *h)
 	return c_num_values;
 }
 
-void histogram_dump(struct histogram *h, int cumulative, const char *header)
+void histogram_dump(FILE *f, struct histogram *h, int cumulative,
+		const char *header)
 {
 	size_t s = 0;
 	int i;
 
 	for (i = 0; i < c_num_values; i++) {
-		printf("%s%3.2f\t%10lu\t%3.2f", header,
+		fprintf(f, "%s%3.2f\t%10lu\t%3.2f", header,
 				c_values[i], h->values[i],
 				(0.0 + h->values[i]) / h->total);
 		s += h->values[i];
 		if (cumulative)
-			printf("\t%12lu\t%3.2f", s, (0.0 + s) / h->total);
-		printf("\n");
+			fprintf(f, "\t%12lu\t%3.2f", s, (0.0 + s) / h->total);
+		fprintf(f, "\n");
 	}
 }
 

@@ -287,7 +287,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
 			rt->sz, 2*rs, minc, maxc);
 
 	printf("Final histogram:\n");
-	histogram_dump(h, 1, "\t");
+	histogram_dump(stdout, h, 1, "\t");
 
 	free_reservoir_array(reservoir, k/2);
 	//free_reservoir_array(reservoir2, k); don't free this since we might have shared rules :(
