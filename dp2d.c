@@ -200,7 +200,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		long int seed)
 {
-	struct reservoir *reservoir = calloc(k/2, sizeof(reservoir[0]));
+	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	int *items = calloc(mis + 1, sizeof(items[0]));
 	struct histogram *h = init_histogram();
