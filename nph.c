@@ -23,10 +23,14 @@
 
 struct experiment {
 	size_t num_items;
+	size_t length;
 	int items[MAX_SIZE];
 	struct histogram *h;
 	int valid;
 };
+
+int lengths[] = {3, 5, 7};
+size_t num_lenghts = 3;
 
 /* Command line arguments */
 static struct {
@@ -173,7 +177,7 @@ err:
 
 int main(int argc, char **argv)
 {
-	struct experiment *exps = calloc(NUM * MAX_SIZE, sizeof(exps[0]));
+	struct experiment *exps = calloc(num_lenghts * NUM * MAX_SIZE, sizeof(exps[0]));
 	size_t i, j, k, l, ve, i1, i2, num_exps = 0;
 	struct drand48_data randbuffer;
 	struct file_data *data = NULL;
@@ -201,20 +205,23 @@ int main(int argc, char **argv)
 	}
 	ve = j;
 
-	for (i = 2; i <= MAX_SIZE; i++)
-		for (j = 0; j < NUM; j++) {
-			exps[num_exps].num_items = i;
-			for (k = 0; k < i; k++) {
+	for (i2 = 0; i2 < num_lenghts; i2++) {
+		for (i = 2; i <= MAX_SIZE; i++)
+			for (j = 0; j < NUM; j++) {
+				exps[num_exps].length = lengths[i2];
+				exps[num_exps].num_items = i;
+				for (k = 0; k < i; k++) {
 again:
-				lrand48_r(&randbuffer, (long int*)&l);
-				l = l % ve;
-				for (i1 = 0; i1 < k; i1++)
-					if (exps[num_exps].items[i1] == tmp_items[l])
-						goto again;
-				exps[num_exps].items[k] = tmp_items[l];
+					lrand48_r(&randbuffer, (long int*)&l);
+					l = l % ve;
+					for (i1 = 0; i1 < k; i1++)
+						if (exps[num_exps].items[i1] == tmp_items[l])
+							goto again;
+					exps[num_exps].items[k] = tmp_items[l];
+				}
+				num_exps++;
 			}
-			num_exps++;
-		}
+	}
 
 	free(tmp_items);
 	qsort(data->itemsets, data->item_count, sizeof(data->itemsets[0]), itemset_cmp);
@@ -256,7 +263,8 @@ again:
 						break;
 					}
 
-			if (l == exps[j].num_items) {
+			if (l == exps[j].num_items &&
+					data->itemsets[i].size <= exps[j].num_items + exps[j].length) {
 				ve++;
 				exps[j].valid = 1;
 			}
@@ -299,7 +307,8 @@ again:
 	for (j = 0; j < num_exps; j++) {
 		char *fname = NULL, *tmp = NULL;
 
-		asprintf(&fname, "%s/%s_%lu", args.dirname, args.dataset, exps[j].num_items);
+		asprintf(&fname, "%s/%s_%lu_%lu", args.dirname, args.dataset,
+				exps[j].length, exps[j].num_items);
 		for (i = 0; i < exps[j].num_items; i++) {
 			asprintf(&tmp, "%s_%d", fname, exps[j].items[i]);
 			free(fname);
@@ -314,7 +323,7 @@ again:
 			die("Unable to save output");
 		}
 
-		fprintf(f, "%lu\n%d", exps[j].num_items, exps[j].items[0]);
+		fprintf(f, "%lu %lu\n%d", exps[j].length, exps[j].num_items, exps[j].items[0]);
 		for (i = 1; i < exps[j].num_items; i++)
 			fprintf(f, " %d", exps[j].items[i]);
 		fprintf(f, "\n%lu\n", histogram_get_all(exps[j].h));
