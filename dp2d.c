@@ -202,13 +202,12 @@ void dp2d(const struct fptree *fp, const char *npfile,
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
-	int *items = calloc(mis + 1, sizeof(items[0]));
 	struct histogram *nph = init_histogram();
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
+	int *control_items = NULL, *items;
 	struct drand48_data randbuffer;
 	size_t i, fm, rs, st, nci, npr;
-	int *control_items = NULL;
 	double maxc, minc;
 	FILE *f;
 
@@ -218,6 +217,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	if (fscanf(f, "%lu", &nci) != 1)
 		die("Invalid npfile: cannot read number of items!");
 	control_items = calloc(nci, sizeof(control_items[0]));
+	items = calloc(mis + nci + 1, sizeof(items[0]));
 	for (i = 0; i < nci; i++)
 		if (fscanf(f, "%d", &control_items[i]) != 1)
 			die("Invalid npfile: cannot read control items!");
