@@ -250,28 +250,46 @@ void dp2d(const struct fptree *fp, const char *npfile,
 
 	/* select mining domains */
 	rs = 0; /* empty reservoir */
-	st = 3;
+	st = 0;
 
 	/* initial items */
-	for (fm = 0; fm < mis; fm++)
+	for (i = 0; i  < nci; i++) {
+		items[mis + i] = control_items[i];
+		st |= 1 << (mis + i);
+	}
+	for (fm = 0; fm < mis; fm++) {
+		for (i = 0; i < nci; i++)
+			if (ic[fm].value == control_items[i])
+				break;
+		if (i != nci)
+			continue;
 		items[fm] = ic[fm].value;
+	}
 
 	while (fm < fp->n) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		printf("Domain: %lu: ", fm);
-		for (i = 0; i < mis; i++)
+		for (i = 0; i < mis + nci; i++)
 			printf("%d ", items[i]);
 		printf("\n");
 #endif
 
-		generate_and_add_all_rules(fp, items, mis, st, eps,
+		generate_and_add_all_rules(fp, items, mis + nci, st, eps,
 				&rs, reservoir, k, &randbuffer);
-		st = (1 << (mis - 1)) + 1;
+		st |= (1 << (mis - 1));
 
 		for (i = 0; i < mis - 1; i++)
 			items[i] = items[i+1];
-		items[mis - 1] = ic[fm++].value;
-		if (ic[fm-1].noisy_count < minth)
+		for (; ic[fm].noisy_count >= minth; fm++) {
+			for (i = 0; i < nci; i++)
+				if (ic[fm].value == control_items[i])
+					break;
+			if (i != nci)
+				continue;
+			items[mis - 1] = ic[fm].value;
+			break;
+		}
+		if (ic[fm++].noisy_count < minth)
 			break;
 	}
 
