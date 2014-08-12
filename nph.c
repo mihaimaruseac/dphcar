@@ -88,6 +88,14 @@ static int itemset_cmp(const void *isa, const void *isb)
 	return 0;
 }
 
+static int itemset_cnt_cmp(const void *isa, const void *isb)
+{
+	const struct itemset *a = isa;
+	const struct itemset *b = isb;
+
+	return b->count - a->count;
+}
+
 static void free_itemsets(struct file_data *data)
 {
 	if (data->itemsets) {
@@ -183,6 +191,7 @@ int main(int argc, char **argv)
 	if (!data)
 		goto out;
 
+	qsort(data->itemsets, data->item_count, sizeof(data->itemsets[0]), itemset_cnt_cmp);
 	for (i = 2; i <= MAX_SIZE; i++) {
 		k = 0;
 		for (j = 0; j < NUM; j++) {
@@ -196,10 +205,11 @@ int main(int argc, char **argv)
 				break;
 			}
 
-			if (k == data->item_count)
+			if (k++ == data->item_count)
 				break;
 		}
 	}
+	qsort(data->itemsets, data->item_count, sizeof(data->itemsets[0]), itemset_cmp);
 
 	printf("Exps: %lu\n", num_exps);
 
