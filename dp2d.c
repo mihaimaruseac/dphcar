@@ -206,13 +206,32 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	size_t i, fm, rs, st;
+	size_t i, fm, rs, st, nci, npr;
+	int *control_items = NULL;
 	double maxc, minc;
+	FILE *f;
+
+	f = fopen(npfile, "r");
+	if (!f)
+		die("Invalid/not found npfile!");
+	if (fscanf(f, "%lu", &nci) != 1)
+		die("Invalid npfile: cannot read number of items!");
+	control_items = calloc(nci, sizeof(control_items[0]));
+	for (i = 0; i < nci; i++)
+		if (fscanf(f, "%d", &control_items[i]) != 1)
+			die("Invalid npfile: cannot read control items!");
+	if (fscanf(f, "%lu", &npr) != 1)
+		die("Invalid npfile: cannot read number of non private rules!");
+	fclose(f);
 
 	init_rng(seed, &randbuffer);
 
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
+	printf("Using %lu control items:", nci);
+	for (i = 0; i < nci; i++)
+		printf(" %d", control_items[i]);
+	printf("\nMatching %lu non-private rules\n", npr);
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -274,6 +293,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 
 	free_reservoir_array(reservoir, k);
 	free_histogram(h);
+	free(control_items);
 	free(items);
 	free(ic);
 }
