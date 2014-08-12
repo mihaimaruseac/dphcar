@@ -190,12 +190,16 @@ int main(int argc, char **argv)
 		tmp_items[j++] = data->itemsets[i].elems[0];
 	}
 
-	for (i = 1; i <= MAX_SIZE; i++)
+	for (i = 2; i <= MAX_SIZE; i++)
 		for (j = 0; j < NUM; j++) {
 			exps[num_exps].num_items = i;
 			for (k = 0; k < i; k++) {
+again:
 				lrand48_r(&randbuffer, (long int*)&l);
 				l = l % TOP;
+				for (i1 = 0; i1 < k; i1++)
+					if (exps[num_exps].items[k] == tmp_items[l])
+						goto again;
 				exps[num_exps].items[k] = tmp_items[l];
 			}
 			num_exps++;
