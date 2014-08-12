@@ -18,7 +18,7 @@
 #define LINELEN 1024
 
 #define NUM 50
-#define MAX_SIZE 5
+#define MAX_SIZE 3
 #define TOP 100
 
 struct experiment {
