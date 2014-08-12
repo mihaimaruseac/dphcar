@@ -162,15 +162,13 @@ static void process_rule(const struct fptree *fp,
 
 static void generate_and_add_all_rules(const struct fptree *fp,
 		const int *items, size_t num_items, size_t st, double eps,
-		size_t *rs, size_t *rs2,
-		struct reservoir *reservoir, struct reservoir *reservoir2,
+		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer)
 {
 	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
 	int *A, *AB;
 	double u;
 
-	k /= 2;
 	A = calloc(num_items, sizeof(A[0]));
 	AB = calloc(num_items, sizeof(AB[0]));
 
@@ -191,8 +189,6 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 			drand48_r(randbuffer, &u);
 			process_rule(fp, AB, ab_length, A, a_length,
 					eps, rs, reservoir, k, u);
-			process_rule(fp, AB, ab_length, A, a_length,
-					eps, rs2, reservoir2, k, 1 - u);
 		}
 	}
 
@@ -205,14 +201,12 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		long int seed)
 {
 	struct reservoir *reservoir = calloc(k/2, sizeof(reservoir[0]));
-	struct reservoir *reservoir2 = calloc(k/2, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	int *items = calloc(mis + 1, sizeof(items[0]));
-	struct rule_table *rt = init_rule_table();
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	size_t i, fm, rs, rs2, st;
+	size_t i, fm, rs, st;
 	double maxc, minc;
 
 	init_rng(seed, &randbuffer);
@@ -235,7 +229,6 @@ void dp2d(const struct fptree *fp, const char *npfile,
 
 	/* select mining domains */
 	rs = 0; /* empty reservoir */
-	rs2 = 0; /* empty reservoir */
 	st = 3;
 
 	/* initial items */
@@ -251,8 +244,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 #endif
 
 		generate_and_add_all_rules(fp, items, mis, st, eps,
-				&rs, &rs2, reservoir, reservoir2,
-				k, &randbuffer);
+				&rs, reservoir, k, &randbuffer);
 		st = (1 << (mis - 1)) + 1;
 
 		for (i = 0; i < mis - 1; i++)
@@ -272,27 +264,15 @@ void dp2d(const struct fptree *fp, const char *npfile,
 			minc = reservoir[i].c;
 		if (reservoir[i].c > maxc)
 			maxc = reservoir[i].c;
-		save_rule2(rt, reservoir[i].r, reservoir[i].c);
+		histogram_register(h, reservoir[i].c);
 	}
-	for (i = 0; i < rs2; i++) {
-		if (reservoir2[i].c < minc)
-			minc = reservoir2[i].c;
-		if (reservoir2[i].c > maxc)
-			maxc = reservoir2[i].c;
-		save_rule2(rt, reservoir2[i].r, reservoir2[i].c);
-		//histogram_register(h, reservoir[i].c);
-	}
-	for (i = 0; i < rt->sz; i++)
-		histogram_register(h, rt->c[i]);
-	printf("Rules saved: %lu/%lu, minconf: %3.2lf, maxconf: %3.2lf\n",
-			rt->sz, 2*rs, minc, maxc);
+	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+			rs, minc, maxc);
 
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
-	free_reservoir_array(reservoir, k/2);
-	//free_reservoir_array(reservoir2, k); don't free this since we might have shared rules :(
-	free_rule_table2(rt);
+	free_reservoir_array(reservoir, k);
 	free_histogram(h);
 	free(items);
 	free(ic);
