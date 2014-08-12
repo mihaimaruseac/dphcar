@@ -200,8 +200,9 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	free(AB);
 }
 
-void dp2d(const struct fptree *fp, double eps, double eps_share, int minth,
-		size_t mis, size_t k, long int seed)
+void dp2d(const struct fptree *fp, const char *npfile,
+		double eps, double eps_share, int minth, size_t mis, size_t k,
+		long int seed)
 {
 	struct reservoir *reservoir = calloc(k/2, sizeof(reservoir[0]));
 	struct reservoir *reservoir2 = calloc(k/2, sizeof(reservoir[0]));
