@@ -17,156 +17,16 @@
 
 #define LINELEN 1024
 
+#define NUM 50
+#define MAX_SIZE 5
+#define TOP 100
+
 struct experiment {
-	const size_t num_items;
-	const int items[3];
+	size_t num_items;
+	int items[MAX_SIZE];
 	struct histogram *h;
 	int valid;
 };
-
-#define RETAIL 1
-#define KOSARAK 2
-#define MUSHROOM 3
-#define PUMSB 4
-#define DATASET_OPT PUMSB
-#if DATASET_OPT == RETAIL
-#define DATASET "retail"
-static struct experiment exps [] = {
-	{.num_items = 1, .items = {39}},
-	{.num_items = 1, .items = {48}},
-	{.num_items = 1, .items = {38}},
-	{.num_items = 1, .items = {32}},
-	{.num_items = 1, .items = {41}},
-	{.num_items = 1, .items = {65}},
-	{.num_items = 1, .items = {89}},
-	{.num_items = 1, .items = {225}},
-	{.num_items = 1, .items = {237}},
-	{.num_items = 1, .items = {170}},
-	{.num_items = 2, .items = {48, 170}},
-	{.num_items = 2, .items = {48, 65}},
-	{.num_items = 2, .items = {32, 89}},
-	{.num_items = 2, .items = {48, 32}},
-	{.num_items = 2, .items = {38, 65}},
-	{.num_items = 2, .items = {39, 38}},
-	{.num_items = 2, .items = {39, 48}},
-	{.num_items = 2, .items = {225, 170}},
-	{.num_items = 2, .items = {41, 225}},
-	{.num_items = 2, .items = {38, 170}},
-	{.num_items = 3, .items = {32, 65, 225}},
-	{.num_items = 3, .items = {38, 32, 170}},
-	{.num_items = 3, .items = {39, 38, 65}},
-	{.num_items = 3, .items = {32, 237, 170}},
-	{.num_items = 3, .items = {32, 41, 65}},
-	{.num_items = 3, .items = {39, 48, 38}},
-	{.num_items = 3, .items = {38, 32, 65}},
-	{.num_items = 3, .items = {39, 38, 170}},
-	{.num_items = 3, .items = {48, 89, 237}},
-	{.num_items = 3, .items = {48, 38, 237}},
-};
-#elif DATASET_OPT == KOSARAK
-#define DATASET "kosarak"
-static struct experiment exps [] = {
-	{.num_items = 1, .items = {6}},
-	{.num_items = 1, .items = {3}},
-	{.num_items = 1, .items = {11}},
-	{.num_items = 1, .items = {1}},
-	{.num_items = 1, .items = {218}},
-	{.num_items = 1, .items = {7}},
-	{.num_items = 1, .items = {4}},
-	{.num_items = 1, .items = {27}},
-	{.num_items = 1, .items = {148}},
-	{.num_items = 1, .items = {55}},
-	{.num_items = 2, .items = {3, 55}},
-	{.num_items = 2, .items = {3, 7}},
-	{.num_items = 2, .items = {1, 4}},
-	{.num_items = 2, .items = {3, 1}},
-	{.num_items = 2, .items = {11, 7}},
-	{.num_items = 2, .items = {6, 11}},
-	{.num_items = 2, .items = {6, 3}},
-	{.num_items = 2, .items = {27, 55}},
-	{.num_items = 2, .items = {218, 27}},
-	{.num_items = 2, .items = {11, 55}},
-	{.num_items = 3, .items = {1, 7, 27}},
-	{.num_items = 3, .items = {11, 1, 55}},
-	{.num_items = 3, .items = {6, 11, 7}},
-	{.num_items = 3, .items = {1, 148, 55}},
-	{.num_items = 3, .items = {1, 218, 7}},
-	{.num_items = 3, .items = {6, 3, 11}},
-	{.num_items = 3, .items = {11, 1, 7}},
-	{.num_items = 3, .items = {6, 11, 55}},
-	{.num_items = 3, .items = {3, 4, 148}},
-	{.num_items = 3, .items = {3, 11, 148}},
-};
-#elif DATASET_OPT == MUSHROOM
-#define DATASET "mushroom"
-static struct experiment exps [] = {
-	{.num_items = 1, .items = {85}},
-	{.num_items = 1, .items = {86}},
-	{.num_items = 1, .items = {34}},
-	{.num_items = 1, .items = {90}},
-	{.num_items = 1, .items = {36}},
-	{.num_items = 1, .items = {39}},
-	{.num_items = 1, .items = {59}},
-	{.num_items = 1, .items = {63}},
-	{.num_items = 1, .items = {24}},
-	{.num_items = 1, .items = {53}},
-	{.num_items = 2, .items = {86, 53}},
-	{.num_items = 2, .items = {86, 39}},
-	{.num_items = 2, .items = {90, 59}},
-	{.num_items = 2, .items = {86, 90}},
-	{.num_items = 2, .items = {34, 39}},
-	{.num_items = 2, .items = {85, 34}},
-	{.num_items = 2, .items = {85, 86}},
-	{.num_items = 2, .items = {63, 53}},
-	{.num_items = 2, .items = {36, 63}},
-	{.num_items = 2, .items = {34, 53}},
-	{.num_items = 3, .items = {90, 39, 63}},
-	{.num_items = 3, .items = {34, 90, 53}},
-	{.num_items = 3, .items = {85, 34, 39}},
-	{.num_items = 3, .items = {90, 24, 53}},
-	{.num_items = 3, .items = {90, 36, 39}},
-	{.num_items = 3, .items = {85, 86, 34}},
-	{.num_items = 3, .items = {34, 90, 39}},
-	{.num_items = 3, .items = {85, 34, 53}},
-	{.num_items = 3, .items = {86, 59, 24}},
-	{.num_items = 3, .items = {86, 34, 24}},
-};
-#elif DATASET_OPT == PUMSB
-#define DATASET "pumsb"
-static struct experiment exps [] = {
-	{.num_items = 1, .items = {7072}},
-	{.num_items = 1, .items = {161}},
-	{.num_items = 1, .items = {197}},
-	{.num_items = 1, .items = {84}},
-	{.num_items = 1, .items = {4499}},
-	{.num_items = 1, .items = {4502}},
-	{.num_items = 1, .items = {168}},
-	{.num_items = 1, .items = {4933}},
-	{.num_items = 1, .items = {4937}},
-	{.num_items = 1, .items = {4496}},
-	{.num_items = 2, .items = {161, 4496}},
-	{.num_items = 2, .items = {161, 4502}},
-	{.num_items = 2, .items = {84, 168}},
-	{.num_items = 2, .items = {161, 84}},
-	{.num_items = 2, .items = {197, 4502}},
-	{.num_items = 2, .items = {7072, 197}},
-	{.num_items = 2, .items = {7072, 161}},
-	{.num_items = 2, .items = {4933, 4496}},
-	{.num_items = 2, .items = {4499, 4933}},
-	{.num_items = 2, .items = {197, 4496}},
-	{.num_items = 3, .items = {84, 4502, 4933}},
-	{.num_items = 3, .items = {197, 84, 4496}},
-	{.num_items = 3, .items = {7072, 197, 4502}},
-	{.num_items = 3, .items = {84, 4937, 4496}},
-	{.num_items = 3, .items = {84, 4499, 4502}},
-	{.num_items = 3, .items = {7072, 161, 197}},
-	{.num_items = 3, .items = {197, 84, 4502}},
-	{.num_items = 3, .items = {7072, 197, 4496}},
-	{.num_items = 3, .items = {161, 168, 4937}},
-	{.num_items = 3, .items = {161, 197, 4937}},
-};
-#endif
-
 
 /* Command line arguments */
 static struct {
@@ -174,11 +34,13 @@ static struct {
 	char *tfname;
 	/* dirname for the outputs */
 	char *dirname;
+	/* dataset */
+	char *dataset;
 } args;
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s iFILE OUTDIRNAME\n", prg);
+	fprintf(stderr, "Usage: %s iFILE DATASET OUTDIRNAME\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -191,14 +53,11 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 3)
+	if (argc != 4)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
-
-	if (!strstr(args.tfname, DATASET))
-		die("Code was not compiled for this dataset!");
-
-	args.dirname = strdup(argv[2]);
+	args.dataset = strdup(argv[2]);
+	args.dirname = strdup(argv[3]);
 }
 
 struct itemset {
@@ -306,8 +165,9 @@ err:
 
 int main(int argc, char **argv)
 {
-	size_t num_exps = sizeof(exps) / sizeof(exps[0]);
-	size_t i, j, k, l, ve, i1, i2;
+	struct experiment *exps = calloc(NUM * MAX_SIZE, sizeof(exps[0]));
+	size_t i, j, k, l, ve, i1, i2, num_exps = 0;
+	struct drand48_data randbuffer;
 	struct file_data *data = NULL;
 	int status = EXIT_FAILURE;
 	struct itemset tmp, *res;
@@ -317,10 +177,33 @@ int main(int argc, char **argv)
 	FILE *f;
 
 	parse_arguments(argc, argv);
+	srand48_r(42, &randbuffer);
 
 	data = read_input(argv[1]);
 	if (!data)
 		goto out;
+
+	tmp_items = calloc(TOP, sizeof(tmp_items[0]));
+	for (i = 0, j = 0; i < data->item_count && j < TOP; i++) {
+		if (data->itemsets[i].size != 1)
+			continue;
+		tmp_items[j++] = data->itemsets[i].elems[0];
+	}
+
+	for (i = 1; i <= MAX_SIZE; i++)
+		for (j = 0; j < NUM; j++) {
+			exps[num_exps].num_items = i;
+			for (k = 0; k < i; k++) {
+				lrand48_r(&randbuffer, (long int*)&l);
+				l = l % TOP;
+				exps[num_exps].items[k] = tmp_items[l];
+			}
+			num_exps++;
+		}
+
+	free(tmp_items);
+
+	printf("Exps: %lu\n", num_exps);
 
 	for (i = 0; i < num_exps; i++) {
 		exps[i].h = init_histogram();
@@ -394,11 +277,11 @@ int main(int argc, char **argv)
 			exps[j].valid = 0;
 	}
 
-	/* TODO: save histograms to files */
+	/* save histograms to files */
 	for (j = 0; j < num_exps; j++) {
 		char *fname = NULL, *tmp = NULL;
 
-		asprintf(&fname, "%s/%s_%lu", args.dirname, DATASET, exps[j].num_items);
+		asprintf(&fname, "%s/%s_%lu", args.dirname, args.dataset, exps[j].num_items);
 		for (i = 0; i < exps[j].num_items; i++) {
 			asprintf(&tmp, "%s_%d", fname, exps[j].items[i]);
 			free(fname);
