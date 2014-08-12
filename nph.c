@@ -183,29 +183,23 @@ int main(int argc, char **argv)
 	if (!data)
 		goto out;
 
-	tmp_items = calloc(TOP, sizeof(tmp_items[0]));
-	for (i = 0, j = 0; i < data->item_count && j < TOP; i++) {
-		if (data->itemsets[i].size != 1)
-			continue;
-		tmp_items[j++] = data->itemsets[i].elems[0];
-	}
-
-	for (i = 2; i <= MAX_SIZE; i++)
+	for (i = 2; i <= MAX_SIZE; i++) {
+		k = 0;
 		for (j = 0; j < NUM; j++) {
 			exps[num_exps].num_items = i;
-			for (k = 0; k < i; k++) {
-again:
-				lrand48_r(&randbuffer, (long int*)&l);
-				l = l % TOP;
-				for (i1 = 0; i1 < k; i1++)
-					if (exps[num_exps].items[k] == tmp_items[l])
-						goto again;
-				exps[num_exps].items[k] = tmp_items[l];
+			for (; k < data->item_count; k++) {
+				if (data->itemsets[k].size != i)
+					continue;
+				for (l = 0; l < i; l++)
+					exps[num_exps].items[l] = data->itemsets[k].elems[l];
+				num_exps++;
+				break;
 			}
-			num_exps++;
-		}
 
-	free(tmp_items);
+			if (k == data->item_count)
+				break;
+		}
+	}
 
 	printf("Exps: %lu\n", num_exps);
 
@@ -237,12 +231,14 @@ again:
 		ve = 0;
 		for (j = 0; j < num_exps; j++) {
 			l = 0;
-			for (i1 = 0; i1 < exps[j].num_items && !l; i1++)
-				for (i2 = 0; i2 < data->itemsets[i].size && !l; i2++)
-					if (exps[j].items[i1] == data->itemsets[i].elems[i2])
+			for (i1 = 0; i1 < exps[j].num_items; i1++)
+				for (i2 = 0; i2 < data->itemsets[i].size; i2++)
+					if (exps[j].items[i1] == data->itemsets[i].elems[i2]) {
 						l++;
+						break;
+					}
 
-			if (l) {
+			if (l == exps[j].num_items) {
 				ve++;
 				exps[j].valid = 1;
 			}
