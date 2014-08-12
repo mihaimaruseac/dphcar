@@ -53,7 +53,7 @@ static void parse_arguments(int argc, char **argv)
 	if (argc < 8 || argc > 9)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
-	args.tfname = strdup(argv[2]);
+	args.npfile = strdup(argv[2]);
 	if (sscanf(argv[3], "%lf", &args.eps) != 1 || args.eps < 0)
 		usage(argv[0]);
 	if (sscanf(argv[4], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
