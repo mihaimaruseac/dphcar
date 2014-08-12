@@ -79,6 +79,29 @@ void histogram_dump(FILE *f, struct histogram *h, int cumulative,
 	}
 }
 
+void histogram_load(FILE *f, struct histogram *h, int cumulative,
+		const char *header)
+{
+	float c, v;
+	size_t hv;
+	int i;
+
+	for (i = 0; i < c_num_values; i++) {
+		if (fscanf(f, header) != 0)
+			die("Unable to read header line %d!", i);
+		if (fscanf(f, "%f%lu%f", &c, &hv, &v) != 3)
+			die("Unable to read sample data line %d!", i);
+		if ((int)(100 *c) != (int)(100 * c_values[i]))
+			die("Unmatched bin value %d %3.2lf %3.2lf!", i, c, c_values[i]);
+		h->values[i] = hv;
+		h->total += hv;
+		if (cumulative && fscanf(f, "%lu%f", &hv, &c) != 2)
+			die("Unable to read cumulative data line %d!", i);
+		if (fscanf(f, "\n") != 0)
+			die("Extra output on line!");
+	}
+}
+
 void free_histogram(struct histogram *h)
 {
 	free(h->values);

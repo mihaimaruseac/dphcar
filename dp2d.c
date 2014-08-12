@@ -203,6 +203,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	int *items = calloc(mis + 1, sizeof(items[0]));
+	struct histogram *nph = init_histogram();
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
@@ -222,6 +223,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 			die("Invalid npfile: cannot read control items!");
 	if (fscanf(f, "%lu", &npr) != 1)
 		die("Invalid npfile: cannot read number of non private rules!");
+	histogram_load(f, nph, 1, "\t");
 	fclose(f);
 
 	init_rng(seed, &randbuffer);
@@ -290,6 +292,9 @@ void dp2d(const struct fptree *fp, const char *npfile,
 
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
+
+	printf("Non-private histogram:\n");
+	histogram_dump(stdout, nph, 1, "\t");
 
 	free_reservoir_array(reservoir, k);
 	free_histogram(h);

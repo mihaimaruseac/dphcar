@@ -14,6 +14,8 @@ int histogram_get_count_bins(struct histogram *h);
 
 void histogram_dump(FILE *f, struct histogram *h, int cumulative,
 		const char *header);
+void histogram_load(FILE *f, struct histogram *h, int cumulative,
+		const char *header);
 
 void free_histogram(struct histogram *h);
 
