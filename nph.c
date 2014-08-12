@@ -316,7 +316,7 @@ again:
 		fprintf(f, "%lu\n%d", exps[j].num_items, exps[j].items[0]);
 		for (i = 1; i < exps[j].num_items; i++)
 			fprintf(f, " %d", exps[j].items[i]);
-		fprintf(f, "\n\n");
+		fprintf(f, "\n%lu\n", histogram_get_all(exps[j].h));
 		histogram_dump(f, exps[j].h, 1, "\t");
 
 		fclose(f);
