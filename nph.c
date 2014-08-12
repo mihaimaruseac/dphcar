@@ -208,7 +208,7 @@ again:
 				lrand48_r(&randbuffer, (long int*)&l);
 				l = l % TOP;
 				for (i1 = 0; i1 < k; i1++)
-					if (exps[num_exps].items[k] == tmp_items[l])
+					if (exps[num_exps].items[i1] == tmp_items[l])
 						goto again;
 				exps[num_exps].items[k] = tmp_items[l];
 			}
