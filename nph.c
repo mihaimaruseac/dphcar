@@ -199,6 +199,7 @@ int main(int argc, char **argv)
 			continue;
 		tmp_items[j++] = data->itemsets[i].elems[0];
 	}
+	ve = j;
 
 	for (i = 2; i <= MAX_SIZE; i++)
 		for (j = 0; j < NUM; j++) {
@@ -206,7 +207,7 @@ int main(int argc, char **argv)
 			for (k = 0; k < i; k++) {
 again:
 				lrand48_r(&randbuffer, (long int*)&l);
-				l = l % TOP;
+				l = l % ve;
 				for (i1 = 0; i1 < k; i1++)
 					if (exps[num_exps].items[i1] == tmp_items[l])
 						goto again;
