@@ -192,23 +192,30 @@ int main(int argc, char **argv)
 		goto out;
 
 	qsort(data->itemsets, data->item_count, sizeof(data->itemsets[0]), itemset_cnt_cmp);
-	for (i = 2; i <= MAX_SIZE; i++) {
-		k = 0;
+
+	tmp_items = calloc(TOP, sizeof(tmp_items[0]));
+	for (i = 0, j = 0; i < data->item_count && j < TOP; i++) {
+		if (data->itemsets[i].size != 1)
+			continue;
+		tmp_items[j++] = data->itemsets[i].elems[0];
+	}
+
+	for (i = 2; i <= MAX_SIZE; i++)
 		for (j = 0; j < NUM; j++) {
 			exps[num_exps].num_items = i;
-			for (; k < data->item_count; k++) {
-				if (data->itemsets[k].size != i)
-					continue;
-				for (l = 0; l < i; l++)
-					exps[num_exps].items[l] = data->itemsets[k].elems[l];
-				num_exps++;
-				break;
+			for (k = 0; k < i; k++) {
+again:
+				lrand48_r(&randbuffer, (long int*)&l);
+				l = l % TOP;
+				for (i1 = 0; i1 < k; i1++)
+					if (exps[num_exps].items[k] == tmp_items[l])
+						goto again;
+				exps[num_exps].items[k] = tmp_items[l];
 			}
-
-			if (k++ == data->item_count)
-				break;
+			num_exps++;
 		}
-	}
+
+	free(tmp_items);
 	qsort(data->itemsets, data->item_count, sizeof(data->itemsets[0]), itemset_cmp);
 
 	printf("Exps: %lu\n", num_exps);
