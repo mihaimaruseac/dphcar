@@ -206,8 +206,8 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	int *control_items = NULL, *items;
+	size_t i, j, fm, rs, st, nci, npr;
 	struct drand48_data randbuffer;
-	size_t i, fm, rs, st, nci, npr;
 	double maxc, minc;
 	FILE *f;
 
@@ -257,13 +257,13 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		items[mis + i] = control_items[i];
 		st |= 1 << (mis + i);
 	}
-	for (fm = 0; fm < mis; fm++) {
+	for (fm = 0, j = 0; j < mis; fm++) {
 		for (i = 0; i < nci; i++)
 			if (ic[fm].value == control_items[i])
 				break;
 		if (i != nci)
 			continue;
-		items[fm] = ic[fm].value;
+		items[j++] = ic[fm].value;
 	}
 
 	while (fm < fp->n) {
