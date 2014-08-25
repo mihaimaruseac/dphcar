@@ -9,6 +9,6 @@ struct fptree;
 
 void dp2d(const struct fptree *fp, const char *npfile,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
-		long int seed);
+		double minalpha, long int seed);
 
 #endif

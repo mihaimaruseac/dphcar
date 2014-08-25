@@ -31,13 +31,15 @@ static struct {
 	size_t mis;
 	/* number of rules to extract */
 	size_t k;
+	/* min alpha value */
+	double minalpha;
 	/* random seed */
 	long int seed;
 } args;
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE NPFILE EPS EPS_SHARE MINTH MIS K [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE NPFILE EPS EPS_SHARE MINTH MINALHPA MIS K [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -50,7 +52,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc < 8 || argc > 9)
+	if (argc < 9 || argc > 10)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	args.npfile = strdup(argv[2]);
@@ -60,12 +62,14 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[5], "%lu", &args.minth) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[6], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
+	if (sscanf(argv[6], "%lf", &args.minalpha) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[7], "%lu", &args.k) != 1)
+	if (sscanf(argv[7], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
 		usage(argv[0]);
-	if (argc == 9) {
-		if (sscanf(argv[8], "%ld", &args.seed) != 1)
+	if (sscanf(argv[8], "%lu", &args.k) != 1)
+		usage(argv[0]);
+	if (argc == 10) {
+		if (sscanf(argv[9], "%ld", &args.seed) != 1)
 			usage(argv[0]);
 	} else
 		args.seed = 42;
@@ -82,7 +86,7 @@ int main(int argc, char **argv)
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
 	dp2d(&fp, args.npfile, args.eps, args.eps_share, args.minth, args.mis,
-			args.k, args.seed);
+			args.k, args.minalpha, args.seed);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);

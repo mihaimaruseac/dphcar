@@ -29,7 +29,7 @@
 #define PRINT_FINAL_RULES 0
 #endif
 
-static double quality(int x, int y, int m)
+static double quality(int x, int y, double m)
 {
 	double c;
 
@@ -107,7 +107,7 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 static void process_rule(const struct fptree *fp,
 		const int *AB, int ab_length, const int *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
-		double u, int m)
+		double u, double m)
 {
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
@@ -163,7 +163,7 @@ static void process_rule(const struct fptree *fp,
 static void generate_and_add_all_rules(const struct fptree *fp,
 		const int *items, size_t num_items, size_t st, double eps,
 		size_t *rs, struct reservoir *reservoir,
-		size_t k, struct drand48_data *randbuffer, int m)
+		size_t k, struct drand48_data *randbuffer, double m)
 {
 	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
 	int *A, *AB;
@@ -198,7 +198,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 
 void dp2d(const struct fptree *fp, const char *npfile,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
-		long int seed)
+		double minalpha, long int seed)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
@@ -281,7 +281,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 #endif
 
 		generate_and_add_all_rules(fp, items, mis + nci, st, eps,
-				&rs, reservoir, k, &randbuffer, minth);
+				&rs, reservoir, k, &randbuffer, minalpha);
 		st |= (1 << (mis - 1));
 
 		for (i = 0; i < mis - 1; i++)
