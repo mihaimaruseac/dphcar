@@ -29,14 +29,14 @@
 #define PRINT_FINAL_RULES 0
 #endif
 
-static double quality(int x, int y)
+static double quality(int x, int y, int m)
 {
 	double c;
 
-	if (x < 1000) x = 1000;
+	if (x < m) x = m;
 	c = (y + 0.0) / (x + 0.0);
 
-	return 1000 * pow(c, 1);
+	return m * pow(c, 1);
 }
 
 struct item_count {
@@ -107,7 +107,7 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 static void process_rule(const struct fptree *fp,
 		const int *AB, int ab_length, const int *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
-		double u)
+		double u, int m)
 {
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
@@ -119,7 +119,7 @@ static void process_rule(const struct fptree *fp,
 	iA = build_itemset(A, a_length);
 	iAB = build_itemset(AB, ab_length);
 	r = build_rule_A_AB(iA, iAB);
-	q = quality(sup_a, sup_ab);
+	q = quality(sup_a, sup_ab, m);
 	v = log(log(1/u)) - eps * q / 2;
 	c = (sup_ab + 0.0) / (sup_a + 0.0);
 
@@ -163,7 +163,7 @@ static void process_rule(const struct fptree *fp,
 static void generate_and_add_all_rules(const struct fptree *fp,
 		const int *items, size_t num_items, size_t st, double eps,
 		size_t *rs, struct reservoir *reservoir,
-		size_t k, struct drand48_data *randbuffer)
+		size_t k, struct drand48_data *randbuffer, int m)
 {
 	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
 	int *A, *AB;
@@ -188,7 +188,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 					A[a_length++] = AB[l];
 			drand48_r(randbuffer, &u);
 			process_rule(fp, AB, ab_length, A, a_length,
-					eps, rs, reservoir, k, u);
+					eps, rs, reservoir, k, u, m);
 		}
 	}
 
@@ -281,7 +281,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 #endif
 
 		generate_and_add_all_rules(fp, items, mis + nci, st, eps,
-				&rs, reservoir, k, &randbuffer);
+				&rs, reservoir, k, &randbuffer, minth);
 		st |= (1 << (mis - 1));
 
 		for (i = 0; i < mis - 1; i++)
