@@ -211,22 +211,28 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	double maxc, minc;
 	FILE *f;
 
-	f = fopen(npfile, "r");
-	if (!f)
-		die("Invalid/not found npfile!");
-	if (fscanf(f, "%lu", &nci) != 1)
-		die("Invalid npfile: cannot read number of items!");
-	control_items = calloc(nci, sizeof(control_items[0]));
-	items = calloc(mis + nci + 1, sizeof(items[0]));
-	for (i = 0; i < nci; i++)
-		if (fscanf(f, "%d", &control_items[i]) != 1)
-			die("Invalid npfile: cannot read control items!");
-	if (fscanf(f, "%lu", &npr) != 1)
-		die("Invalid npfile: cannot read number of non private rules!");
-	histogram_load(f, nph, 1, "\t");
-	fclose(f);
+	if (strncmp(npfile, "-", strlen("-"))) {
+		f = fopen(npfile, "r");
+		if (!f)
+			die("Invalid/not found npfile!");
+		if (fscanf(f, "%lu", &nci) != 1)
+			die("Invalid npfile: cannot read number of items!");
+		control_items = calloc(nci, sizeof(control_items[0]));
+		for (i = 0; i < nci; i++)
+			if (fscanf(f, "%d", &control_items[i]) != 1)
+				die("Invalid npfile: cannot read control items!");
+		if (fscanf(f, "%lu", &npr) != 1)
+			die("Invalid npfile: cannot read number of non private rules!");
+		histogram_load(f, nph, 1, "\t");
+		fclose(f);
+	} else {
+		nci = 0;
+		control_items = calloc(1, sizeof(control_items[0]));
+		npr = 0;
+	}
 
 	init_rng(seed, &randbuffer);
+	items = calloc(mis + nci + 1, sizeof(items[0]));
 
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
