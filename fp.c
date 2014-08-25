@@ -357,11 +357,12 @@ int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen)
 	p = fp->table[i].fst;
 	l = fp->table[i].lst;
 
-	while (p != l) {
+	while (p && p != l) {
 		count += search_on_path(p, search_key, key_len);
 		p = p->next;
 	}
-	count += search_on_path(p, search_key, key_len);
+	if (p)
+		count += search_on_path(p, search_key, key_len);
 
 	free(search_key);
 	return count;
