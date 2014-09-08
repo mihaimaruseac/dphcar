@@ -35,12 +35,15 @@ for exp in sorted(d.keys()):
     npv = 0.0
     cnt = 0.0 + c[exp]
     s = s/c[exp]
+    expected = int(exp.split()[-1])
     for k in sorted(d[exp].keys(), reverse=True):
         v = v + d[exp][k]
         npv = npv + npd[exp][k]
         vv = v/cnt
-        npvv = npv/cnt
-        vnpv = vv / npvv if npv else float('nan')
+        #npvv = npv/cnt
+        #vnpv = vv / npvv if npv else float('nan')
         vs = vv / s if s else float('nan')
-        print '\t{}\t{:>6.2f}\t{:>10.2f}\t{:3.2f}\t{:3.2f}'.format(k, vv, npvv, vs, vnpv)
+        ve = vv / expected if expected else float('nan')
+        #print '\t{}\t{:>6.2f}\t{:>10.2f}\t{:3.2f}\t{:3.2f}'.format(k, vv, npvv, vs, vnpv)
+        print '\t{}\t{:>6.2f}\t{:3.2f}\t{:3.2f}'.format(k, vv, vs, ve)
     print
