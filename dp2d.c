@@ -26,7 +26,7 @@
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 0
+#define PRINT_FINAL_RULES 1
 #endif
 
 static double quality(int x, int y, double m)
