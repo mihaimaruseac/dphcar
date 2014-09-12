@@ -49,6 +49,8 @@ struct reservoir {
 	struct rule *r;
 	double c;
 	double v;
+	int sxy;
+	int sx;
 };
 
 static void free_reservoir_array(struct reservoir *reservoir, int size)
@@ -96,8 +98,9 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 	size_t i;
 
 	for (i = 0; i < rs; i++) {
-		printf("\t%lu\t%3.2lf\t% 11.5lf | ", i,
-				reservoir[i].c, reservoir[i].v);
+		printf("\t%lu\t%3.2lf\t% 11.5lf\t%7d\t%7d | ", i,
+				reservoir[i].c, reservoir[i].v,
+				reservoir[i].sxy, reservoir[i].sx);
 		print_rule(reservoir[i].r);
 		printf("\n");
 	}
@@ -134,6 +137,8 @@ static void process_rule(const struct fptree *fp,
 		reservoir[*rs].r = r;
 		reservoir[*rs].v = v;
 		reservoir[*rs].c = c;
+		reservoir[*rs].sxy = sup_ab;
+		reservoir[*rs].sx = sup_a;
 		*rs = *rs + 1;
 
 		if (*rs == k) {
@@ -148,6 +153,8 @@ static void process_rule(const struct fptree *fp,
 		reservoir[k-1].r = r;
 		reservoir[k-1].v = v;
 		reservoir[k-1].c = c;
+		reservoir[k-1].sxy = sup_ab;
+		reservoir[k-1].sx = sup_a;
 		qsort(reservoir, k, sizeof(reservoir[0]), reservoir_cmp);
 #if PRINT_RS_TRACE
 		printf("Inserted into reservoir, now:\n");
