@@ -324,8 +324,10 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
+#if 0
 	printf("Non-private histogram:\n");
 	histogram_dump(stdout, nph, 1, "\t");
+#endif
 
 	free_reservoir_array(reservoir, k);
 	free_histogram(h);
