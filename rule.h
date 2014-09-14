@@ -33,6 +33,8 @@ struct rule *build_rule_A_B(const struct itemset *A, const struct itemset *B);
 struct rule *build_rule_A_AB(const struct itemset *A, const struct itemset *AB);
 
 struct itemset *build_itemset(const int *items, size_t length);
+struct itemset *build_itemset_add_items(const struct itemset *base, int *item, size_t length);
+struct itemset *build_itemset_del_items(const struct itemset *base, int *item, size_t length);
 
 void free_rule(struct rule *r);
 void free_itemset(struct itemset *its);

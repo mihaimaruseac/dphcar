@@ -200,6 +200,53 @@ struct itemset *build_itemset(const int *items, size_t length)
 	return its;
 }
 
+struct itemset *build_itemset_add_items(const struct itemset *base, int *items, size_t length)
+{
+	struct itemset *its = calloc(1, sizeof(*its));
+	size_t i;
+
+	its->length = base->length + length;
+	its->items = calloc(its->length, sizeof(its->items[0]));
+	its->length = 0;
+
+	for (i = 0; i < base->length; i++)
+		its->items[its->length++] = base->items[i];
+	for (i = 0; i < length; i++)
+		its->items[its->length++] = items[i];
+
+	if (its->length != base->length + length)
+		die("Invalid usage of build_itemset_add_itemset");
+
+	return its;
+}
+
+struct itemset *build_itemset_del_items(const struct itemset *base, int *items, size_t length)
+{
+	struct itemset *its = calloc(1, sizeof(*its));
+	size_t i, j;
+	int found;
+
+	its->length = base->length;
+	its->items = calloc(its->length, sizeof(its->items[0]));
+	its->length = 0;
+
+	for (i = 0; i < base->length; i++) {
+		found = 0;
+		for (j = 0; j < length && !found; j++)
+			if (base->items[i] == items[j])
+				found = 1;
+		if (!found)
+			its->items[its->length++] = base->items[i];
+	}
+
+	if (its->length != base->length - length)
+		die("Invalid usage of build_itemset_del_itemset");
+
+	its->items = realloc(its->items, its->length * sizeof(its->items[0]));
+
+	return its;
+}
+
 void free_rule(struct rule *r)
 {
 	if (!r)
