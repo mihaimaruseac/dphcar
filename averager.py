@@ -1,6 +1,7 @@
 import sys
 
 d = {}
+exp_rules = {}
 npd = {}
 c = {}
 for fname in sys.argv[1:]:
@@ -11,7 +12,14 @@ for fname in sys.argv[1:]:
         d.setdefault(exp, {})
         npd.setdefault(exp, {})
         c[exp] = c.get(exp, 0) + 1
-        for i in xrange(10): f.readline()
+        for i in xrange(8): f.readline()
+        line = f.readline()
+        if not line:
+            del d[exp]
+            del npd[exp]
+            continue
+        exp_rules[exp] = exp_rules.get(exp, 0) + int(line.split()[2][:-1])
+        f.readline()
         for i in xrange(10):
             line = f.readline()
             if not line:
@@ -23,10 +31,10 @@ for fname in sys.argv[1:]:
             del d[exp]
             del npd[exp]
             continue
-        for i in xrange(1): f.readline()
-        for i in xrange(10):
-            k, v = f.readline().split()[:2]
-            npd[exp][k] = npd[exp].get(k, 0) + int(v)
+        #for i in xrange(1): f.readline()
+        #for i in xrange(10):
+        #    k, v = f.readline().split()[:2]
+        #    npd[exp][k] = npd[exp].get(k, 0) + int(v)
 
 for exp in sorted(d.keys()):
     print "Experiment", exp
@@ -34,11 +42,12 @@ for exp in sorted(d.keys()):
     v = 0.0
     npv = 0.0
     cnt = 0.0 + c[exp]
-    s = s/c[exp]
+    s = s/cnt
     expected = int(exp.split()[-1])
+    print "Total rules:", exp_rules[exp] / cnt
     for k in sorted(d[exp].keys(), reverse=True):
         v = v + d[exp][k]
-        npv = npv + npd[exp][k]
+        #npv = npv + npd[exp][k]
         vv = v/cnt
         #npvv = npv/cnt
         #vnpv = vv / npvv if npv else float('nan')
