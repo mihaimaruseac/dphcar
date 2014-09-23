@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include <gmp.h>
 #include <mpfr.h>
@@ -11,6 +12,8 @@
 #include "globals.h"
 #include "histogram.h"
 #include "rule.h"
+
+#define MICROSECONDS 1000000L
 
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
@@ -283,6 +286,9 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		items[j++] = ic[fm].value;
 	}
 
+	struct timeval starttime;
+	gettimeofday(&starttime, NULL);
+
 	while (fm < fp->n) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		printf("Domain: %lu: ", fm);
@@ -309,6 +315,14 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		if (ic[fm++].noisy_count < minth)
 			break;
 	}
+
+	struct timeval endtime;
+	gettimeofday(&endtime, NULL);
+	double t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
+	double t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
+
+	printf("Total time: %5.2lf\n", t2 - t1);
+	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
 #if PRINT_FINAL_RULES
 	print_reservoir(reservoir, rs);
