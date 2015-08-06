@@ -218,8 +218,8 @@ static void split_in_partitions(const struct fptree *fp,
 	size_t i, j, k, c;
 
 	/* compute how many items there are */
-	for (c = 0; c < fp->n; c++)
-		if (ic[c].noisy_count < minth)
+	for (c = 0; c < fp->n;)
+		if (ic[c++].noisy_count < minth)
 			break;
 	printf("Items above threshold: %lu\n", c);
 
