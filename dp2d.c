@@ -278,11 +278,17 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		st |= 1 << (mis + i);
 	}
 	for (fm = 0, j = 0; j < mis; fm++) {
-		for (i = 0; i < nci; i++)
+		for (i = 0; i < nci; i++) {
+			fprintf(stderr, "Don't use control items!!!. Pass - for the file!\n");
+			exit(EXIT_FAILURE);
 			if (ic[fm].value == control_items[i])
 				break;
+		}
+#if 0
+		why?
 		if (i != nci)
 			continue;
+#endif
 		//TODO: remove MM: if (ic[fm].noisy_count > 810) continue;
 		if (ic[fm].noisy_count < minth)
 			break;
