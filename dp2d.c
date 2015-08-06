@@ -33,7 +33,7 @@
 #endif
 /* do rule expansion */
 #ifndef RULE_EXPAND
-#define RULE_EXPAND 1
+#define RULE_EXPAND 0
 #endif
 
 static double quality(int x, int y, double m)
