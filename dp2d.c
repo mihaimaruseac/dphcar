@@ -211,7 +211,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 }
 
 static void split_in_partitions(const struct fptree *fp,
-		const struct item_count *ic, size_t bins, enum bin_mode bin_mode,
+		struct item_count *ic, size_t bins, enum bin_mode bin_mode,
 		int minth,
 		size_t **parts, size_t *parlens,
 		struct drand48_data *randbuffer)
@@ -233,7 +233,6 @@ static void split_in_partitions(const struct fptree *fp,
 		/* compute thresholds */
 		for (i = 0; i < bins; i++) {
 			t-=delta;
-			printf("t=%lu\n", t);
 			thresholds[i] = t;
 		}
 		thresholds[bins-1] = minth;
@@ -253,15 +252,26 @@ static void split_in_partitions(const struct fptree *fp,
 		parlens[bins-1] += c%bins;
 	}
 
+	/* RANDOM needs a shuffle of all items in ic */
+	if (bin_mode == RANDOM) {
+		struct item_count t;
+		double rnd;
+
+		for(i = c - 1; i; i--) {
+			drand48_r(randbuffer, &rnd);
+			j = i * rnd;
+			t = ic[j];
+			ic[j] = ic[i];
+			ic[i] = t;
+		}
+	}
+
 	/* distribute items */
 	j = 0;
 	for (i = 0; i < bins; i++) {
 		parts[i] = calloc(parlens[i], sizeof(parts[i][0]));
-		if (bin_mode == RANDOM)
-			die("This mode not completed yet!");
-		else
-			for (k = 0; k < parlens[i]; k++)
-				parts[i][k] = j++;
+		for (k = 0; k < parlens[i]; k++)
+			parts[i][k] = j++;
 	}
 }
 
