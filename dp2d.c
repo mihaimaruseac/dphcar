@@ -296,30 +296,13 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		st = 0;
 
 		/* initial items */
-		for (fm = 0, j = 0; j < mis && fm < parlens[ip]; fm++) {
-#if 0 /* move to partitions */
-			//TODO: remove MM: if (ic[fm].noisy_count > 810) continue;
-			if (ic[fm].noisy_count < minth)
-				break;
-			items[j++] = ic[fm].value;
-#else
+		for (fm = 0, j = 0; j < mis && fm < parlens[ip]; fm++)
 			items[j++] = ic[partitions[ip][fm]].value;
-#endif
-		}
 
 		if (j < mis)
 			mis = j;
 
-#if 0 /* move to partitions */
-		if (mis == 0)
-			goto end;
-#endif
-
-#if 0 /* move to partitions */
-		while (fm < fp->n) {
-#else
-		while (fm < parlens[ip]) {
-#endif
+		while (1) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 			printf("Domain: %lu: ", fm);
 			for (i = 0; i < mis; i++)
@@ -331,23 +314,12 @@ void dp2d(const struct fptree *fp, const char *npfile,
 					&rs, reservoir, k, &randbuffer, minalpha);
 			st |= (1 << (mis - 1));
 
+			if (fm == parlens[ip] - 1)
+				break;
 			for (i = 0; i < mis - 1; i++)
 				items[i] = items[i+1];
-#if 0 /* move to partitions */
-			for (; ic[fm].noisy_count >= minth; fm++) {
-				items[mis - 1] = ic[fm].value;
-				break;
-			}
-			if (ic[fm++].noisy_count < minth)
-				break;
-#else
 			items[mis - 1] = ic[partitions[ip][fm++]].value;
-#endif
 		}
-#if 0 /* move to partitions */
-end:
-		printf("Stopped at fm=%ld item=%d nc=%lf minth=%d\n", fm, ic[fm].value, ic[fm].noisy_count, minth);
-#endif
 
 #if PRINT_FINAL_RULES
 		print_reservoir(reservoir, rs);
