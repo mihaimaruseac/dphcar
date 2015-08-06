@@ -210,12 +210,42 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	free(AB);
 }
 
+static void split_in_partitions(const struct fptree *fp,
+		const struct item_count *ic, int minth,
+		int ***parts, int **parlens, int *parcts,
+		struct drand48_data *randbuffer)
+{
+	int i, c, j, k;
+
+	/* compute how many items there are */
+	for (c = 0; c < fp->n; c++)
+		if (ic[c].noisy_count < minth)
+			break;
+	printf("Items above threshold: %d\n", c);
+
+	/* TODO: for now is a single partition */
+	*parcts = 1;
+	*parlens = calloc(*parcts, sizeof(**parlens));
+	*parts = calloc(*parcts, sizeof(**parts));
+
+	j = 0;
+	for (i = 0; i < *parcts; i++) {
+		(*parlens)[i] = c; // TODO: different updates
+		(*parts)[i] = calloc((*parlens)[i], sizeof(***parts));
+		/* TODO: for now we assume all items go to the single bin */
+		for (k = 0; k < *parlens[i]; k++)
+			(*parts)[i][k] = j++;
+	}
+	/* TODO: random ordering of items */
+}
+
 void dp2d(const struct fptree *fp, const char *npfile,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	int **partitions = NULL, *parlens = NULL, parcts;
 	struct histogram *nph = init_histogram();
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
@@ -264,6 +294,14 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
+
+	split_in_partitions(fp, ic, minth,
+			&partitions, &parlens, &parcts,
+			&randbuffer);
+	printf("Partitions: %d |", parcts);
+	for (i = 0; i < parcts; i++)
+		printf(" %d", parlens[i]);
+	printf("\n");
 
 	eps = (eps - epsilon_step1) / k;
 	printf("Step 2: mining with remaining eps (per rule): %lf\n", eps);
@@ -408,6 +446,10 @@ end:
 	histogram_dump(stdout, nph, 1, "\t");
 #endif
 
+	for (i = 0; i < parcts; i++)
+		free(partitions[i]);
+	free(parlens);
+	free(partitions);
 	free_reservoir_array(reservoir, k);
 	free_histogram(h);
 	free(control_items);
