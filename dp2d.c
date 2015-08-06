@@ -283,11 +283,20 @@ void dp2d(const struct fptree *fp, const char *npfile,
 				break;
 		if (i != nci)
 			continue;
+		//TODO: remove MM: if (ic[fm].noisy_count > 810) continue;
+		if (ic[fm].noisy_count < minth)
+			break;
 		items[j++] = ic[fm].value;
 	}
 
+	if (j < mis)
+		mis = j;
+
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
+
+	if (mis == 0)
+		goto end;
 
 	while (fm < fp->n) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
@@ -315,6 +324,8 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		if (ic[fm++].noisy_count < minth)
 			break;
 	}
+end:
+	printf("Stopped at fm=%ld item=%d nc=%lf minth=%d\n", fm, ic[fm].value, ic[fm].noisy_count, minth);
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
