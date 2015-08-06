@@ -243,7 +243,6 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed)
 {
-	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t **partitions = NULL, *parlens = NULL, parcts;
 #if 0
@@ -310,68 +309,132 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	eps = (eps - epsilon_step1) / k;
 	printf("Step 2: mining with remaining eps (per rule): %lf\n", eps);
 
-	/* select mining domains */
-	rs = 0; /* empty reservoir */
-	st = 0;
-
-	/* initial items */
-	for (i = 0; i  < nci; i++) {
-		items[mis + i] = control_items[i];
-		st |= 1 << (mis + i);
-	}
-	for (fm = 0, j = 0; j < mis; fm++) {
-#if 0
-		for (i = 0; i < nci; i++) {
-			if (ic[fm].value == control_items[i])
-				break;
-		}
-		// TODO: why?
-		if (i != nci)
-			continue;
-#endif
-		//TODO: remove MM: if (ic[fm].noisy_count > 810) continue;
-		if (ic[fm].noisy_count < minth)
-			break;
-		items[j++] = ic[fm].value;
-	}
-
-	if (j < mis)
-		mis = j;
-
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
-	if (mis == 0)
-		goto end;
+	for (ip = 0; ip < parcts; ip++) {
+		/* select mining domains */
+		struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
+		rs = 0; /* empty reservoir */
+		st = 0;
 
-	while (fm < fp->n) {
-#if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
-		printf("Domain: %lu: ", fm);
-		for (i = 0; i < mis + nci; i++)
-			printf("%d ", items[i]);
-		printf("\n");
-#endif
-
-		generate_and_add_all_rules(fp, items, mis + nci, st, eps,
-				&rs, reservoir, k, &randbuffer, minalpha);
-		st |= (1 << (mis - 1));
-
-		for (i = 0; i < mis - 1; i++)
-			items[i] = items[i+1];
-		for (; ic[fm].noisy_count >= minth; fm++) {
-			for (i = 0; i < nci; i++)
+		/* initial items */
+		for (i = 0; i  < nci; i++) {
+			items[mis + i] = control_items[i];
+			st |= 1 << (mis + i);
+		}
+		for (fm = 0, j = 0; j < mis; fm++) {
+#if 0
+			for (i = 0; i < nci; i++) {
 				if (ic[fm].value == control_items[i])
 					break;
+			}
+
 			if (i != nci)
 				continue;
-			items[mis - 1] = ic[fm].value;
-			break;
+#endif
+			//TODO: remove MM: if (ic[fm].noisy_count > 810) continue;
+			if (ic[fm].noisy_count < minth)
+				break;
+			items[j++] = ic[fm].value;
 		}
-		if (ic[fm++].noisy_count < minth)
-			break;
-	}
+
+		if (j < mis)
+			mis = j;
+
+		if (mis == 0)
+			goto end;
+
+		while (fm < fp->n) {
+#if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
+			printf("Domain: %lu: ", fm);
+			for (i = 0; i < mis + nci; i++)
+				printf("%d ", items[i]);
+			printf("\n");
+#endif
+
+			generate_and_add_all_rules(fp, items, mis + nci, st, eps,
+					&rs, reservoir, k, &randbuffer, minalpha);
+			st |= (1 << (mis - 1));
+
+			for (i = 0; i < mis - 1; i++)
+				items[i] = items[i+1];
+			for (; ic[fm].noisy_count >= minth; fm++) {
+				for (i = 0; i < nci; i++)
+					if (ic[fm].value == control_items[i])
+						break;
+				if (i != nci)
+					continue;
+				items[mis - 1] = ic[fm].value;
+				break;
+			}
+			if (ic[fm++].noisy_count < minth)
+				break;
+		}
 end:
-	printf("Stopped at fm=%ld item=%d nc=%lf minth=%d\n", fm, ic[fm].value, ic[fm].noisy_count, minth);
+		printf("Stopped at fm=%ld item=%d nc=%lf minth=%d\n", fm, ic[fm].value, ic[fm].noisy_count, minth);
+
+#if PRINT_FINAL_RULES
+		print_reservoir(reservoir, rs);
+#endif
+
+		minc = 1; maxc = 0;
+#if RULE_EXPAND
+		struct rule_table *rt = init_rule_table();
+		for (i = 0; i < rs; i++) {
+			struct rule *r = reservoir[i].r, *nr1, *nr2;
+			int *items = calloc(r->B->length, sizeof(items[0]));
+			struct itemset *A, *AB, *ABprime;
+			int supA, supAB;
+			size_t k, nis;
+
+			save_rule2(rt, r, reservoir[i].c);
+
+			st = 1 << r->B->length; st--;
+			AB = build_itemset_add_items(r->A, r->B->items, r->B->length);
+			for (j = 1; j < st; j++) {
+				nis = 0;
+				for (k = 0; k < r->B->length; k++)
+					if ((1 << k) & j)
+						items[nis++] = r->B->items[k];
+
+				ABprime = build_itemset_del_items(AB, items, nis);
+				nr1 = build_rule_A_AB(r->A, ABprime);
+				supAB = fpt_itemset_count(fp, ABprime->items, ABprime->length);
+				supA = fpt_itemset_count(fp, r->A->items, r->A->length);
+				save_rule2(rt, nr1, supAB / (supA + 0.0));
+
+				A = build_itemset_add_items(r->A, items, nis);
+				nr2 = build_rule_A_AB(A, AB);
+				supAB = fpt_itemset_count(fp, AB->items, AB->length);
+				supA = fpt_itemset_count(fp, A->items, A->length);
+				save_rule2(rt, nr2, supAB / (supA + 0.0));
+			}
+		}
+
+		for (i = 0; i < rt->sz; i++) {
+			if (rt->c[i] < minc)
+				minc = rt->c[i];
+			if (rt->c[i] > maxc)
+				maxc = rt->c[i];
+			histogram_register(h, rt->c[i]);
+		}
+
+		rs = rt->sz;
+#else
+		for (i = 0; i < rs; i++) {
+			if (reservoir[i].c < minc)
+				minc = reservoir[i].c;
+			if (reservoir[i].c > maxc)
+				maxc = reservoir[i].c;
+			histogram_register(h, reservoir[i].c);
+		}
+#endif
+		printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+				rs, minc, maxc);
+
+		free_reservoir_array(reservoir, rs);
+	}
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
@@ -380,65 +443,6 @@ end:
 
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
-
-#if PRINT_FINAL_RULES
-	print_reservoir(reservoir, rs);
-#endif
-
-	minc = 1; maxc = 0;
-#if RULE_EXPAND
-	struct rule_table *rt = init_rule_table();
-	for (i = 0; i < rs; i++) {
-		struct rule *r = reservoir[i].r, *nr1, *nr2;
-		int *items = calloc(r->B->length, sizeof(items[0]));
-		struct itemset *A, *AB, *ABprime;
-		int supA, supAB;
-		size_t k, nis;
-
-		save_rule2(rt, r, reservoir[i].c);
-
-		st = 1 << r->B->length; st--;
-		AB = build_itemset_add_items(r->A, r->B->items, r->B->length);
-		for (j = 1; j < st; j++) {
-			nis = 0;
-			for (k = 0; k < r->B->length; k++)
-				if ((1 << k) & j)
-					items[nis++] = r->B->items[k];
-
-			ABprime = build_itemset_del_items(AB, items, nis);
-			nr1 = build_rule_A_AB(r->A, ABprime);
-			supAB = fpt_itemset_count(fp, ABprime->items, ABprime->length);
-			supA = fpt_itemset_count(fp, r->A->items, r->A->length);
-			save_rule2(rt, nr1, supAB / (supA + 0.0));
-
-			A = build_itemset_add_items(r->A, items, nis);
-			nr2 = build_rule_A_AB(A, AB);
-			supAB = fpt_itemset_count(fp, AB->items, AB->length);
-			supA = fpt_itemset_count(fp, A->items, A->length);
-			save_rule2(rt, nr2, supAB / (supA + 0.0));
-		}
-	}
-
-	for (i = 0; i < rt->sz; i++) {
-		if (rt->c[i] < minc)
-			minc = rt->c[i];
-		if (rt->c[i] > maxc)
-			maxc = rt->c[i];
-		histogram_register(h, rt->c[i]);
-	}
-
-	rs = rt->sz;
-#else
-	for (i = 0; i < rs; i++) {
-		if (reservoir[i].c < minc)
-			minc = reservoir[i].c;
-		if (reservoir[i].c > maxc)
-			maxc = reservoir[i].c;
-		histogram_register(h, reservoir[i].c);
-	}
-#endif
-	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
-			rs, minc, maxc);
 
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
@@ -452,7 +456,6 @@ end:
 		free(partitions[i]);
 	free(parlens);
 	free(partitions);
-	free_reservoir_array(reservoir, k);
 	free_histogram(h);
 	free(control_items);
 	free(items);
