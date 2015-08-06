@@ -257,7 +257,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 
 	if (strncmp(npfile, "-", strlen("-"))) {
 		die("Don't use control items!!!. Pass - for the file!");
-#if 0
+#if 0 /* control items have been removed */
 		FILE *f = fopen(npfile, "r");
 		if (!f)
 			die("Invalid/not found npfile!");
@@ -313,18 +313,24 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	gettimeofday(&starttime, NULL);
 
 	for (ip = 0; ip < parcts; ip++) {
+		/* if no items just move away */
+		if (!parlens[ip])
+			continue;
+
 		/* select mining domains */
 		struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 		rs = 0; /* empty reservoir */
 		st = 0;
 
 		/* initial items */
+#if 0 /* control items have been removed */
 		for (i = 0; i  < nci; i++) {
 			items[mis + i] = control_items[i];
 			st |= 1 << (mis + i);
 		}
-		for (fm = 0, j = 0; j < mis; fm++) {
-#if 0
+#endif
+		for (fm = 0, j = 0; j < mis && fm < parlens[ip]; fm++) {
+#if 0 /* control items have been removed */
 			for (i = 0; i < nci; i++) {
 				if (ic[fm].value == control_items[i])
 					break;
@@ -333,19 +339,29 @@ void dp2d(const struct fptree *fp, const char *npfile,
 			if (i != nci)
 				continue;
 #endif
+#if 0 /* move to partitions */
 			//TODO: remove MM: if (ic[fm].noisy_count > 810) continue;
 			if (ic[fm].noisy_count < minth)
 				break;
 			items[j++] = ic[fm].value;
+#else
+			items[j++] = ic[partitions[ip][fm]].value;
+#endif
 		}
 
 		if (j < mis)
 			mis = j;
 
+#if 0 /* move to partitions */
 		if (mis == 0)
 			goto end;
+#endif
 
+#if 0 /* move to partitions */
 		while (fm < fp->n) {
+#else
+		while (fm < parlens[ip]) {
+#endif
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 			printf("Domain: %lu: ", fm);
 			for (i = 0; i < mis + nci; i++)
@@ -359,6 +375,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 
 			for (i = 0; i < mis - 1; i++)
 				items[i] = items[i+1];
+#if 0 /* move to partitions */
 			for (; ic[fm].noisy_count >= minth; fm++) {
 				for (i = 0; i < nci; i++)
 					if (ic[fm].value == control_items[i])
@@ -370,14 +387,20 @@ void dp2d(const struct fptree *fp, const char *npfile,
 			}
 			if (ic[fm++].noisy_count < minth)
 				break;
+#else
+			items[mis - 1] = ic[partitions[ip][fm++]].value;
+#endif
 		}
+#if 0 /* move to partitions */
 end:
 		printf("Stopped at fm=%ld item=%d nc=%lf minth=%d\n", fm, ic[fm].value, ic[fm].noisy_count, minth);
+#endif
 
 #if PRINT_FINAL_RULES
 		print_reservoir(reservoir, rs);
 #endif
 
+		/* move rules from reservoir to histogram */
 		minc = 1; maxc = 0;
 #if RULE_EXPAND
 		struct rule_table *rt = init_rule_table();
@@ -419,8 +442,6 @@ end:
 				maxc = rt->c[i];
 			histogram_register(h, rt->c[i]);
 		}
-
-		rs = rt->sz;
 #else
 		for (i = 0; i < rs; i++) {
 			if (reservoir[i].c < minc)
@@ -430,8 +451,14 @@ end:
 			histogram_register(h, reservoir[i].c);
 		}
 #endif
+
 		printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
-				rs, minc, maxc);
+#if RULE_EXPAND
+				rt->sz,
+#else
+				rs,
+#endif
+				minc, maxc);
 
 		free_reservoir_array(reservoir, rs);
 	}
@@ -447,7 +474,7 @@ end:
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
-#if 0
+#if 0 /* control items have been removed */
 	printf("Non-private histogram:\n");
 	histogram_dump(stdout, nph, 1, "\t");
 #endif
