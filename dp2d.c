@@ -212,16 +212,16 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 
 static void split_in_partitions(const struct fptree *fp,
 		const struct item_count *ic, int minth,
-		int ***parts, int **parlens, int *parcts,
+		size_t ***parts, size_t **parlens, size_t *parcts,
 		struct drand48_data *randbuffer)
 {
-	int i, c, j, k;
+	size_t i, j, k, c;
 
 	/* compute how many items there are */
 	for (c = 0; c < fp->n; c++)
 		if (ic[c].noisy_count < minth)
 			break;
-	printf("Items above threshold: %d\n", c);
+	printf("Items above threshold: %lu\n", c);
 
 	/* TODO: for now is a single partition */
 	*parcts = 1;
@@ -245,18 +245,21 @@ void dp2d(const struct fptree *fp, const char *npfile,
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
-	int **partitions = NULL, *parlens = NULL, parcts;
+	size_t **partitions = NULL, *parlens = NULL, parcts;
+#if 0
 	struct histogram *nph = init_histogram();
+#endif
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
+	size_t i, j, ip, fm, rs, st, nci, npr;
 	int *control_items = NULL, *items;
-	size_t i, j, fm, rs, st, nci, npr;
 	struct drand48_data randbuffer;
 	double maxc, minc;
-	FILE *f;
 
 	if (strncmp(npfile, "-", strlen("-"))) {
-		f = fopen(npfile, "r");
+		die("Don't use control items!!!. Pass - for the file!");
+#if 0
+		FILE *f = fopen(npfile, "r");
 		if (!f)
 			die("Invalid/not found npfile!");
 		if (fscanf(f, "%lu", &nci) != 1)
@@ -269,6 +272,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 			die("Invalid npfile: cannot read number of non private rules!");
 		histogram_load(f, nph, 1, "\t");
 		fclose(f);
+#endif
 	} else {
 		nci = 0;
 		control_items = calloc(1, sizeof(control_items[0]));
@@ -298,9 +302,9 @@ void dp2d(const struct fptree *fp, const char *npfile,
 	split_in_partitions(fp, ic, minth,
 			&partitions, &parlens, &parcts,
 			&randbuffer);
-	printf("Partitions: %d |", parcts);
+	printf("Partitions: %lu |", parcts);
 	for (i = 0; i < parcts; i++)
-		printf(" %d", parlens[i]);
+		printf(" %lu", parlens[i]);
 	printf("\n");
 
 	eps = (eps - epsilon_step1) / k;
@@ -316,14 +320,12 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		st |= 1 << (mis + i);
 	}
 	for (fm = 0, j = 0; j < mis; fm++) {
+#if 0
 		for (i = 0; i < nci; i++) {
-			fprintf(stderr, "Don't use control items!!!. Pass - for the file!\n");
-			exit(EXIT_FAILURE);
 			if (ic[fm].value == control_items[i])
 				break;
 		}
-#if 0
-		why?
+		// TODO: why?
 		if (i != nci)
 			continue;
 #endif
