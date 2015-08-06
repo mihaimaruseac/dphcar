@@ -245,48 +245,21 @@ void dp2d(const struct fptree *fp, const char *npfile,
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t **partitions = NULL, *parlens = NULL, parcts;
-#if 0
-	struct histogram *nph = init_histogram();
-#endif
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
-	size_t i, j, ip, fm, rs, st, nci, npr;
-	int *control_items = NULL, *items;
+	size_t i, j, ip, fm, rs, st;
 	struct drand48_data randbuffer;
 	double maxc, minc;
+	int *items;
 
-	if (strncmp(npfile, "-", strlen("-"))) {
+	if (strncmp(npfile, "-", strlen("-")))
 		die("Don't use control items!!!. Pass - for the file!");
-#if 0 /* control items have been removed */
-		FILE *f = fopen(npfile, "r");
-		if (!f)
-			die("Invalid/not found npfile!");
-		if (fscanf(f, "%lu", &nci) != 1)
-			die("Invalid npfile: cannot read number of items!");
-		control_items = calloc(nci, sizeof(control_items[0]));
-		for (i = 0; i < nci; i++)
-			if (fscanf(f, "%d", &control_items[i]) != 1)
-				die("Invalid npfile: cannot read control items!");
-		if (fscanf(f, "%lu", &npr) != 1)
-			die("Invalid npfile: cannot read number of non private rules!");
-		histogram_load(f, nph, 1, "\t");
-		fclose(f);
-#endif
-	} else {
-		nci = 0;
-		control_items = calloc(1, sizeof(control_items[0]));
-		npr = 0;
-	}
 
 	init_rng(seed, &randbuffer);
-	items = calloc(mis + nci + 1, sizeof(items[0]));
+	items = calloc(mis + 1, sizeof(items[0]));
 
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
-	printf("Using %lu control items:", nci);
-	for (i = 0; i < nci; i++)
-		printf(" %d", control_items[i]);
-	printf("\nMatching %lu non-private rules\n", npr);
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -323,22 +296,7 @@ void dp2d(const struct fptree *fp, const char *npfile,
 		st = 0;
 
 		/* initial items */
-#if 0 /* control items have been removed */
-		for (i = 0; i  < nci; i++) {
-			items[mis + i] = control_items[i];
-			st |= 1 << (mis + i);
-		}
-#endif
 		for (fm = 0, j = 0; j < mis && fm < parlens[ip]; fm++) {
-#if 0 /* control items have been removed */
-			for (i = 0; i < nci; i++) {
-				if (ic[fm].value == control_items[i])
-					break;
-			}
-
-			if (i != nci)
-				continue;
-#endif
 #if 0 /* move to partitions */
 			//TODO: remove MM: if (ic[fm].noisy_count > 810) continue;
 			if (ic[fm].noisy_count < minth)
@@ -364,12 +322,12 @@ void dp2d(const struct fptree *fp, const char *npfile,
 #endif
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 			printf("Domain: %lu: ", fm);
-			for (i = 0; i < mis + nci; i++)
+			for (i = 0; i < mis; i++)
 				printf("%d ", items[i]);
 			printf("\n");
 #endif
 
-			generate_and_add_all_rules(fp, items, mis + nci, st, eps,
+			generate_and_add_all_rules(fp, items, mis, st, eps,
 					&rs, reservoir, k, &randbuffer, minalpha);
 			st |= (1 << (mis - 1));
 
@@ -377,11 +335,6 @@ void dp2d(const struct fptree *fp, const char *npfile,
 				items[i] = items[i+1];
 #if 0 /* move to partitions */
 			for (; ic[fm].noisy_count >= minth; fm++) {
-				for (i = 0; i < nci; i++)
-					if (ic[fm].value == control_items[i])
-						break;
-				if (i != nci)
-					continue;
 				items[mis - 1] = ic[fm].value;
 				break;
 			}
@@ -474,17 +427,11 @@ end:
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
-#if 0 /* control items have been removed */
-	printf("Non-private histogram:\n");
-	histogram_dump(stdout, nph, 1, "\t");
-#endif
-
 	for (i = 0; i < parcts; i++)
 		free(partitions[i]);
 	free(parlens);
 	free(partitions);
 	free_histogram(h);
-	free(control_items);
 	free(items);
 	free(ic);
 }
