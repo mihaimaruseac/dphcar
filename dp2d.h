@@ -7,7 +7,14 @@
 
 struct fptree;
 
-void dp2d(const struct fptree *fp, const char *npfile,
+enum bin_mode {
+	NONE,
+	RANDOM,
+	EQUIWIDTH,
+	EQUIDENSITY,
+};
+
+void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed);
 
