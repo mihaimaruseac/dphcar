@@ -304,6 +304,8 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
+	k /= bins;
+
 	partitions = calloc(bins, sizeof(partitions[0]));
 	parlens = calloc(bins, sizeof(parlens[0]));
 	split_in_partitions(fp, ic, bins, bin_mode, minth,
@@ -369,7 +371,7 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 			int *items = calloc(r->B->length, sizeof(items[0]));
 			struct itemset *A, *AB, *ABprime;
 			int supA, supAB;
-			size_t k, nis;
+			size_t k1, nis;
 
 			save_rule2(rt, r, reservoir[i].c);
 
@@ -377,9 +379,9 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 			AB = build_itemset_add_items(r->A, r->B->items, r->B->length);
 			for (j = 1; j < st; j++) {
 				nis = 0;
-				for (k = 0; k < r->B->length; k++)
-					if ((1 << k) & j)
-						items[nis++] = r->B->items[k];
+				for (k1 = 0; k1 < r->B->length; k1++)
+					if ((1 << k1) & j)
+						items[nis++] = r->B->items[k1];
 
 				ABprime = build_itemset_del_items(AB, items, nis);
 				nr1 = build_rule_A_AB(r->A, ABprime);
