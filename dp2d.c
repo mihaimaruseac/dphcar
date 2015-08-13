@@ -310,13 +310,19 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 #endif
 
 	int shelves = 6; /* TODO: move as arg */
+	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 
 	eps = eps - epsilon_step1;
-	printf("Step 2: mining %d rules with remaining eps:\t%lf\n", k, eps);
+	printf("Step 2: mining %d rules with remaining eps: %lf\n", k, eps);
 
 	eps /= shelves;
-	k /= shelves;
-	printf("                  -> per shelf (rules: %d):\t%lf\n", k, eps);
+	for (sh = 0; sh < shelves; sh++)
+		ksh[sh] = (k / shelves) + ((k % shelves) > sh);
+	printf("\t-> per shelf:\t%lf\n", k, eps);
+	printf("\t-> rules per shelf:");
+	for (sh = 0; sh < shelves; sh++)
+		printf(" %d", ksh[sh]);
+	printf("\n");
 
 	k /= bins;
 	eps /= k;
@@ -461,5 +467,6 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 	free(partitions);
 	free_histogram(h);
 	free(items);
+	free(ksh);
 	free(ic);
 }
