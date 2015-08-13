@@ -309,19 +309,19 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
-	int shelves = 6; /* TODO: move as arg */
+	size_t shelves = 6; /* TODO: move as arg */
 	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 
 	eps = eps - epsilon_step1;
-	printf("Step 2: mining %d rules with remaining eps: %lf\n", k, eps);
+	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
 	eps /= shelves;
 	for (sh = 0; sh < shelves; sh++)
 		ksh[sh] = (k / shelves) + ((k % shelves) > sh);
-	printf("\t-> per shelf:\t%lf\n", k, eps);
+	printf("\t-> per shelf:\t%lf\n", eps);
 	printf("\t-> rules per shelf:");
 	for (sh = 0; sh < shelves; sh++)
-		printf(" %d", ksh[sh]);
+		printf(" %lu", ksh[sh]);
 	printf("\n");
 
 	k /= bins;
@@ -447,7 +447,7 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 			free_reservoir_array(reservoir, rs);
 		}
 
-		printf("Finished shelf %d\n", sh);
+		printf("Finished shelf %lu\n", sh);
 	}
 
 	struct timeval endtime;
