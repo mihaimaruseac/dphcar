@@ -211,12 +211,13 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 }
 
 static void split_in_partitions(const struct fptree *fp,
-		struct item_count *ic, size_t bins, enum bin_mode bin_mode,
+		const struct item_count *ic, size_t bins, enum bin_mode bin_mode,
 		int minth,
 		size_t **parts, size_t *parlens,
 		struct drand48_data *randbuffer)
 {
 	size_t i, j, k, c;
+	size_t *items;
 
 	/* compute how many items there are */
 	for (c = 0; c < fp->n;)
@@ -252,17 +253,21 @@ static void split_in_partitions(const struct fptree *fp,
 		parlens[bins-1] += c%bins;
 	}
 
+	items = calloc(c, sizeof(*items));
+	for (i = 0; i < c; i++)
+		items[i] = i;
+
 	/* RANDOM needs a shuffle of all items in ic */
 	if (bin_mode == RANDOM) {
-		struct item_count t;
+		size_t t;
 		double rnd;
 
 		for(i = c - 1; i; i--) {
 			drand48_r(randbuffer, &rnd);
 			j = i * rnd;
-			t = ic[j];
-			ic[j] = ic[i];
-			ic[i] = t;
+			t = items[j];
+			items[j] = items[i];
+			items[i] = t;
 		}
 	}
 
@@ -271,7 +276,7 @@ static void split_in_partitions(const struct fptree *fp,
 	for (i = 0; i < bins; i++) {
 		parts[i] = calloc(parlens[i], sizeof(parts[i][0]));
 		for (k = 0; k < parlens[i]; k++)
-			parts[i][k] = j++;
+			parts[i][k] = items[j++];
 	}
 }
 
@@ -283,7 +288,7 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 	size_t **partitions = NULL, *parlens = NULL;
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
-	size_t i, j, ip, fm, rs, st, cis;
+	size_t i, j, ip, fm, rs, st, cis, sh;
 	struct drand48_data randbuffer;
 	double maxc, minc;
 	int *items;
@@ -304,125 +309,139 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
+	int shelves = 6; /* TODO: move as arg */
+
+	eps = eps - epsilon_step1;
+	printf("Step 2: mining %d rules with remaining eps:\t%lf\n", k, eps);
+
+	eps /= shelves;
+	k /= shelves;
+	printf("                  -> per shelf (rules: %d):\t%lf\n", k, eps);
+
 	k /= bins;
-
-	partitions = calloc(bins, sizeof(partitions[0]));
-	parlens = calloc(bins, sizeof(parlens[0]));
-	split_in_partitions(fp, ic, bins, bin_mode, minth,
-			partitions, parlens, &randbuffer);
-	printf("Partitions: %lu |", bins);
-	for (i = 0; i < bins; i++)
-		printf(" %lu", parlens[i]);
-	printf("\n");
-
-	eps = (eps - epsilon_step1) / k;
-	printf("Step 2: mining with remaining eps (per rule): %lf\n", eps);
+	eps /= k;
+	printf("                  ->               per rule:\t%lf\n", eps);
 
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
-	for (ip = 0; ip < bins; ip++) {
-		/* if no items just move away */
-		if (!parlens[ip])
-			continue;
-		cis = mis;
+	for (sh = 0; sh < shelves; sh++) {
+		free(partitions);
+		free(parlens);
+		partitions = calloc(bins, sizeof(partitions[0]));
+		parlens = calloc(bins, sizeof(parlens[0]));
+		split_in_partitions(fp, ic, bins, bin_mode, minth,
+				partitions, parlens, &randbuffer);
+		printf("Partitions: %lu |", bins);
+		for (i = 0; i < bins; i++)
+			printf(" %lu", parlens[i]);
+		printf("\n");
 
-		/* select mining domains */
-		struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
-		rs = 0; /* empty reservoir */
-		st = 0;
+		for (ip = 0; ip < bins; ip++) {
+			/* if no items just move away */
+			if (!parlens[ip])
+				continue;
+			cis = mis;
 
-		/* initial items */
-		for (fm = 0, j = 0; j < cis && fm < parlens[ip]; fm++)
-			items[j++] = ic[partitions[ip][fm]].value;
+			/* select mining domains */
+			struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
+			rs = 0; /* empty reservoir */
+			st = 0;
 
-		if (j < cis)
-			cis = j;
+			/* initial items */
+			for (fm = 0, j = 0; j < cis && fm < parlens[ip]; fm++)
+				items[j++] = ic[partitions[ip][fm]].value;
 
-		while (1) {
+			if (j < cis)
+				cis = j;
+
+			while (1) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
-			printf("Domain: %lu: ", fm);
-			for (i = 0; i < cis; i++)
-				printf("%d ", items[i]);
-			printf("\n");
+				printf("Domain: %lu: ", fm);
+				for (i = 0; i < cis; i++)
+					printf("%d ", items[i]);
+				printf("\n");
 #endif
 
-			generate_and_add_all_rules(fp, items, cis, st, eps,
-					&rs, reservoir, k, &randbuffer, minalpha);
-			st |= (1 << (cis - 1));
+				generate_and_add_all_rules(fp, items, cis, st, eps,
+						&rs, reservoir, k, &randbuffer, minalpha);
+				st |= (1 << (cis - 1));
 
-			if (fm == parlens[ip])
-				break;
-			for (i = 0; i < cis - 1; i++)
-				items[i] = items[i+1];
-			items[cis - 1] = ic[partitions[ip][fm++]].value;
-		}
+				if (fm == parlens[ip])
+					break;
+				for (i = 0; i < cis - 1; i++)
+					items[i] = items[i+1];
+				items[cis - 1] = ic[partitions[ip][fm++]].value;
+			}
 
 #if PRINT_FINAL_RULES
-		print_reservoir(reservoir, rs);
+			print_reservoir(reservoir, rs);
 #endif
 
-		/* move rules from reservoir to histogram */
-		minc = 1; maxc = 0;
+			/* move rules from reservoir to histogram */
+			minc = 1; maxc = 0;
 #if RULE_EXPAND
-		struct rule_table *rt = init_rule_table();
-		for (i = 0; i < rs; i++) {
-			struct rule *r = reservoir[i].r, *nr1, *nr2;
-			int *items = calloc(r->B->length, sizeof(items[0]));
-			struct itemset *A, *AB, *ABprime;
-			int supA, supAB;
-			size_t k1, nis;
+			struct rule_table *rt = init_rule_table();
+			for (i = 0; i < rs; i++) {
+				struct rule *r = reservoir[i].r, *nr1, *nr2;
+				int *items = calloc(r->B->length, sizeof(items[0]));
+				struct itemset *A, *AB, *ABprime;
+				int supA, supAB;
+				size_t k1, nis;
 
-			save_rule2(rt, r, reservoir[i].c);
+				save_rule2(rt, r, reservoir[i].c);
 
-			st = 1 << r->B->length; st--;
-			AB = build_itemset_add_items(r->A, r->B->items, r->B->length);
-			for (j = 1; j < st; j++) {
-				nis = 0;
-				for (k1 = 0; k1 < r->B->length; k1++)
-					if ((1 << k1) & j)
-						items[nis++] = r->B->items[k1];
+				st = 1 << r->B->length; st--;
+				AB = build_itemset_add_items(r->A, r->B->items, r->B->length);
+				for (j = 1; j < st; j++) {
+					nis = 0;
+					for (k1 = 0; k1 < r->B->length; k1++)
+						if ((1 << k1) & j)
+							items[nis++] = r->B->items[k1];
 
-				ABprime = build_itemset_del_items(AB, items, nis);
-				nr1 = build_rule_A_AB(r->A, ABprime);
-				supAB = fpt_itemset_count(fp, ABprime->items, ABprime->length);
-				supA = fpt_itemset_count(fp, r->A->items, r->A->length);
-				save_rule2(rt, nr1, supAB / (supA + 0.0));
+					ABprime = build_itemset_del_items(AB, items, nis);
+					nr1 = build_rule_A_AB(r->A, ABprime);
+					supAB = fpt_itemset_count(fp, ABprime->items, ABprime->length);
+					supA = fpt_itemset_count(fp, r->A->items, r->A->length);
+					save_rule2(rt, nr1, supAB / (supA + 0.0));
 
-				A = build_itemset_add_items(r->A, items, nis);
-				nr2 = build_rule_A_AB(A, AB);
-				supAB = fpt_itemset_count(fp, AB->items, AB->length);
-				supA = fpt_itemset_count(fp, A->items, A->length);
-				save_rule2(rt, nr2, supAB / (supA + 0.0));
+					A = build_itemset_add_items(r->A, items, nis);
+					nr2 = build_rule_A_AB(A, AB);
+					supAB = fpt_itemset_count(fp, AB->items, AB->length);
+					supA = fpt_itemset_count(fp, A->items, A->length);
+					save_rule2(rt, nr2, supAB / (supA + 0.0));
+				}
 			}
-		}
 
-		for (i = 0; i < rt->sz; i++) {
-			if (rt->c[i] < minc)
-				minc = rt->c[i];
-			if (rt->c[i] > maxc)
-				maxc = rt->c[i];
-			histogram_register(h, rt->c[i]);
-		}
+			for (i = 0; i < rt->sz; i++) {
+				if (rt->c[i] < minc)
+					minc = rt->c[i];
+				if (rt->c[i] > maxc)
+					maxc = rt->c[i];
+				histogram_register(h, rt->c[i]);
+			}
 #else
-		for (i = 0; i < rs; i++) {
-			if (reservoir[i].c < minc)
-				minc = reservoir[i].c;
-			if (reservoir[i].c > maxc)
-				maxc = reservoir[i].c;
-			histogram_register(h, reservoir[i].c);
-		}
+			for (i = 0; i < rs; i++) {
+				if (reservoir[i].c < minc)
+					minc = reservoir[i].c;
+				if (reservoir[i].c > maxc)
+					maxc = reservoir[i].c;
+				histogram_register(h, reservoir[i].c);
+			}
 #endif
 
-		printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+			printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
 #if RULE_EXPAND
-				rt->sz,
+					rt->sz,
 #else
-				rs,
+					rs,
 #endif
-				minc, maxc);
+					minc, maxc);
 
-		free_reservoir_array(reservoir, rs);
+			free_reservoir_array(reservoir, rs);
+		}
+
+		printf("Finished shelf %d\n", sh);
 	}
 
 	struct timeval endtime;
