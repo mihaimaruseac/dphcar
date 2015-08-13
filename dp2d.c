@@ -278,6 +278,8 @@ static void split_in_partitions(const struct fptree *fp,
 		for (k = 0; k < parlens[i]; k++)
 			parts[i][k] = items[j++];
 	}
+
+	free(items);
 }
 
 void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
@@ -330,8 +332,11 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 	gettimeofday(&starttime, NULL);
 
 	for (sh = 0; sh < shelves; sh++) {
+		for (i = 0; i < bins && partitions; i++)
+			free(partitions[i]);
 		free(partitions);
 		free(parlens);
+
 		partitions = calloc(bins, sizeof(partitions[0]));
 		parlens = calloc(bins, sizeof(parlens[0]));
 		split_in_partitions(fp, ic, bins, bin_mode, minth,
