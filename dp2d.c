@@ -316,17 +316,15 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
 	eps /= shelves;
+	printf("\t-> per shelf:\t%lf\n", eps);
+
 	for (sh = 0; sh < shelves; sh++)
 		ksh[sh] = (k / shelves) + ((k % shelves) > sh);
-	printf("\t-> per shelf:\t%lf\n", eps);
+
 	printf("\t-> rules per shelf:");
 	for (sh = 0; sh < shelves; sh++)
 		printf(" %lu", ksh[sh]);
 	printf("\n");
-
-	k /= bins;
-	eps /= k;
-	printf("                  ->               per rule:\t%lf\n", eps);
 
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
@@ -344,13 +342,16 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 		printf("\n");
 
 		for (ip = 0; ip < bins; ip++) {
+			size_t k_now = ksh[sh];
+			k_now = (k_now / bins) + ((k_now % bins) > ip);
+
 			/* if no items just move away */
 			if (!parlens[ip])
 				continue;
 			cis = mis;
 
 			/* select mining domains */
-			struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
+			struct reservoir *reservoir = calloc(k_now, sizeof(reservoir[0]));
 			rs = 0; /* empty reservoir */
 			st = 0;
 
@@ -369,8 +370,8 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 				printf("\n");
 #endif
 
-				generate_and_add_all_rules(fp, items, cis, st, eps,
-						&rs, reservoir, k, &randbuffer, minalpha);
+				generate_and_add_all_rules(fp, items, cis, st, eps/k_now,
+						&rs, reservoir, k_now, &randbuffer, minalpha);
 				st |= (1 << (cis - 1));
 
 				if (fm == parlens[ip])
