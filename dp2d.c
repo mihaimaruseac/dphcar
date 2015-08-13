@@ -282,11 +282,13 @@ static void split_in_partitions(const struct fptree *fp,
 	free(items);
 }
 
-void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
+void dp2d(const struct fptree *fp,
+		size_t shelves, size_t bins, enum bin_mode bin_mode,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 	size_t **partitions = NULL, *parlens = NULL;
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
@@ -310,9 +312,6 @@ void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
 	for (i = 0; i < fp->n; i++)
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
-
-	size_t shelves = 6; /* TODO: move as arg */
-	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 
 	eps = eps - epsilon_step1;
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);

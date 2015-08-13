@@ -14,7 +14,8 @@ enum bin_mode {
 	EQUIDENSITY,
 };
 
-void dp2d(const struct fptree *fp, size_t bins, enum bin_mode bin_mode,
+void dp2d(const struct fptree *fp,
+		size_t shelves, size_t bins, enum bin_mode bin_mode,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed);
 
