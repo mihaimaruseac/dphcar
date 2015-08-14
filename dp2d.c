@@ -91,6 +91,7 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		ic[i].real_count = fpt_item_count(fp, i);
 		ic[i].noisy_count = laplace_mechanism(ic[i].real_count,
 				eps, 1, buffer);
+		/* TODO: replace 1 with lmax !!!! */
 		/* TODO: filter some noise */
 		if (ic[i].noisy_count < 0)
 			ic[i].noisy_count = 0;
