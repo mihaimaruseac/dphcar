@@ -2,7 +2,9 @@ import sys
 
 data = {}
 
-for fname in sys.argv[1:]:
+count = int(sys.argv[1])
+
+for fname in sys.argv[2:]:
     parts = fname.split('_')
     bins = int(parts[-1])
     shelves = int(parts[-3])
@@ -30,11 +32,11 @@ for c in [0.9, 0.8, 0.7, 0.6, 0.5]:
     print c
     print ', ', ', '.join(map(str, range(1, 21)))
     data_shelves = data.get(c, {})
-    for shelf in range(1, 21):
+    for shelf in range(1, 11):
         print shelf,
         data_bins = data_shelves.get(shelf, {})
-        for bin in range(1, 21):
-            print ', ', data_bins.get(bin, '-'),
+        for bin in range(1, 11):
+            print ', {:5.2f}'.format(data_bins.get(bin, 0) / (0.0 + count)),
         print
     print
     print
