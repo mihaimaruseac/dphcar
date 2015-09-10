@@ -128,8 +128,8 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv);
 
-#if 0 /* moving to graphs */
 	fpt_read_from_file(args.tfname, &fp);
+#if 0 /* moving to graphs */
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 

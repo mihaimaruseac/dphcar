@@ -37,16 +37,19 @@ struct table {
 	size_t rpi;
 };
 
+#if 0 /* moving to graphs */
 /* sort table entries in descending order */
 static int fptable_cmp(const void *a, const void *b)
 {
 	const struct table *ta = a, *tb = b;
 	return tb->cnt - ta->cnt;
 }
+#endif
 
 #define LINELENGTH 4096
 #define INITIAL_SIZE 100
 
+#if 0 /* moving to graphs */
 static void single_item_stat(FILE *f, struct fptree *fp)
 {
 	size_t x, sa = INITIAL_SIZE, *xs, i;
@@ -93,7 +96,9 @@ static void single_item_stat(FILE *f, struct fptree *fp)
 	free(xs);
 	fseek(f, 0, SEEK_SET);
 }
+#endif
 
+#if 0 /* moving to graphs */
 static void fpt_add_transaction(const int *t, int c, int sz,
 		struct fptree_node *fpn, struct table *tb);
 static void read_transactions(FILE *f, const struct fptree *fp)
@@ -153,11 +158,13 @@ static void read_transactions(FILE *f, const struct fptree *fp)
 
 	free(items);
 }
+#endif
 
 #undef LINELENGTH
 #undef INITIAL_SIZE
 #define INITIAL_SIZE 10
 
+#if 0 /* moving to graphs */
 static struct fptree_node *fpt_node_new()
 {
 	struct fptree_node *ret = calloc(1, sizeof(ret[0]));
@@ -165,9 +172,11 @@ static struct fptree_node *fpt_node_new()
 	ret->children = calloc(ret->sz_children, sizeof(ret->children[0]));
 	return ret;
 }
+#endif
 
 #undef INITIAL_SIZE
 
+#if 0 /* moving to graphs */
 static void fpt_add_transaction(const int *t, int c, int sz,
 		struct fptree_node *fpn, struct table *tb)
 {
@@ -202,7 +211,9 @@ static void fpt_add_transaction(const int *t, int c, int sz,
 	n->parent = fpn;
 	fpt_add_transaction(t, c + 1, sz, n, tb);
 }
+#endif
 
+#if 0 /* moving to graphs */
 static void fpt_node_free(const struct fptree_node *r)
 {
 	int i;
@@ -212,7 +223,9 @@ static void fpt_node_free(const struct fptree_node *r)
 	free(r->children);
 	free((void*)r);
 }
+#endif
 
+#if 0 /* moving to graphs */
 static int fpt_get_height(const struct fptree_node *r)
 {
 	int ret = 0, i, x;
@@ -225,7 +238,9 @@ static int fpt_get_height(const struct fptree_node *r)
 
 	return ret + 1;
 }
+#endif
 
+#if 0 /* moving to graphs */
 static int fpt_get_nodes(const struct fptree_node *r)
 {
 	int ret = 1, i;
@@ -235,7 +250,9 @@ static int fpt_get_nodes(const struct fptree_node *r)
 
 	return ret;
 }
+#endif
 
+#if 0 /* moving to graphs */
 static void fpt_node_print(const struct fptree_node *r, int gap)
 {
 	int i, j;
@@ -250,14 +267,20 @@ static void fpt_node_print(const struct fptree_node *r, int gap)
 		fpt_node_print(r->children[i], gap + 1);
 	}
 }
+#endif
 
 void fpt_tree_print(const struct fptree *fp)
 {
+#if 0 /* moving to graphs */
 	fpt_node_print(fp->tree, 0);
+#else
+	(void)fp;
+#endif
 }
 
 void fpt_table_print(const struct fptree *fp)
 {
+#if 0 /* moving to graphs */
 	struct table *table = fp->table;
 	struct fptree_node *p;
 	int n = fp->n;
@@ -272,6 +295,9 @@ void fpt_table_print(const struct fptree *fp)
 		}
 		printf(" %p\n", p);
 	}
+#else
+	(void)fp;
+#endif
 }
 
 void fpt_read_from_file(const char *fname, struct fptree *fp)
@@ -281,6 +307,7 @@ void fpt_read_from_file(const char *fname, struct fptree *fp)
 	if (!f)
 		die("Invalid transaction filename %s", fname);
 
+#if 0 /* moving to graphs */
 	printf("Reading file to determine counts of items ... ");
 	fflush(stdout);
 	single_item_stat(f, fp);
@@ -290,6 +317,9 @@ void fpt_read_from_file(const char *fname, struct fptree *fp)
 	printf("Reading file to build fp-tree ... ");
 	fflush(stdout);
 	read_transactions(f, fp);
+#else
+	(void)fp;
+#endif
 	printf("OK\n");
 
 	fclose(f);
@@ -297,27 +327,47 @@ void fpt_read_from_file(const char *fname, struct fptree *fp)
 
 void fpt_cleanup(const struct fptree *fp)
 {
+#if 0 /* moving to graphs */
 	free(fp->table);
 	fpt_node_free(fp->tree);
+#else
+	(void)fp;
+#endif
 }
 
 int fpt_height(const struct fptree *fp)
 {
+#if 0 /* moving to graphs */
 	return fpt_get_height(fp->tree);
+#else
+	(void)fp;
+	return 0;
+#endif
 }
 
 int fpt_nodes(const struct fptree *fp)
 {
+#if 0 /* moving to graphs */
 	return fpt_get_nodes(fp->tree);
+#else
+	(void)fp;
+	return 0;
+#endif
 }
 
 int fpt_item_count(const struct fptree *fp, int it)
 {
+#if 0 /* moving to graphs */
 	if (it < 0 || (size_t)it >= fp->n)
 		return 0;
 	return fp->table[fp->table[it].rpi].cnt;
+#else
+	(void)fp; (void)it;
+	return 0;
+#endif
 }
 
+#if 0 /* moving to graphs */
 static int search_on_path(const struct fptree_node *n,
 		const int *key, int keylen)
 {
@@ -339,9 +389,11 @@ static int search_on_path(const struct fptree_node *n,
 
 	return n->cnt;
 }
+#endif
 
 int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen)
 {
+#if 0 /* moving to graphs */
 	int *search_key = calloc(itslen, sizeof(search_key[0]));
 	int i, count = 0, key_len = 0;
 	struct fptree_node *p, *l;
@@ -366,4 +418,8 @@ int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen)
 
 	free(search_key);
 	return count;
+#else
+	(void)fp; (void)its; (void)itslen;
+	return 0;
+#endif
 }

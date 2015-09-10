@@ -13,14 +13,18 @@ struct fptree_node;
  * Contains all the information needed to reconstruct a transaction file.
  */
 struct fptree {
-	/* number of items */
+	/* number of nodes */
 	size_t n;
+	/* number of edges */
+	size_t e;
 	/* number of transactions */
 	size_t t;
+#if 0 /* moving to graphs */
 	/* header table for the tree, opaque */
 	struct table *table;
 	/* root of the tree, opaque */
 	struct fptree_node *tree;
+#endif
 };
 
 /**
