@@ -132,14 +132,19 @@ int main(int argc, char **argv)
 #if 0 /* moving to graphs */
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
+#else
+	printf("data-struct: nodes: %lu, edges: %lu, transactions: %lu\n",
+			fp.n, fp.e, fp.t);
+#endif
 
+#if 0 /* moving to graphs */
 	dp2d(&fp, args.shelves, args.bins, args.bin_mode,
 			args.eps, args.eps_share,
 			args.minth, args.mis, args.k, args.minalpha,
 			args.seed);
+#endif
 
 	fpt_cleanup(&fp);
-#endif
 	free(args.tfname);
 
 	return 0;

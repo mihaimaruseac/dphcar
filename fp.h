@@ -4,8 +4,11 @@
 #ifndef _FP_H
 #define _FP_H
 
+#if 0 /* moving to graphs */
 struct table;
 struct fptree_node;
+#endif
+struct graph;
 
 /**
  * A fp-tree structure.
@@ -24,6 +27,11 @@ struct fptree {
 	struct table *table;
 	/* root of the tree, opaque */
 	struct fptree_node *tree;
+#else
+	/* adjacency list for the graph, opaque */
+	struct graph *graph;
+	/* documents, opaque */
+	struct docs *docs;
 #endif
 };
 

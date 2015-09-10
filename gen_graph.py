@@ -26,7 +26,7 @@ def main(seed=42, n=10, fr=0.5, num_docs=10,
 
     # generate graph
     e = int(fr * (n * (n -1) / 2))
-    tuples = random.sample([(x, y) for x in xrange(n)
+    tuples = random.sample([(1+x, 1+y) for x in xrange(n)
                                   for y in xrange(n)
                                   if x < y], e)
 
@@ -39,7 +39,7 @@ def main(seed=42, n=10, fr=0.5, num_docs=10,
     docs = []
     for i in xrange(num_docs):
         doclen = random.randint(min_doc_len, max_doc_len)
-        cn = random.randint(1, n) - 1
+        cn = random.randint(1, n)
         pth = []
         for j in xrange(doclen):
             pth.append(cn)

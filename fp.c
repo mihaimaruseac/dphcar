@@ -7,6 +7,7 @@
 #include "fp.h"
 #include "globals.h"
 
+#if 0 /* moving to graphs */
 struct fptree_node {
 	/* item value */
 	int val;
@@ -36,6 +37,23 @@ struct table {
 	/* reverse permutation index */
 	size_t rpi;
 };
+#endif
+
+struct graph {
+	/* node */
+	size_t n;
+	/* count of children */
+	size_t cnt;
+	/* list of children */
+	size_t *next;
+};
+
+struct docs {
+	/* length */
+	size_t sz;
+	/* values */
+	size_t *vals;
+};
 
 #if 0 /* moving to graphs */
 /* sort table entries in descending order */
@@ -48,6 +66,57 @@ static int fptable_cmp(const void *a, const void *b)
 
 #define LINELENGTH 4096
 #define INITIAL_SIZE 100
+
+static int* read_line(FILE *f, int *pisz)
+{
+	int i, l, save=0, isz=0, isp=INITIAL_SIZE, *items;
+	char line[LINELENGTH], *p, *q;
+
+	items = calloc(isp, sizeof(items[0]));
+
+	while (fgets(line, LINELENGTH, f)) {
+		l = strlen(line) - 1;
+		p = line;
+
+		/* reform number split between reads */
+		if (save) {
+			while (isdigit(*p)) {
+				save = save * 10 + (*p - '0');
+				p++;
+			}
+			if (isz >= isp) {
+				isp *= 2;
+				items = realloc(items, isp * sizeof(items[0]));
+			}
+			items[isz++] = save;
+			save = 0;
+		}
+
+		/* see if another number is split */
+		if (isdigit(line[l])) {
+			q = strrchr(line, ' ');
+			if (q) {
+				save = strtol(q, NULL, 0);
+				*q = 0; /* remove last number */
+			}
+		}
+
+		while ((i = strtol(p, &q, 10))) {
+			if (isz >= isp) {
+				isp *= 2;
+				items = realloc(items, isp * sizeof(items[0]));
+			}
+			items[isz++] = i;
+			p = q;
+		}
+
+		if (line[l] == '\n')
+			break; /* line completely read */
+	}
+
+	*pisz = isz;
+	return items;
+}
 
 #if 0 /* moving to graphs */
 static void single_item_stat(FILE *f, struct fptree *fp)
@@ -175,6 +244,61 @@ static struct fptree_node *fpt_node_new()
 #endif
 
 #undef INITIAL_SIZE
+
+static void read_edges(FILE *f, struct fptree *fp)
+{
+	int j, *items, sz = 0;
+	size_t i;
+
+	items = read_line(f, &sz); /* ignore remainder of first line */
+	if (sz)
+		die("First line in transaction file has bogus data");
+	free(items);
+
+	fp->graph = calloc(fp->n, sizeof(fp->graph[0]));
+
+	for (i = 0; i < fp->n; i++) {
+		items = read_line(f, &sz);
+		if (!sz)
+			die("Invalid graph line in transaction file");
+
+		fp->graph[i].n = items[0];
+		fp->graph[i].cnt = sz - 1;
+		fp->graph[i].next = calloc(sz, sizeof(fp->graph[i].next[0]));
+
+		for (j = 1; j < sz; j++)
+			fp->graph[i].next[j-1] = items[j];
+
+		free(items);
+	}
+}
+
+static void read_docs(FILE *f, struct fptree *fp)
+{
+	int j, *items, sz = 0;
+	size_t i;
+
+	items = read_line(f, &sz); /* read the -- separator */
+	if (sz)
+		die("Missing separator between graph and transactions (or too few transactions)");
+	free(items);
+
+	fp->docs = calloc(fp->t, sizeof(fp->docs[0]));
+
+	for (i = 0; i < fp->n; i++) {
+		items = read_line(f, &sz);
+		if (!sz)
+			die("Invalid graph line in transaction file");
+
+		/* TODO: check validity of doc path? */
+		fp->docs[i].sz = sz;
+		fp->docs[i].vals = calloc(sz, sizeof(fp->docs[i].vals[0]));
+		for (j = 0; j < sz; j++)
+			fp->docs[i].vals[j] = items[j];
+
+		free(items);
+	}
+}
 
 #if 0 /* moving to graphs */
 static void fpt_add_transaction(const int *t, int c, int sz,
@@ -318,7 +442,17 @@ void fpt_read_from_file(const char *fname, struct fptree *fp)
 	fflush(stdout);
 	read_transactions(f, fp);
 #else
-	(void)fp;
+	if (fscanf(f, "%lu%lu%lu", &fp->n, &fp->e, &fp->t) != 3)
+		die("Invalid header in transaction file %s", fname);
+
+	printf("Reading graph from file ... ");
+	fflush(stdout);
+	read_edges(f, fp);
+	printf("OK\n");
+
+	printf("Reading docs from file ... ");
+	fflush(stdout);
+	read_docs(f, fp);
 #endif
 	printf("OK\n");
 
@@ -331,7 +465,15 @@ void fpt_cleanup(const struct fptree *fp)
 	free(fp->table);
 	fpt_node_free(fp->tree);
 #else
-	(void)fp;
+	size_t i;
+
+	for (i = 0; i < fp->n; i++)
+		free(fp->graph[i].next);
+	for (i = 0; i < fp->n; i++)
+		free(fp->docs[i].vals);
+
+	free(fp->graph);
+	free(fp->docs);
 #endif
 }
 
