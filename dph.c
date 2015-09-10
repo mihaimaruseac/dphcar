@@ -142,6 +142,8 @@ int main(int argc, char **argv)
 			args.eps, args.eps_share,
 			args.minth, args.mis, args.k, args.minalpha,
 			args.seed);
+#else
+	dp2d(&fp, args.eps, args.eps_share, args.seed);
 #endif
 
 	fpt_cleanup(&fp);

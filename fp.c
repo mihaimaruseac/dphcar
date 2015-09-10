@@ -497,15 +497,22 @@ int fpt_nodes(const struct fptree *fp)
 #endif
 }
 
-int fpt_item_count(const struct fptree *fp, int it)
+size_t fpt_item_count(const struct fptree *fp, size_t it)
 {
-#if 0 /* moving to graphs */
-	if (it < 0 || (size_t)it >= fp->n)
+	if (it >= fp->n)
 		return 0;
+
+#if 0 /* moving to graphs */
 	return fp->table[fp->table[it].rpi].cnt;
 #else
-	(void)fp; (void)it;
-	return 0;
+	size_t i, j, cnt = 0;
+
+	it++;
+	for (i = 0; i < fp->t; i++)
+		for (j = 0; j < fp->docs[i].sz; j++)
+			if (fp->docs[i].vals[j] == it)
+				cnt++;
+	return cnt;
 #endif
 }
 
@@ -533,7 +540,8 @@ static int search_on_path(const struct fptree_node *n,
 }
 #endif
 
-int fpt_itemset_count(const struct fptree *fp, const int *its, int itslen)
+size_t fpt_itemset_count(const struct fptree *fp,
+		const size_t *its, size_t itslen)
 {
 #if 0 /* moving to graphs */
 	int *search_key = calloc(itslen, sizeof(search_key[0]));

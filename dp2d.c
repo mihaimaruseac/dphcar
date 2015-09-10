@@ -283,26 +283,45 @@ static void split_in_partitions(const struct fptree *fp,
 	free(items);
 }
 
+#if 0 /* moving to graphs */
 void dp2d(const struct fptree *fp,
 		size_t shelves, size_t bins, enum bin_mode bin_mode,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed)
+#else
+void dp2d(const struct fptree *fp, double eps, double eps_share,
+		long int seed)
+#endif
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+#if 0 /* moving to graphs */
 	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 	size_t **partitions = NULL, *parlens = NULL;
 	struct histogram *h = init_histogram();
+#endif
 	double epsilon_step1 = eps * eps_share;
+#if 0 /* moving to graphs */
 	size_t i, j, ip, fm, rs, st, cis, sh;
+#else
+	size_t i;
+#endif
 	struct drand48_data randbuffer;
+#if 0 /* moving to graphs */
 	double maxc, minc;
 	int *items;
+#endif
 
 	init_rng(seed, &randbuffer);
+#if 0 /* moving to graphs */
 	items = calloc(mis + 1, sizeof(items[0]));
+#endif
 
+#if 0 /* moving to graphs */
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
+#else
+	printf("Running dp2D with eps=%lf, eps_share=%lf\n", eps, eps_share);
+#endif
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -314,6 +333,7 @@ void dp2d(const struct fptree *fp,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
+#if 0 /* moving to graphs */
 	eps = eps - epsilon_step1;
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
@@ -474,5 +494,6 @@ void dp2d(const struct fptree *fp,
 	free_histogram(h);
 	free(items);
 	free(ksh);
+#endif
 	free(ic);
 }
