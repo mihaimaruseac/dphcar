@@ -21,7 +21,7 @@
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
-#define PRINT_RULE_DOMAIN 0
+#define PRINT_RULE_DOMAIN 1
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
@@ -182,10 +182,19 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 {
 #if 0 /* moving to graphs */
 	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
+#else
+	size_t i, j, max=1<<num_items, ab_length;
+#endif
+#if 0 /* moving to graphs */
 	int *A, *AB;
+#else
+	int *AB;
+#endif
+#if 0 /* moving to graphs */
 	double u;
 
 	A = calloc(num_items, sizeof(A[0]));
+#endif
 	AB = calloc(num_items, sizeof(AB[0]));
 
 	/* generate rule's AB */
@@ -196,6 +205,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 				AB[ab_length++] = items[j];
 		if (ab_length < 2) continue;
 
+#if 0 /* moving to graphs */
 		max2 = (1 << ab_length) - 1;
 		for (j = 1; j < max2; j++) {
 			a_length = 0;
@@ -206,11 +216,13 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 			process_rule(fp, AB, ab_length, A, a_length,
 					eps, rs, reservoir, k, u, m);
 		}
+#endif
 	}
 
+#if 0 /* moving to graphs */
 	free(A);
-	free(AB);
 #endif
+	free(AB);
 }
 
 static void split_in_partitions(const struct fptree *fp,
