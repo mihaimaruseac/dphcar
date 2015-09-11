@@ -456,10 +456,10 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
-#if 0 /* moving to graphs */
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
+#if 0 /* moving to graphs */
 	for (i = 0; i < bins; i++)
 		free(partitions[i]);
 	free(parlens);
