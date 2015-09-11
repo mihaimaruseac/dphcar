@@ -433,47 +433,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 			/* move rules from reservoir to histogram */
 			minc = 1; maxc = 0;
-#if RULE_EXPAND
-			struct rule_table *rt = init_rule_table();
-			for (i = 0; i < rs; i++) {
-				struct rule *r = reservoir[i].r, *nr1, *nr2;
-				int *items = calloc(r->B->length, sizeof(items[0]));
-				struct itemset *A, *AB, *ABprime;
-				int supA, supAB;
-				size_t k1, nis;
-
-				save_rule2(rt, r, reservoir[i].c);
-
-				st = 1 << r->B->length; st--;
-				AB = build_itemset_add_items(r->A, r->B->items, r->B->length);
-				for (j = 1; j < st; j++) {
-					nis = 0;
-					for (k1 = 0; k1 < r->B->length; k1++)
-						if ((1 << k1) & j)
-							items[nis++] = r->B->items[k1];
-
-					ABprime = build_itemset_del_items(AB, items, nis);
-					nr1 = build_rule_A_AB(r->A, ABprime);
-					supAB = fpt_itemset_count(fp, ABprime->items, ABprime->length);
-					supA = fpt_itemset_count(fp, r->A->items, r->A->length);
-					save_rule2(rt, nr1, supAB / (supA + 0.0));
-
-					A = build_itemset_add_items(r->A, items, nis);
-					nr2 = build_rule_A_AB(A, AB);
-					supAB = fpt_itemset_count(fp, AB->items, AB->length);
-					supA = fpt_itemset_count(fp, A->items, A->length);
-					save_rule2(rt, nr2, supAB / (supA + 0.0));
-				}
-			}
-
-			for (i = 0; i < rt->sz; i++) {
-				if (rt->c[i] < minc)
-					minc = rt->c[i];
-				if (rt->c[i] > maxc)
-					maxc = rt->c[i];
-				histogram_register(h, rt->c[i]);
-			}
-#else
 			for (i = 0; i < rs; i++) {
 				if (reservoir[i].c < minc)
 					minc = reservoir[i].c;
@@ -481,15 +440,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 					maxc = reservoir[i].c;
 				histogram_register(h, reservoir[i].c);
 			}
-#endif
 
 			printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
-#if RULE_EXPAND
-					rt->sz,
-#else
-					rs,
-#endif
-					minc, maxc);
+					rs, minc, maxc);
 
 			free_reservoir_array(reservoir, rs);
 #if 0 /* moving to graphs */
