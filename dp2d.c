@@ -25,7 +25,7 @@
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 0
+#define PRINT_RS_TRACE 1
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
@@ -290,7 +290,7 @@ void dp2d(const struct fptree *fp,
 		double minalpha, long int seed)
 #else
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		size_t k, long int seed)
+		size_t mis, size_t k, long int seed)
 #endif
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
@@ -303,24 +303,23 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if 0 /* moving to graphs */
 	size_t i, j, ip, fm, rs, st, cis, sh;
 #else
-	size_t i, rs;
+	size_t i, j, fm, rs, cis;
 #endif
 	struct drand48_data randbuffer;
 #if 0 /* moving to graphs */
 	double maxc, minc;
-	int *items;
 #endif
+	int *items;
 
 	init_rng(seed, &randbuffer);
-#if 0 /* moving to graphs */
 	items = calloc(mis + 1, sizeof(items[0]));
-#endif
 
 #if 0 /* moving to graphs */
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
 #else
-	printf("Running dp2D with eps=%lf, eps_share=%lf\n", eps, eps_share);
+	printf("Running dp2D with eps=%lf, eps_share=%lf, "
+			"mis=%lu, k=%lu\n", eps, eps_share, mis, k);
 #endif
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
@@ -375,8 +374,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 			/* if no items just move away */
 			if (!parlens[ip])
 				continue;
-			cis = mis;
 #endif
+			cis = mis;
 
 			/* select mining domains */
 #if 0 /* moving to graphs */
@@ -389,10 +388,14 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 			st = 0;
 #endif
 
-#if 0 /* moving to graphs */
 			/* initial items */
+#if 0 /* moving to graphs */
 			for (fm = 0, j = 0; j < cis && fm < parlens[ip]; fm++)
 				items[j++] = ic[partitions[ip][fm]].value;
+#else
+			for (fm = 0, j = 0; j < cis && fm < fp->n; fm++)
+				items[j++] = ic[fm].value;
+#endif
 
 			if (j < cis)
 				cis = j;
@@ -405,17 +408,28 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 				printf("\n");
 #endif
 
+#if 0 /* moving to graphs */
 				generate_and_add_all_rules(fp, items, cis, st, eps/k_now,
 						&rs, reservoir, k_now, &randbuffer, minalpha);
 				st |= (1 << (cis - 1));
+#endif
 
+#if 0 /* moving to graphs */
 				if (fm == parlens[ip])
+#else
+				if (fm == fp->n)
+#endif
 					break;
 				for (i = 0; i < cis - 1; i++)
 					items[i] = items[i+1];
+#if 0 /* moving to graphs */
 				items[cis - 1] = ic[partitions[ip][fm++]].value;
+#else
+				items[cis - 1] = ic[fm++].value;
+#endif
 			}
 
+#if 0 /* moving to graphs */
 #if PRINT_FINAL_RULES
 			print_reservoir(reservoir, rs);
 #endif
@@ -506,7 +520,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	free(parlens);
 	free(partitions);
 	free_histogram(h);
+#endif
 	free(items);
+#if 0 /* moving to graphs */
 	free(ksh);
 #endif
 	free(ic);

@@ -34,9 +34,9 @@ static struct {
 #if 0 /* moving to graphs */
 	/* minimum threshold */
 	size_t minth;
+#endif
 	/* max items in generation step */
 	size_t mis;
-#endif
 	/* number of rules to extract */
 	size_t k;
 #if 0 /* moving to graphs */
@@ -52,7 +52,7 @@ static void usage(const char *prg)
 #if 0 /* moving to graphs */
 	fprintf(stderr, "Usage: %s TFILE BIN_MODE(n|r|w|d) NUM_BINS NUM_SHELVES EPS EPS_SHARE MINTH MINALHPA MIS K [SEED]\n", prg);
 #else
-	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE K [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MIS K [SEED]\n", prg);
 #endif
 	exit(EXIT_FAILURE);
 }
@@ -69,7 +69,7 @@ static void parse_arguments(int argc, char **argv)
 #if 0 /* moving to graphs */
 	if (argc < 11 || argc > 12)
 #else
-	if (argc < 5 || argc > 6)
+	if (argc < 6 || argc > 7)
 #endif
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
@@ -107,21 +107,25 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[8], "%lf", &args.minalpha) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[9], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
-		usage(argv[0]);
 #endif
+#if 0 /* moving to graphs */
+	if (sscanf(argv[9], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
+#else
+	if (sscanf(argv[4], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
+#endif
+		usage(argv[0]);
 #if 0 /* moving to graphs */
 	if (sscanf(argv[10], "%lu", &args.k) != 1)
 #else
-	if (sscanf(argv[4], "%lu", &args.k) != 1)
+	if (sscanf(argv[5], "%lu", &args.k) != 1)
 #endif
 		usage(argv[0]);
 #if 0 /* moving to graphs */
 	if (argc == 12) {
 		if (sscanf(argv[11], "%ld", &args.seed) != 1)
 #else
-	if (argc == 6) {
-		if (sscanf(argv[5], "%ld", &args.seed) != 1)
+	if (argc == 7) {
+		if (sscanf(argv[6], "%ld", &args.seed) != 1)
 #endif
 			usage(argv[0]);
 	} else
@@ -149,7 +153,7 @@ int main(int argc, char **argv)
 			args.minth, args.mis, args.k, args.minalpha,
 			args.seed);
 #else
-	dp2d(&fp, args.eps, args.eps_share, args.k, args.seed);
+	dp2d(&fp, args.eps, args.eps_share, args.mis, args.k, args.seed);
 #endif
 
 	fpt_cleanup(&fp);
