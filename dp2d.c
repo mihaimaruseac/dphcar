@@ -303,7 +303,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if 0 /* moving to graphs */
 	size_t i, j, ip, fm, rs, st, cis, sh;
 #else
-	size_t i;
+	size_t i, rs;
 #endif
 	struct drand48_data randbuffer;
 #if 0 /* moving to graphs */
@@ -376,12 +376,20 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 			if (!parlens[ip])
 				continue;
 			cis = mis;
+#endif
 
 			/* select mining domains */
+#if 0 /* moving to graphs */
 			struct reservoir *reservoir = calloc(k_now, sizeof(reservoir[0]));
+#else
+			struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
+#endif
 			rs = 0; /* empty reservoir */
+#if 0 /* moving to graphs */
 			st = 0;
+#endif
 
+#if 0 /* moving to graphs */
 			/* initial items */
 			for (fm = 0, j = 0; j < cis && fm < parlens[ip]; fm++)
 				items[j++] = ic[partitions[ip][fm]].value;
@@ -471,8 +479,10 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 					rs,
 #endif
 					minc, maxc);
+#endif
 
 			free_reservoir_array(reservoir, rs);
+#if 0 /* moving to graphs */
 		}
 
 		printf("Finished shelf %lu\n", sh);
