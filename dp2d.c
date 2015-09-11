@@ -31,10 +31,6 @@
 #ifndef PRINT_FINAL_RULES
 #define PRINT_FINAL_RULES 0
 #endif
-/* do rule expansion */
-#ifndef RULE_EXPAND
-#define RULE_EXPAND 0
-#endif
 
 static double quality(int x, int y, double m)
 {
