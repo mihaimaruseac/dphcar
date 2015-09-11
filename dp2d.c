@@ -297,8 +297,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if 0 /* moving to graphs */
 	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 	size_t **partitions = NULL, *parlens = NULL;
-	struct histogram *h = init_histogram();
 #endif
+	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 #if 0 /* moving to graphs */
 	size_t i, j, ip, fm, rs, st, cis, sh;
@@ -306,9 +306,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	size_t i, j, fm, rs, cis;
 #endif
 	struct drand48_data randbuffer;
-#if 0 /* moving to graphs */
 	double maxc, minc;
-#endif
 	int *items;
 
 	init_rng(seed, &randbuffer);
@@ -429,7 +427,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #endif
 			}
 
-#if 0 /* moving to graphs */
 #if PRINT_FINAL_RULES
 			print_reservoir(reservoir, rs);
 #endif
@@ -493,7 +490,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 					rs,
 #endif
 					minc, maxc);
-#endif
 
 			free_reservoir_array(reservoir, rs);
 #if 0 /* moving to graphs */
@@ -519,8 +515,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		free(partitions[i]);
 	free(parlens);
 	free(partitions);
-	free_histogram(h);
 #endif
+	free_histogram(h);
 	free(items);
 #if 0 /* moving to graphs */
 	free(ksh);
