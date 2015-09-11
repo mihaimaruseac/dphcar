@@ -347,10 +347,12 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	for (sh = 0; sh < shelves; sh++)
 		printf(" %lu", ksh[sh]);
 	printf("\n");
+#endif
 
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
+#if 0 /* moving to graphs */
 	for (sh = 0; sh < shelves; sh++) {
 		for (i = 0; i < bins && partitions; i++)
 			free(partitions[i]);
@@ -475,6 +477,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 		printf("Finished shelf %lu\n", sh);
 	}
+#endif
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
@@ -484,6 +487,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
+#if 0 /* moving to graphs */
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
