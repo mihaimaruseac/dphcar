@@ -290,7 +290,7 @@ void dp2d(const struct fptree *fp,
 		double minalpha, long int seed)
 #else
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		long int seed)
+		size_t k, long int seed)
 #endif
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
@@ -333,10 +333,10 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
-#if 0 /* moving to graphs */
 	eps = eps - epsilon_step1;
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
+#if 0 /* moving to graphs */
 	eps /= shelves;
 	printf("\t-> per shelf:\t%lf\n", eps);
 
