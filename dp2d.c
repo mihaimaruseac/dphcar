@@ -172,7 +172,11 @@ static void process_rule(const struct fptree *fp,
 }
 
 static void generate_and_add_all_rules(const struct fptree *fp,
+#if 0 /* moving to graphs */
 		const int *items, size_t num_items, size_t st, double eps,
+#else
+		const int *items, size_t num_items, double eps,
+#endif
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer, double m)
 {
@@ -193,6 +197,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 #endif
 	AB = calloc(num_items, sizeof(AB[0]));
 
+#if 0 /* moving to graphs */
 	/* generate rule's AB */
 	for (i = st; i < max; i++) {
 		ab_length = 0;
@@ -214,6 +219,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		}
 #endif
 	}
+#endif
 
 #if 0 /* moving to graphs */
 	free(A);
@@ -314,7 +320,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if 0 /* moving to graphs */
 	size_t i, j, ip, fm, rs, st, cis, sh;
 #else
-	size_t i, j, fm, rs, st, cis;
+	size_t i, j, fm, rs, cis;
 #endif
 	struct drand48_data randbuffer;
 	double maxc, minc;
@@ -394,7 +400,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 			struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 #endif
 			rs = 0; /* empty reservoir */
+#if 0 /* moving to graphs */
 			st = 0;
+#endif
 
 			/* initial items */
 #if 0 /* moving to graphs */
@@ -420,10 +428,12 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 				generate_and_add_all_rules(fp, items, cis, st, eps/k_now,
 						&rs, reservoir, k_now, &randbuffer, minalpha);
 #else
-				generate_and_add_all_rules(fp, items, cis, st, eps/k,
+				generate_and_add_all_rules(fp, items, cis, eps/k,
 						&rs, reservoir, k, &randbuffer, minalpha);
 #endif
+#if 0 /* moving to graphs */
 				st |= (1 << (cis - 1));
+#endif
 
 #if 0 /* moving to graphs */
 				if (fm == parlens[ip])
