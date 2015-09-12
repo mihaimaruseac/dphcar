@@ -174,11 +174,7 @@ static void process_rule(const struct fptree *fp,
 static void generate_and_add_all_rules(const struct fptree *fp,
 		const int *items, size_t num_items, size_t st, double eps,
 		size_t *rs, struct reservoir *reservoir,
-#if 0 /* moving to graphs */
 		size_t k, struct drand48_data *randbuffer, double m)
-#else
-		size_t k, struct drand48_data *randbuffer)
-#endif
 {
 #if 0 /* moving to graphs */
 	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
@@ -304,7 +300,8 @@ void dp2d(const struct fptree *fp,
 		double minalpha, long int seed)
 #else
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		size_t mis, size_t k, long int seed)
+		size_t mis, size_t k,
+		double minalpha, long int seed)
 #endif
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
@@ -331,7 +328,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
 #else
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
-			"mis=%lu, k=%lu\n", eps, eps_share, mis, k);
+			"mis=%lu, k=%lu, minalpha=%lf\n",
+			eps, eps_share, mis, k, minalpha);
 #endif
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
@@ -423,7 +421,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 						&rs, reservoir, k_now, &randbuffer, minalpha);
 #else
 				generate_and_add_all_rules(fp, items, cis, st, eps/k,
-						&rs, reservoir, k, &randbuffer);
+						&rs, reservoir, k, &randbuffer, minalpha);
 #endif
 				st |= (1 << (cis - 1));
 
