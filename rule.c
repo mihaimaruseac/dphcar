@@ -151,8 +151,14 @@ struct rule *build_rule_A_B(const struct itemset *A, const struct itemset *B)
 struct rule *build_rule_A_AB(const struct itemset *A, const struct itemset *AB)
 {
 	struct rule *r = calloc(1, sizeof(*r));
+#if 0 /* moving to graphs */
 	size_t l = A->length, i, j = 0;
+#else
+	size_t i, j = 0;
+#endif
+#if 0 /* moving to graphs */
 	int *p;
+#endif
 
 	r->A = calloc(1, sizeof(*(r->A)));
 	r->B = calloc(1, sizeof(*(r->B)));
@@ -181,8 +187,10 @@ struct rule *build_rule_A_AB(const struct itemset *A, const struct itemset *AB)
 	if (j != r->B->length)
 		die("Length of B: expected %lu got %lu", r->B->length, j);
 
+#if 0 /* moving to graphs */
 	if (l != A->length)
 		die("Length changed from %lu to %lu", AB->length, l);
+#endif
 
 	return r;
 }

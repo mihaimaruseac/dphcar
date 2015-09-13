@@ -286,6 +286,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	free(AB);
 }
 
+#if 0 /* moving to graphs */
 static void split_in_partitions(const struct fptree *fp,
 		const struct item_count *ic, size_t bins, enum bin_mode bin_mode,
 		int minth,
@@ -357,6 +358,7 @@ static void split_in_partitions(const struct fptree *fp,
 
 	free(items);
 }
+#endif
 
 #if 0 /* moving to graphs */
 void dp2d(const struct fptree *fp,
