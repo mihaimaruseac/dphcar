@@ -293,7 +293,7 @@ static void read_docs(FILE *f, struct fptree *fp)
 
 	fp->docs = calloc(fp->t, sizeof(fp->docs[0]));
 
-	for (i = 0; i < fp->n; i++) {
+	for (i = 0; i < fp->t; i++) {
 		items = read_line(f, &sz);
 		if (!sz)
 			die("Invalid graph line in transaction file");
@@ -555,7 +555,12 @@ size_t fpt_itemset_count(const struct fptree *fp,
 	int *search_key = calloc(itslen, sizeof(search_key[0]));
 	int i, count = 0, key_len = 0;
 	struct fptree_node *p, *l;
+#else
+	size_t i, j, l, ret=0, found;
+	struct docs const *doc;
+#endif
 
+#if 0 /* moving to graphs */
 	for (i = 0; i < itslen; i++)
 		if (its[i] > 0)
 			search_key[key_len++] = fp->table[its[i] - 1].rpi;
@@ -577,8 +582,24 @@ size_t fpt_itemset_count(const struct fptree *fp,
 	free(search_key);
 	return count;
 #else
-	(void)fp; (void)its; (void)itslen;
-	return 0;
+	for (i = 0; i < fp->t; i++) {
+		doc = &fp->docs[i];
+		if (doc->sz < itslen)
+			continue;
+
+		for (j = 0, found = 0; j < doc->sz; j++) {
+			if (doc->vals[j] == its[found]) {
+				found++;
+				if (found == itslen) {
+					found = 0;
+					ret++;
+				}
+			} else
+				found = 0;
+		}
+	}
+
+	return ret;
 #endif
 }
 

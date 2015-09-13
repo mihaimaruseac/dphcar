@@ -259,9 +259,8 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 			printf("\n");
 
 			/* fill A, generate & process rule */
-			A[0] = AB[0];
 			for (a_length = 1; a_length < ab_length; a_length++) {
-				A[a_length] = AB[a_length];
+				A[a_length-1] = AB[a_length-1];
 				drand48_r(randbuffer, &u);
 				process_rule(fp, AB, ab_length, A, a_length,
 						eps, rs, reservoir, k, u, m);
