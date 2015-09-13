@@ -166,12 +166,17 @@ struct rule *build_rule_A_AB(const struct itemset *A, const struct itemset *AB)
 	for (i = 0; i < r->A->length; i++)
 		r->A->items[i] = A->items[i];
 
+#if 0 /* moving to graphs */
 	for (i = 0; i < AB->length; i++) {
 		p = lfind(&AB->items[i], r->A->items, &l,
 				sizeof(r->A->items[0]), int_cmp);
 		if (!p)
 			r->B->items[j++] = AB->items[i];
 	}
+#else
+	for (; i < AB->length; i++)
+		r->B->items[j++] = AB->items[i];
+#endif
 
 	if (j != r->B->length)
 		die("Length of B: expected %lu got %lu", r->B->length, j);
