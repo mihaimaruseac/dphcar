@@ -64,6 +64,13 @@ static int fptable_cmp(const void *a, const void *b)
 }
 #endif
 
+/* sort graph adjacency list in ascending order of nodes */
+static int fpgraph_cmp(const void *a, const void *b)
+{
+	const struct graph *ga=a, *gb=b;
+	return ga->n - gb->n;
+}
+
 #define LINELENGTH 4096
 #define INITIAL_SIZE 100
 
@@ -248,7 +255,6 @@ static struct fptree_node *fpt_node_new()
 static void read_edges(FILE *f, struct fptree *fp)
 {
 	int j, *items, sz = 0;
-	size_t i;
 
 	items = read_line(f, &sz); /* ignore remainder of first line */
 	if (sz)
@@ -257,20 +263,22 @@ static void read_edges(FILE *f, struct fptree *fp)
 
 	fp->graph = calloc(fp->n, sizeof(fp->graph[0]));
 
-	for (i = 0; i < fp->n; i++) {
+	for (fp->alc = 0; fp->alc < fp->n; fp->alc++) {
 		items = read_line(f, &sz);
 		if (!sz)
 			die("Invalid graph line in transaction file");
 
-		fp->graph[i].n = items[0];
-		fp->graph[i].cnt = sz - 1;
-		fp->graph[i].next = calloc(sz, sizeof(fp->graph[i].next[0]));
+		fp->graph[fp->alc].n = items[0];
+		fp->graph[fp->alc].cnt = sz - 1;
+		fp->graph[fp->alc].next = calloc(sz, sizeof(fp->graph[fp->alc].next[0]));
 
 		for (j = 1; j < sz; j++)
-			fp->graph[i].next[j-1] = items[j];
+			fp->graph[fp->alc].next[j-1] = items[j];
 
 		free(items);
 	}
+
+	qsort(fp->graph, fp->alc, sizeof(fp->graph[0]), fpgraph_cmp);
 }
 
 static void read_docs(FILE *f, struct fptree *fp)
@@ -572,4 +580,19 @@ size_t fpt_itemset_count(const struct fptree *fp,
 	(void)fp; (void)its; (void)itslen;
 	return 0;
 #endif
+}
+
+size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz)
+{
+	struct graph *n;
+	size_t *ret, i;
+
+	n = bsearch(&node, fp->graph, fp->alc, sizeof(fp->graph[0]), fpgraph_cmp);
+	ret = calloc(n->cnt, sizeof(ret[0]));
+	*sz = n->cnt;
+
+	for (i = 0; i < n->cnt; i++)
+		ret[i] = n->next[i];
+
+	return ret;
 }

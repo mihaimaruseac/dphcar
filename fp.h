@@ -28,6 +28,8 @@ struct fptree {
 	/* root of the tree, opaque */
 	struct fptree_node *tree;
 #else
+	/* number of items in adjacency list */
+	size_t alc;
 	/* adjacency list for the graph, opaque */
 	struct graph *graph;
 	/* documents, opaque */
@@ -55,5 +57,7 @@ size_t fpt_itemset_count(const struct fptree *fp,
 /** Debug printing. */
 void fpt_tree_print(const struct fptree *fp);
 void fpt_table_print(const struct fptree *fp);
+
+size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz);
 
 #endif

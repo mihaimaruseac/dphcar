@@ -43,8 +43,8 @@ static double quality(int x, int y, double m)
 }
 
 struct item_count {
-	int value;
-	int real_count;
+	size_t value;
+	size_t real_count;
 	double noisy_count;
 };
 
@@ -112,7 +112,7 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 #endif
 
 static void process_rule(const struct fptree *fp,
-		const int *AB, int ab_length, const int *A, int a_length,
+		const size_t *AB, int ab_length, const size_t *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
 		double u, double m)
 {
@@ -175,7 +175,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 #if 0 /* moving to graphs */
 		const int *items, size_t num_items, size_t st, double eps,
 #else
-		const int *items, size_t num_items, double eps,
+		const size_t *items, size_t num_items, size_t sz, double eps,
 #endif
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer, double m)
@@ -183,18 +183,17 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 #if 0 /* moving to graphs */
 	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
 #else
-	size_t i, j, max=1<<num_items, ab_length;
+	size_t i, j, a_length, ab_length;
 #endif
 #if 0 /* moving to graphs */
 	int *A, *AB;
 #else
-	int *AB;
+	size_t *A, *AB, **next, *nsz;
+	int kp, *ptr;
 #endif
-#if 0 /* moving to graphs */
 	double u;
 
 	A = calloc(num_items, sizeof(A[0]));
-#endif
 	AB = calloc(num_items, sizeof(AB[0]));
 
 #if 0 /* moving to graphs */
@@ -219,6 +218,68 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		}
 #endif
 	}
+#else
+	next = calloc(sz, sizeof(next[0]));
+	ptr = calloc(sz, sizeof(ptr[0]));
+	nsz = calloc(sz, sizeof(nsz[0]));
+
+	next[0] = calloc(num_items, sizeof(next[0][0]));
+	for (i = 0; i < num_items; i++)
+		next[0][i] = items[i];
+
+	kp = 0; ptr[0] = -1; nsz[0] = num_items;
+	while (kp >= 0) {
+		ptr[kp]++;
+
+		/* backtrack */
+		if (ptr[kp] == (int)nsz[kp]) {
+			free(next[kp]);
+			next[kp] = 0;
+			kp--;
+			continue;
+		}
+
+		/* check that current item is in current set of items */
+		for (j = 0; j < num_items; j++)
+			if (items[j] == next[kp][ptr[kp]])
+				break;
+		if (j == num_items)
+			continue;
+
+		/* combination generated */
+		if (kp) { /* need at least 2 items */
+			/* fill AB */
+			for (j = 0; j <= (size_t)kp; j++)
+				AB[j] = next[j][ptr[j]];
+			ab_length = kp + 1;
+
+			/* TODO: we just print it */
+			for (j = 0; j <= (size_t)kp; j++)
+				printf("(%lu)%lu ", j, next[j][ptr[j]]);
+			printf("\n");
+
+			/* fill A, generate & process rule */
+			A[0] = AB[0];
+			for (a_length = 1; a_length < ab_length; a_length++) {
+				A[a_length] = AB[a_length];
+				drand48_r(randbuffer, &u);
+				process_rule(fp, AB, ab_length, A, a_length,
+						eps, rs, reservoir, k, u, m);
+			}
+		}
+
+		if (kp == (int)(sz-1)) /* max length */
+			continue;
+
+		/* next */
+		kp++;
+		ptr[kp] = -1;
+		next[kp] = fp_grph_children(fp, next[kp-1][ptr[kp-1]], &nsz[kp]);
+	}
+
+	free(next);
+	free(ptr);
+	free(nsz);
 #endif
 
 #if 0 /* moving to graphs */
@@ -324,7 +385,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #endif
 	struct drand48_data randbuffer;
 	double maxc, minc;
-	int *items;
+	size_t *items;
 
 	init_rng(seed, &randbuffer);
 	items = calloc(mis + 1, sizeof(items[0]));
@@ -420,7 +481,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 				printf("Domain: %lu: ", fm);
 				for (i = 0; i < cis; i++)
-					printf("%d ", items[i]);
+					printf("%lu ", items[i]);
 				printf("\n");
 #endif
 
@@ -428,7 +489,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 				generate_and_add_all_rules(fp, items, cis, st, eps/k_now,
 						&rs, reservoir, k_now, &randbuffer, minalpha);
 #else
-				generate_and_add_all_rules(fp, items, cis, eps/k,
+				generate_and_add_all_rules(fp, items, cis, cis, eps/k,
 						&rs, reservoir, k, &randbuffer, minalpha);
 #endif
 #if 0 /* moving to graphs */

@@ -53,7 +53,7 @@ struct rule_table *init_rule_table()
 }
 
 void save_rule(struct rule_table *rt, const struct rule *r,
-		int supA, int supAB)
+		size_t supA, size_t supAB)
 {
 	size_t ix, s = rt->sz;
 	struct rule **p;
@@ -73,7 +73,7 @@ void save_rule(struct rule_table *rt, const struct rule *r,
 
 	if (s == rt->sz) {
 		if (rt->supA[ix] != supA || rt->supAB[ix] != supAB)
-			die("Same rule with different sup %d %d / %d %d",
+			die("Same rule with different sup %lu %lu / %lu %lu",
 				rt->supA[ix], rt->supAB[ix], supA, supAB);
 		free_rule((struct rule*)r);
 	} else {
@@ -119,11 +119,11 @@ void print_rule(const struct rule *r)
 	size_t i;
 
 	for (i = 0; i < r->A->length; i++)
-		printf("%d ", r->A->items[i]);
+		printf("%lu ", r->A->items[i]);
 	printf("-> ");
 	for (i = 0; i < r->B->length; i++)
 		if (r->B->items[i])
-			printf("%d ", r->B->items[i]);
+			printf("%lu ", r->B->items[i]);
 }
 
 struct rule *build_rule_A_B(const struct itemset *A, const struct itemset *B)
@@ -182,7 +182,7 @@ struct rule *build_rule_A_AB(const struct itemset *A, const struct itemset *AB)
 	return r;
 }
 
-struct itemset *build_itemset(const int *items, size_t length)
+struct itemset *build_itemset(const size_t *items, size_t length)
 {
 	struct itemset *its = calloc(1, sizeof(*its));
 	size_t i;
@@ -200,7 +200,7 @@ struct itemset *build_itemset(const int *items, size_t length)
 	return its;
 }
 
-struct itemset *build_itemset_add_items(const struct itemset *base, int *items, size_t length)
+struct itemset *build_itemset_add_items(const struct itemset *base, size_t *items, size_t length)
 {
 	struct itemset *its = calloc(1, sizeof(*its));
 	size_t i;
@@ -220,7 +220,7 @@ struct itemset *build_itemset_add_items(const struct itemset *base, int *items, 
 	return its;
 }
 
-struct itemset *build_itemset_del_items(const struct itemset *base, int *items, size_t length)
+struct itemset *build_itemset_del_items(const struct itemset *base, size_t *items, size_t length)
 {
 	struct itemset *its = calloc(1, sizeof(*its));
 	size_t i, j;
