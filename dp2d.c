@@ -218,11 +218,6 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 				AB[j] = next[j][ptr[j]];
 			ab_length = kp + 1;
 
-			/* TODO: we just print it */
-			for (j = 0; j <= (size_t)kp; j++)
-				printf("(%lu)%lu ", j, next[j][ptr[j]]);
-			printf("\n");
-
 			/* fill A, generate & process rule */
 			for (a_length = 1; a_length < ab_length; a_length++) {
 				A[a_length-1] = AB[a_length-1];
