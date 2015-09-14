@@ -20,6 +20,9 @@ def main(seed=42, n=10, fr=0.5, num_docs=10,
     seed=int(seed)
     n = int(n)
     fr = float(fr)
+    num_docs = int(num_docs)
+    min_doc_len=int(min_doc_len)
+    max_doc_len=int(max_doc_len)
 
     # init random seed
     random.seed(seed)
