@@ -21,11 +21,11 @@
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
-#define PRINT_RULE_DOMAIN 1
+#define PRINT_RULE_DOMAIN 0
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 1
+#define PRINT_RS_TRACE 0
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
