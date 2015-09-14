@@ -118,7 +118,7 @@ static struct file_data *read_input(char *fname)
 	struct file_data *data = calloc(1, sizeof(*data));
 	FILE *f = fopen(fname, "r");
 	char buffer[LINELEN], *p;
-	unsigned int i, j;
+	unsigned int i = 0, j;
 
 	printf("Reading the input...\n");
 
