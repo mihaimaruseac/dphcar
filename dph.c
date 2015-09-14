@@ -25,6 +25,10 @@ static struct {
 	double eps_share;
 	/* max items in generation step */
 	size_t mis;
+	/* number of trees (0 == no tree) */
+	size_t nt;
+	/* max neighbors in tree (0 == no tree) */
+	size_t mnt;
 	/* number of rules to extract */
 	size_t k;
 	/* min alpha value */
@@ -35,7 +39,7 @@ static struct {
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MINALPHA MIS K [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MINALPHA MIS NT MNT K [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -48,7 +52,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc < 7 || argc > 8)
+	if (argc < 9 || argc > 10)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 
@@ -60,13 +64,20 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[5], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
 		usage(argv[0]);
-	if (sscanf(argv[6], "%lu", &args.k) != 1)
+	if (sscanf(argv[6], "%lu", &args.nt) != 1)
 		usage(argv[0]);
-	if (argc == 8) {
-		if (sscanf(argv[7], "%ld", &args.seed) != 1)
+	if (sscanf(argv[7], "%lu", &args.mnt) != 1)
+		usage(argv[0]);
+	if (sscanf(argv[8], "%lu", &args.k) != 1)
+		usage(argv[0]);
+	if (argc == 10) {
+		if (sscanf(argv[9], "%ld", &args.seed) != 1)
 			usage(argv[0]);
 	} else
 		args.seed = 42;
+
+	if (args.nt && !args.mnt)
+		die("NT != 0 implies MNT != 0");
 }
 
 int main(int argc, char **argv)
@@ -79,7 +90,8 @@ int main(int argc, char **argv)
 	printf("data-struct: nodes: %lu, edges: %lu, transactions: %lu\n",
 			fp.n, fp.e, fp.t);
 
-	dp2d(&fp, args.eps, args.eps_share, args.mis, args.k,
+	dp2d(&fp, args.eps, args.eps_share, args.mis,
+			args.nt, args.mnt, args.k,
 			args.minalpha, args.seed);
 
 	fpt_cleanup(&fp);
