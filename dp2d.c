@@ -256,7 +256,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
-	size_t i, j, fm, rs, cis;
+	size_t i, j, fm, rs;
 	double maxc, minc;
 	size_t *items;
 
@@ -283,56 +283,54 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
-			cis = mis;
+	/* select mining domains */
+	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
+	rs = 0; /* empty reservoir */
 
-			/* select mining domains */
-			struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
-			rs = 0; /* empty reservoir */
+	/* initial items */
+	for (fm = 0, j = 0; j < mis && fm < fp->n; fm++)
+		items[j++] = ic[fm].value;
 
-			/* initial items */
-			for (fm = 0, j = 0; j < cis && fm < fp->n; fm++)
-				items[j++] = ic[fm].value;
+	if (j < mis)
+		mis = j;
 
-			if (j < cis)
-				cis = j;
-
-			while (1) {
+	while (1) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
-				printf("Domain: %lu: ", fm);
-				for (i = 0; i < cis; i++)
-					printf("%lu ", items[i]);
-				printf("\n");
+		printf("Domain: %lu: ", fm);
+		for (i = 0; i < mis; i++)
+			printf("%lu ", items[i]);
+		printf("\n");
 #endif
 
-				generate_and_add_all_rules(fp, items, cis, cis, eps/k,
-						&rs, reservoir, k, &randbuffer, minalpha);
+		generate_and_add_all_rules(fp, items, mis, mis, eps/k,
+				&rs, reservoir, k, &randbuffer, minalpha);
 
-				if (fm == fp->n)
-					break;
+		if (fm == fp->n)
+			break;
 
-				for (i = 0; i < cis - 1; i++)
-					items[i] = items[i+1];
-				items[cis - 1] = ic[fm++].value;
-			}
+		for (i = 0; i < mis - 1; i++)
+			items[i] = items[i+1];
+		items[mis - 1] = ic[fm++].value;
+	}
 
 #if PRINT_FINAL_RULES
-			print_reservoir(reservoir, rs);
+	print_reservoir(reservoir, rs);
 #endif
 
-			/* move rules from reservoir to histogram */
-			minc = 1; maxc = 0;
-			for (i = 0; i < rs; i++) {
-				if (reservoir[i].c < minc)
-					minc = reservoir[i].c;
-				if (reservoir[i].c > maxc)
-					maxc = reservoir[i].c;
-				histogram_register(h, reservoir[i].c);
-			}
+	/* move rules from reservoir to histogram */
+	minc = 1; maxc = 0;
+	for (i = 0; i < rs; i++) {
+		if (reservoir[i].c < minc)
+			minc = reservoir[i].c;
+		if (reservoir[i].c > maxc)
+			maxc = reservoir[i].c;
+		histogram_register(h, reservoir[i].c);
+	}
 
-			printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
-					rs, minc, maxc);
+	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+			rs, minc, maxc);
 
-			free_reservoir_array(reservoir, rs);
+	free_reservoir_array(reservoir, rs);
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
