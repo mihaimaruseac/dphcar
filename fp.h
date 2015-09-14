@@ -4,10 +4,6 @@
 #ifndef _FP_H
 #define _FP_H
 
-#if 0 /* moving to graphs */
-struct table;
-struct fptree_node;
-#endif
 struct graph;
 
 /**
@@ -22,19 +18,12 @@ struct fptree {
 	size_t e;
 	/* number of transactions */
 	size_t t;
-#if 0 /* moving to graphs */
-	/* header table for the tree, opaque */
-	struct table *table;
-	/* root of the tree, opaque */
-	struct fptree_node *tree;
-#else
 	/* number of items in adjacency list */
 	size_t alc;
 	/* adjacency list for the graph, opaque */
 	struct graph *graph;
 	/* documents, opaque */
 	struct docs *docs;
-#endif
 };
 
 /**

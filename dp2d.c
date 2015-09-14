@@ -172,53 +172,18 @@ static void process_rule(const struct fptree *fp,
 }
 
 static void generate_and_add_all_rules(const struct fptree *fp,
-#if 0 /* moving to graphs */
-		const int *items, size_t num_items, size_t st, double eps,
-#else
 		const size_t *items, size_t num_items, size_t sz, double eps,
-#endif
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer, double m)
 {
-#if 0 /* moving to graphs */
-	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
-#else
 	size_t i, j, a_length, ab_length;
-#endif
-#if 0 /* moving to graphs */
-	int *A, *AB;
-#else
 	size_t *A, *AB, **next, *nsz;
 	int kp, *ptr;
-#endif
 	double u;
 
 	A = calloc(num_items, sizeof(A[0]));
 	AB = calloc(num_items, sizeof(AB[0]));
 
-#if 0 /* moving to graphs */
-	/* generate rule's AB */
-	for (i = st; i < max; i++) {
-		ab_length = 0;
-		for (j = 0; j < num_items; j++)
-			if (i & (1 << j))
-				AB[ab_length++] = items[j];
-		if (ab_length < 2) continue;
-
-#if 0 /* moving to graphs */
-		max2 = (1 << ab_length) - 1;
-		for (j = 1; j < max2; j++) {
-			a_length = 0;
-			for (l = 0; l < ab_length; l++)
-				if (j & (1 << l))
-					A[a_length++] = AB[l];
-			drand48_r(randbuffer, &u);
-			process_rule(fp, AB, ab_length, A, a_length,
-					eps, rs, reservoir, k, u, m);
-		}
-#endif
-	}
-#else
 	next = calloc(sz, sizeof(next[0]));
 	ptr = calloc(sz, sizeof(ptr[0]));
 	nsz = calloc(sz, sizeof(nsz[0]));
@@ -279,124 +244,28 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	free(next);
 	free(ptr);
 	free(nsz);
-#endif
-
-	free(A);
 	free(AB);
+	free(A);
 }
 
-#if 0 /* moving to graphs */
-static void split_in_partitions(const struct fptree *fp,
-		const struct item_count *ic, size_t bins, enum bin_mode bin_mode,
-		int minth,
-		size_t **parts, size_t *parlens,
-		struct drand48_data *randbuffer)
-{
-	size_t i, j, k, c;
-	size_t *items;
-
-	/* compute how many items there are */
-	for (c = 0; c < fp->n;)
-		if (ic[c++].noisy_count < minth)
-			break;
-	printf("Items above threshold: %lu\n", c);
-
-	/* determine count of items in each bin */
-	if (bin_mode == EQUIWIDTH) {
-		size_t *thresholds = calloc(bins, sizeof(thresholds[0]));
-		size_t delta = (ic[0].noisy_count - minth)/bins;
-		size_t t = ic[0].noisy_count;
-
-		/* compute thresholds */
-		for (i = 0; i < bins; i++) {
-			t-=delta;
-			thresholds[i] = t;
-		}
-		thresholds[bins-1] = minth;
-
-		/* get counts */
-		i = 0;
-		for (j = 0, k = 0; j < c; j++,k++)
-			if (ic[j].noisy_count < thresholds[i]) {
-				parlens[i++] = k;
-				k = 0;
-			}
-
-		free(thresholds);
-	} else {
-		for (i = 0; i < bins; i++)
-			parlens[i] = c/bins;
-		parlens[bins-1] += c%bins;
-	}
-
-	items = calloc(c, sizeof(*items));
-	for (i = 0; i < c; i++)
-		items[i] = i;
-
-	/* RANDOM needs a shuffle of all items in ic */
-	if (bin_mode == RANDOM) {
-		size_t t;
-		double rnd;
-
-		for(i = c - 1; i; i--) {
-			drand48_r(randbuffer, &rnd);
-			j = i * rnd;
-			t = items[j];
-			items[j] = items[i];
-			items[i] = t;
-		}
-	}
-
-	/* distribute items */
-	j = 0;
-	for (i = 0; i < bins; i++) {
-		parts[i] = calloc(parlens[i], sizeof(parts[i][0]));
-		for (k = 0; k < parlens[i]; k++)
-			parts[i][k] = items[j++];
-	}
-
-	free(items);
-}
-#endif
-
-#if 0 /* moving to graphs */
-void dp2d(const struct fptree *fp,
-		size_t shelves, size_t bins, enum bin_mode bin_mode,
-		double eps, double eps_share, int minth, size_t mis, size_t k,
-		double minalpha, long int seed)
-#else
 void dp2d(const struct fptree *fp, double eps, double eps_share,
 		size_t mis, size_t k,
 		double minalpha, long int seed)
-#endif
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
-#if 0 /* moving to graphs */
-	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
-	size_t **partitions = NULL, *parlens = NULL;
-#endif
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
-#if 0 /* moving to graphs */
-	size_t i, j, ip, fm, rs, st, cis, sh;
-#else
-	size_t i, j, fm, rs, cis;
-#endif
 	struct drand48_data randbuffer;
+	size_t i, j, fm, rs, cis;
 	double maxc, minc;
 	size_t *items;
 
 	init_rng(seed, &randbuffer);
 	items = calloc(mis + 1, sizeof(items[0]));
 
-#if 0 /* moving to graphs */
-	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
-			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
-#else
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu, minalpha=%lf\n",
 			eps, eps_share, mis, k, minalpha);
-#endif
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -411,67 +280,18 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	eps = eps - epsilon_step1;
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
-#if 0 /* moving to graphs */
-	eps /= shelves;
-	printf("\t-> per shelf:\t%lf\n", eps);
-
-	for (sh = 0; sh < shelves; sh++)
-		ksh[sh] = (k / shelves) + ((k % shelves) > sh);
-
-	printf("\t-> rules per shelf:");
-	for (sh = 0; sh < shelves; sh++)
-		printf(" %lu", ksh[sh]);
-	printf("\n");
-#endif
-
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
-#if 0 /* moving to graphs */
-	for (sh = 0; sh < shelves; sh++) {
-		for (i = 0; i < bins && partitions; i++)
-			free(partitions[i]);
-		free(partitions);
-		free(parlens);
-
-		partitions = calloc(bins, sizeof(partitions[0]));
-		parlens = calloc(bins, sizeof(parlens[0]));
-		split_in_partitions(fp, ic, bins, bin_mode, minth,
-				partitions, parlens, &randbuffer);
-		printf("Partitions: %lu |", bins);
-		for (i = 0; i < bins; i++)
-			printf(" %lu", parlens[i]);
-		printf("\n");
-
-		for (ip = 0; ip < bins; ip++) {
-			size_t k_now = ksh[sh];
-			k_now = (k_now / bins) + ((k_now % bins) > ip);
-
-			/* if no items just move away */
-			if (!parlens[ip])
-				continue;
-#endif
 			cis = mis;
 
 			/* select mining domains */
-#if 0 /* moving to graphs */
-			struct reservoir *reservoir = calloc(k_now, sizeof(reservoir[0]));
-#else
 			struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
-#endif
 			rs = 0; /* empty reservoir */
-#if 0 /* moving to graphs */
-			st = 0;
-#endif
 
 			/* initial items */
-#if 0 /* moving to graphs */
-			for (fm = 0, j = 0; j < cis && fm < parlens[ip]; fm++)
-				items[j++] = ic[partitions[ip][fm]].value;
-#else
 			for (fm = 0, j = 0; j < cis && fm < fp->n; fm++)
 				items[j++] = ic[fm].value;
-#endif
 
 			if (j < cis)
 				cis = j;
@@ -484,30 +304,15 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 				printf("\n");
 #endif
 
-#if 0 /* moving to graphs */
-				generate_and_add_all_rules(fp, items, cis, st, eps/k_now,
-						&rs, reservoir, k_now, &randbuffer, minalpha);
-#else
 				generate_and_add_all_rules(fp, items, cis, cis, eps/k,
 						&rs, reservoir, k, &randbuffer, minalpha);
-#endif
-#if 0 /* moving to graphs */
-				st |= (1 << (cis - 1));
-#endif
 
-#if 0 /* moving to graphs */
-				if (fm == parlens[ip])
-#else
 				if (fm == fp->n)
-#endif
 					break;
+
 				for (i = 0; i < cis - 1; i++)
 					items[i] = items[i+1];
-#if 0 /* moving to graphs */
-				items[cis - 1] = ic[partitions[ip][fm++]].value;
-#else
 				items[cis - 1] = ic[fm++].value;
-#endif
 			}
 
 #if PRINT_FINAL_RULES
@@ -528,12 +333,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 					rs, minc, maxc);
 
 			free_reservoir_array(reservoir, rs);
-#if 0 /* moving to graphs */
-		}
-
-		printf("Finished shelf %lu\n", sh);
-	}
-#endif
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
@@ -546,16 +345,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
-#if 0 /* moving to graphs */
-	for (i = 0; i < bins; i++)
-		free(partitions[i]);
-	free(parlens);
-	free(partitions);
-#endif
 	free_histogram(h);
 	free(items);
-#if 0 /* moving to graphs */
-	free(ksh);
-#endif
 	free(ic);
 }
