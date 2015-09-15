@@ -38,6 +38,17 @@ def main(seed=42, n=10, fr=0.5, num_docs=10,
         update(edges, x, y)
         update(edges, y, x)
 
+    # generate next transitions (2gram model for now)
+    nexts = {}
+    for cn in xrange(1, n + 1):
+        e1 = edges.get(cn, [])
+        if not e1:
+            nexts[cn] = []
+        else:
+            cnt = min(4, len(e1))
+            nexts[cn] = [(random.uniform(0, 0.2), random.choice(e1))
+                    for i in xrange(cnt)]
+
     # generate docs
     docs = []
     for i in xrange(num_docs):
@@ -46,8 +57,19 @@ def main(seed=42, n=10, fr=0.5, num_docs=10,
         pth = []
         for j in xrange(doclen):
             pth.append(cn)
-            if not edges.get(cn, []): break
-            cn = random.choice(edges[cn])
+            if not nexts[cn]: break
+            s = random.random()
+            l = len(nexts[cn])
+            cnnx = None
+            for i in xrange(l):
+                s -= nexts[cn][i][0]
+                if s < 0:
+                    cnnx = nexts[cn][i][1]
+                    break
+            if not cnnx:
+                cn = random.choice(edges[cn])
+            else:
+                cn = cnnx
         docs.append(pth)
 
     # output datafile
