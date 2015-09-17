@@ -27,8 +27,6 @@ static struct {
 	size_t mis;
 	/* number of trees (0 == no tree) */
 	size_t nt;
-	/* max neighbors in tree (0 == no tree) */
-	size_t mnt;
 	/* number of rules to extract */
 	size_t k;
 	/* min alpha value */
@@ -39,7 +37,7 @@ static struct {
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MINALPHA MIS NT MNT K [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE EPS EPS_SHARE MINALPHA MIS NT K [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -52,7 +50,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc < 9 || argc > 10)
+	if (argc < 8 || argc > 9)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 
@@ -66,18 +64,13 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[6], "%lu", &args.nt) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[7], "%lu", &args.mnt) != 1)
+	if (sscanf(argv[7], "%lu", &args.k) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[8], "%lu", &args.k) != 1)
-		usage(argv[0]);
-	if (argc == 10) {
-		if (sscanf(argv[9], "%ld", &args.seed) != 1)
+	if (argc == 9) {
+		if (sscanf(argv[8], "%ld", &args.seed) != 1)
 			usage(argv[0]);
 	} else
 		args.seed = 42;
-
-	if (args.nt && !args.mnt)
-		die("NT != 0 implies MNT != 0");
 }
 
 int main(int argc, char **argv)
@@ -91,8 +84,7 @@ int main(int argc, char **argv)
 			fp.n, fp.e, fp.t);
 
 	dp2d(&fp, args.eps, args.eps_share, args.mis,
-			args.nt, args.mnt, args.k,
-			args.minalpha, args.seed);
+			args.nt, args.k, args.minalpha, args.seed);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);

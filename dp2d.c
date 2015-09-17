@@ -172,7 +172,7 @@ static void process_rule(const struct fptree *fp,
 }
 
 static void generate_and_add_all_rules(const struct fptree *fp,
-		const size_t *items, size_t num_items, size_t sz, double eps,
+		const size_t *items, size_t num_items, double eps,
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer, double m)
 {
@@ -181,12 +181,12 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	int kp, *ptr;
 	double u;
 
-	A = calloc(sz, sizeof(A[0]));
-	AB = calloc(sz, sizeof(AB[0]));
+	A = calloc(num_items, sizeof(A[0]));
+	AB = calloc(num_items, sizeof(AB[0]));
 
-	next = calloc(sz, sizeof(next[0]));
-	ptr = calloc(sz, sizeof(ptr[0]));
-	nsz = calloc(sz, sizeof(nsz[0]));
+	next = calloc(num_items, sizeof(next[0]));
+	ptr = calloc(num_items, sizeof(ptr[0]));
+	nsz = calloc(num_items, sizeof(nsz[0]));
 
 	next[0] = calloc(num_items, sizeof(next[0][0]));
 	for (i = 0; i < num_items; i++)
@@ -227,7 +227,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 			}
 		}
 
-		if (kp == (int)(sz-1)) /* max length */
+		if (kp == (int)(num_items-1)) /* max length */
 			continue;
 
 		/* next */
@@ -244,11 +244,11 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		size_t mis, size_t nt, size_t mnt, size_t k,
+		size_t mis, size_t nt, size_t k,
 		double minalpha, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
-	size_t i, j, fm = 0, rs, rsi, cmnt, ct, csz;
+	size_t i, j, fm = 0, rs, rsi, ct, csz, tmp, tmp2;
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct drand48_data randbuffer;
@@ -256,6 +256,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	double maxc, minc;
 
 	init_rng(seed, &randbuffer);
+	items = calloc(mis + 1, sizeof(items[0]));
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu, minalpha=%lf\n",
@@ -283,51 +284,49 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	/* initial items */
 	if (nt) {
-		items = calloc(fp->n, sizeof(items[0]));
+		fm = 0;
+		items[0] = ic[fm++].value;
 
-		cmnt = 0;
-		items[cmnt++] = ic[fm++].value;
-		j = 0;
-		while (cmnt < mnt) {
-			/* expand more */
-			i = j; j = cmnt;
-			for (; i < j; i++) {
-				ch = fp_grph_children(fp, items[i], &csz);
-				for (ct = 0; ct < csz; ct++) {
-					for (rsi = 0; rsi < cmnt; rsi++)
-						if (items[rsi] == ch[ct])
-							break;
-					if (rsi < cmnt)
-						continue;
-					items[cmnt++] = ch[ct];
-				}
-				free(ch);
+		for (j = 1, i = 0; j < mis;) {
+			ch = fp_grph_children(fp, items[i++], &csz);
+
+			tmp2 = 0;
+			for (rsi = 0; rsi < fp->n; rsi++)
+				for (ct = tmp2; ct < csz; ct++)
+					if (ic[rsi].value == ch[ct]) {
+						tmp = ch[tmp2];
+						ch[tmp2++] = ch[ct];
+						ch[ct] = tmp;
+					}
+
+			for (ct = 0; ct < csz && j < mis; ct++) {
+				for (rsi = 0; rsi < j; rsi++)
+					if (items[rsi] == ch[ct])
+						break;
+				if (rsi < j)
+					continue;
+				items[j++] = ch[ct];
 			}
+
+			free(ch);
 		}
 	} else {
-		items = calloc(mis + 1, sizeof(items[0]));
 		for (fm = 0, j = 0; j < mis && fm < fp->n; fm++)
 			items[j++] = ic[fm].value;
 
 		if (j < mis)
 			mis = j;
-
-		cmnt = mis;
 	}
 
 	while (1) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		printf("Domain: %lu: ", fm);
-		if (nt)
-			for (i = 0; i < cmnt; i++)
-				printf("%lu ", items[i]);
-		else
-			for (i = 0; i < mis; i++)
-				printf("%lu ", items[i]);
+		for (i = 0; i < mis; i++)
+			printf("%lu ", items[i]);
 		printf("\n");
 #endif
 
-		generate_and_add_all_rules(fp, items, cmnt, mis, eps/k,
+		generate_and_add_all_rules(fp, items, mis, eps/k,
 				&rs, reservoir, k, &randbuffer, minalpha);
 
 		/* move to next set of items */
@@ -335,24 +334,30 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 			if (fm == nt)
 				break;
 
-			cmnt = 0;
-			items[cmnt++] = ic[fm++].value;
-			j = 0;
-			while (cmnt < mnt) {
-				/* expand more */
-				i = j; j = cmnt;
-				for (; i < j; i++) {
-					ch = fp_grph_children(fp, items[i], &csz);
-					for (ct = 0; ct < csz; ct++) {
-						for (rsi = 0; rsi < cmnt; rsi++)
-							if (items[rsi] == ch[ct])
-								break;
-						if (rsi < cmnt)
-							continue;
-						items[cmnt++] = ch[ct];
-					}
-					free(ch);
+			items[0] = ic[fm++].value;
+
+			for (j = 1, i = 0; j < mis;) {
+				ch = fp_grph_children(fp, items[i++], &csz);
+
+				tmp2 = 0;
+				for (rsi = 0; rsi < fp->n; rsi++)
+					for (ct = tmp2; ct < csz; ct++)
+						if (ic[rsi].value == ch[ct]) {
+							tmp = ch[tmp2];
+							ch[tmp2++] = ch[ct];
+							ch[ct] = tmp;
+						}
+
+				for (ct = 0; ct < csz && j < mis; ct++) {
+					for (rsi = 0; rsi < j; rsi++)
+						if (items[rsi] == ch[ct])
+							break;
+					if (rsi < j)
+						continue;
+					items[j++] = ch[ct];
 				}
+
+				free(ch);
 			}
 		} else {
 			if (fm == fp->n)
