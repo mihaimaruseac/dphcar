@@ -20,3 +20,6 @@ dph-orig
 mm
 output_new/
 output_new_old/
+csv_new/
+new_results.csv
+parse_new_output.py
