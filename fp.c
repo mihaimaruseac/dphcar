@@ -126,12 +126,16 @@ static void read_docs(FILE *f, struct fptree *fp)
 		die("Missing separator between graph and transactions (or too few transactions)");
 	free(items);
 
+	fp->l_max_t = 0;
 	fp->docs = calloc(fp->t, sizeof(fp->docs[0]));
 
 	for (i = 0; i < fp->t; i++) {
 		items = read_line(f, &sz);
 		if (!sz)
 			die("Invalid graph line in transaction file");
+
+		if (sz > fp->l_max_t)
+			fp->l_max_t = sz;
 
 		/* TODO: check validity of doc path? */
 		fp->docs[i].sz = sz;

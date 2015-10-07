@@ -18,6 +18,8 @@ struct fptree {
 	size_t e;
 	/* number of transactions */
 	size_t t;
+	/* max transaction length */
+	size_t l_max_t;
 	/* number of items in adjacency list */
 	size_t alc;
 	/* adjacency list for the graph, opaque */

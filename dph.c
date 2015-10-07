@@ -79,16 +79,17 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv);
 
-#if 0 /* moving to graphs */
 	fpt_read_from_file(args.tfname, &fp);
-	printf("data-struct: nodes: %lu, edges: %lu, transactions: %lu\n",
-			fp.n, fp.e, fp.t);
+	printf("data-struct: nodes: %lu, edges: %lu, transactions: %lu, "
+			"l_max_t: %lu\n",
+			fp.n, fp.e, fp.t, fp.l_max_t);
 
+#if 0 /* moving to graphs */
 	dp2d(&fp, args.eps, args.eps_share, args.mis,
 			args.nt, args.k, args.minalpha, args.seed);
+#endif
 
 	fpt_cleanup(&fp);
-#endif
 	free(args.tfname);
 
 	return 0;
