@@ -7,6 +7,8 @@
 #include "fp.h"
 #include "globals.h"
 
+static const int end_of_transaction = 0;
+
 struct graph {
 	/* node */
 	size_t n;
@@ -17,10 +19,22 @@ struct graph {
 };
 
 struct tree_edge {
+#if 0 /* moving to graphs */
 	/* length */
 	size_t sz;
 	/* values */
 	size_t *vals;
+#else
+	/* label of edge */
+	size_t label;
+	/* count of transactions passing through edge */
+	size_t count;
+	/* number of children */
+	size_t sz;
+	/* allocated space for children */
+	size_t asz;
+	struct tree_edge *tree_edges;
+#endif
 };
 
 /* sort graph adjacency list in ascending order of nodes */
@@ -126,6 +140,7 @@ static void read_docs(FILE *f, struct fptree *fp)
 	free(items);
 
 	fp->l_max_t = 0;
+#if 0 /* moving to graphs */
 	fp->tree_edges = calloc(fp->t, sizeof(fp->tree_edges[0]));
 
 	for (i = 0; i < fp->t; i++) {
@@ -144,6 +159,9 @@ static void read_docs(FILE *f, struct fptree *fp)
 
 		free(items);
 	}
+#else
+	(void)i; (void)j;
+#endif
 }
 
 void fpt_read_from_file(const char *fname, struct fptree *fp)
@@ -175,11 +193,15 @@ void fpt_cleanup(const struct fptree *fp)
 
 	for (i = 0; i < fp->n; i++)
 		free(fp->graph[i].next);
+#if 0 /* moving to graphs */
 	for (i = 0; i < fp->n; i++)
 		free(fp->tree_edges[i].vals);
+#endif
 
 	free(fp->graph);
+#if 0 /* moving to graphs */
 	free(fp->tree_edges);
+#endif
 }
 
 size_t fpt_item_count(const struct fptree *fp, size_t it)
@@ -190,10 +212,14 @@ size_t fpt_item_count(const struct fptree *fp, size_t it)
 		return 0;
 
 	it++;
+#if 0 /* moving to graphs */
 	for (i = 0; i < fp->t; i++)
 		for (j = 0; j < fp->tree_edges[i].sz; j++)
 			if (fp->tree_edges[i].vals[j] == it)
 				cnt++;
+#else
+	(void)i; (void)j;
+#endif
 	return cnt;
 }
 
@@ -203,6 +229,7 @@ size_t fpt_itemset_count(const struct fptree *fp,
 	size_t i, j, ret=0, found;
 	struct tree_edge const *doc;
 
+#if 0 /* moving to graphs */
 	for (i = 0; i < fp->t; i++) {
 		doc = &fp->tree_edges[i];
 		if (doc->sz < itslen)
@@ -219,6 +246,10 @@ size_t fpt_itemset_count(const struct fptree *fp,
 				found = 0;
 		}
 	}
+#else
+	(void)i; (void)j; (void)found; (void)doc;
+	(void)fp; (void)its; (void)itslen;
+#endif
 
 	return ret;
 }
