@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv);
 
+#if 0 /* moving to graphs */
 	fpt_read_from_file(args.tfname, &fp);
 	printf("data-struct: nodes: %lu, edges: %lu, transactions: %lu\n",
 			fp.n, fp.e, fp.t);
@@ -87,6 +88,7 @@ int main(int argc, char **argv)
 			args.nt, args.k, args.minalpha, args.seed);
 
 	fpt_cleanup(&fp);
+#endif
 	free(args.tfname);
 
 	return 0;
