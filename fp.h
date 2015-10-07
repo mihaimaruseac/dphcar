@@ -25,7 +25,7 @@ struct fptree {
 	/* adjacency list for the graph, opaque */
 	struct graph *graph;
 	/* documents, opaque */
-	struct docs *docs;
+	struct tree_edge *tree_edges;
 };
 
 /**
