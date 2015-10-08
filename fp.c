@@ -36,6 +36,15 @@ struct node {
 	struct node_data *data;
 };
 
+struct fptree_private {
+	/* number of items in adjacency list */
+	size_t alc;
+	/* adjacency list for the graph, opaque */
+	struct graph *graph;
+	/* documents as trie, opaque */
+	struct node *root;
+};
+
 /* sort graph adjacency list in ascending order of nodes */
 static int fpgraph_cmp(const void *a, const void *b)
 {
@@ -178,24 +187,24 @@ static void read_edges(FILE *f, struct fptree *fp)
 		die("First line in transaction file has bogus data");
 	free(items);
 
-	fp->graph = calloc(fp->n, sizeof(fp->graph[0]));
+	fp->fpt->graph = calloc(fp->n, sizeof(fp->fpt->graph[0]));
 
-	for (fp->alc = 0; fp->alc < fp->n; fp->alc++) {
+	for (fp->fpt->alc = 0; fp->fpt->alc < fp->n; fp->fpt->alc++) {
 		items = read_line(f, &sz);
 		if (!sz)
 			die("Invalid graph line in transaction file");
 
-		fp->graph[fp->alc].n = items[0];
-		fp->graph[fp->alc].cnt = sz - 1;
-		fp->graph[fp->alc].next = calloc(sz, sizeof(fp->graph[fp->alc].next[0]));
+		fp->fpt->graph[fp->fpt->alc].n = items[0];
+		fp->fpt->graph[fp->fpt->alc].cnt = sz - 1;
+		fp->fpt->graph[fp->fpt->alc].next = calloc(sz, sizeof(fp->fpt->graph[fp->fpt->alc].next[0]));
 
 		for (j = 1; j < sz; j++)
-			fp->graph[fp->alc].next[j-1] = items[j];
+			fp->fpt->graph[fp->fpt->alc].next[j-1] = items[j];
 
 		free(items);
 	}
 
-	qsort(fp->graph, fp->alc, sizeof(fp->graph[0]), fpgraph_cmp);
+	qsort(fp->fpt->graph, fp->fpt->alc, sizeof(fp->fpt->graph[0]), fpgraph_cmp);
 }
 
 static void read_docs(FILE *f, struct fptree *fp)
@@ -208,7 +217,7 @@ static void read_docs(FILE *f, struct fptree *fp)
 	free(items);
 
 	fp->l_max_t = 0;
-	fp->root = init_node();
+	fp->fpt->root = init_node();
 
 	for (i = 0; i < fp->t; i++) {
 		items = read_line(f, &sz);
@@ -219,7 +228,7 @@ static void read_docs(FILE *f, struct fptree *fp)
 			fp->l_max_t = sz;
 
 		for (j = 0; j < sz; j++)
-			fpt_add_transaction(items, j, 0, sz, fp, fp->root);
+			fpt_add_transaction(items, j, 0, sz, fp, fp->fpt->root);
 
 		free(items);
 	}
@@ -234,6 +243,8 @@ void fpt_read_from_file(const char *fname, size_t lmax, struct fptree *fp)
 
 	if (fscanf(f, "%lu%lu%lu", &fp->n, &fp->e, &fp->t) != 3)
 		die("Invalid header in transaction file %s", fname);
+
+	fp->fpt = calloc(1, sizeof(*fp->fpt));
 
 	printf("Reading graph from file ... ");
 	fflush(stdout);
@@ -255,10 +266,11 @@ void fpt_cleanup(const struct fptree *fp)
 	size_t i;
 
 	for (i = 0; i < fp->n; i++)
-		free(fp->graph[i].next);
+		free(fp->fpt->graph[i].next);
 
-	free_doc_tree(fp->root);
-	free(fp->graph);
+	free_doc_tree(fp->fpt->root);
+	free(fp->fpt->graph);
+	free(fp->fpt);
 }
 
 size_t fpt_item_count(const struct fptree *fp, size_t it)
@@ -316,7 +328,7 @@ size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz)
 	struct graph *n;
 	size_t *ret, i;
 
-	n = bsearch(&node, fp->graph, fp->alc, sizeof(fp->graph[0]), fpgraph_cmp);
+	n = bsearch(&node, fp->fpt->graph, fp->fpt->alc, sizeof(fp->fpt->graph[0]), fpgraph_cmp);
 	ret = calloc(n->cnt, sizeof(ret[0]));
 	*sz = n->cnt;
 

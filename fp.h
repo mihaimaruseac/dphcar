@@ -4,8 +4,6 @@
 #ifndef _FP_H
 #define _FP_H
 
-struct graph;
-
 /**
  * A fp-tree structure.
  *
@@ -22,12 +20,8 @@ struct fptree {
 	size_t l_max_t;
 	/* max rule length */
 	size_t l_max_r;
-	/* number of items in adjacency list */
-	size_t alc;
-	/* adjacency list for the graph, opaque */
-	struct graph *graph;
-	/* documents as trie, opaque */
-	struct node *root;
+	/* private data, opaque */
+	struct fptree_private *fpt;
 };
 
 /**
