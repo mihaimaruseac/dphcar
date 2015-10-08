@@ -247,6 +247,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		size_t mis, size_t nt, size_t k,
 		double minalpha, long int seed)
 {
+#if 0 /* moving to graphs */
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t i, j, fm = 0, rs, rsi, ct, csz, tmp, tmp2;
 	struct histogram *h = init_histogram();
@@ -402,4 +403,5 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	free_histogram(h);
 	free(items);
 	free(ic);
+#endif
 }

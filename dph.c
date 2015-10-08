@@ -88,10 +88,9 @@ int main(int argc, char **argv)
 			"l_max_t: %lu l_max_r: %lu\n",
 			fp.n, fp.e, fp.t, fp.l_max_t, fp.l_max_r);
 
-#if 0 /* moving to graphs */
-	dp2d(&fp, args.eps, args.eps_share, args.mis,
-			args.nt, args.k, args.minalpha, args.seed);
-#endif
+	dp2d(&fp, args.eps, args.eps_share,
+			args.mis, args.nt, args.k, args.minalpha,
+			args.seed);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);
