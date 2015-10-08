@@ -84,10 +84,9 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
-		ic[i].real_count = fpt_item_count(fp, i);
+		ic[i].real_count = fpt_item_count(fp, i + 1);
 		ic[i].noisy_count = laplace_mechanism(ic[i].real_count,
-				eps, 1, buffer);
-		/* TODO: replace 1 with lmax !!!! */
+				eps, fp->l_max_t, buffer);
 		/* TODO: filter some noise */
 		if (ic[i].noisy_count < 0)
 			ic[i].noisy_count = 0;
@@ -247,17 +246,25 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		size_t mis, size_t nt, size_t k,
 		double minalpha, long int seed)
 {
-#if 0 /* moving to graphs */
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	double epsilon_step1 = eps * eps_share;
+#if 0 /* moving to graphs */
 	size_t i, j, fm = 0, rs, rsi, ct, csz, tmp, tmp2;
 	struct histogram *h = init_histogram();
-	double epsilon_step1 = eps * eps_share;
+#else
+	size_t i;
+	(void)nt; (void)k;
+#endif
 	struct drand48_data randbuffer;
+#if 0 /* moving to graphs */
 	size_t *items, *ch;
 	double maxc, minc;
+#endif
 
 	init_rng(seed, &randbuffer);
+#if 0 /* moving to graphs */
 	items = calloc(mis + 1, sizeof(items[0]));
+#endif
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu, minalpha=%lf\n",
@@ -270,7 +277,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if PRINT_ITEM_TABLE
 	printf("\n");
 	for (i = 0; i < fp->n; i++)
-		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
+		printf("%lu %lu %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
 	eps = eps - epsilon_step1;
@@ -279,6 +286,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
+#if 0 /* moving to graphs */
 	/* select mining domains */
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	rs = 0; /* empty reservoir */
@@ -402,6 +410,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	free_histogram(h);
 	free(items);
-	free(ic);
 #endif
+	free(ic);
 }

@@ -288,21 +288,7 @@ void fpt_cleanup(const struct fptree *fp)
 
 size_t fpt_item_count(const struct fptree *fp, size_t it)
 {
-	size_t i, j, cnt = 0;
-
-	if (it >= fp->n)
-		return 0;
-
-	it++;
-#if 0 /* moving to graphs */
-	for (i = 0; i < fp->t; i++)
-		for (j = 0; j < fp->children[i].sz; j++)
-			if (fp->children[i].vals[j] == it)
-				cnt++;
-#else
-	(void)i; (void)j;
-#endif
-	return cnt;
+	return fp->fpt->udcnt[it];
 }
 
 size_t fpt_itemset_count(const struct fptree *fp,
