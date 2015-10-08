@@ -39,10 +39,12 @@ struct node {
 struct fptree_private {
 	/* number of items in adjacency list */
 	size_t alc;
-	/* adjacency list for the graph, opaque */
+	/* adjacency list for the graph */
 	struct graph *graph;
-	/* documents as trie, opaque */
+	/* documents as trie */
 	struct node *root;
+	/* unique document occurences udcnt[i] = #_s(i) */
+	size_t *udcnt;
 };
 
 /* sort graph adjacency list in ascending order of nodes */
@@ -209,7 +211,7 @@ static void read_edges(FILE *f, struct fptree *fp)
 
 static void read_docs(FILE *f, struct fptree *fp)
 {
-	size_t i, j, sz = 0, *items;
+	size_t i, j, k, sz = 0, *items;
 
 	items = read_line(f, &sz); /* read the -- separator */
 	if (sz)
@@ -229,6 +231,15 @@ static void read_docs(FILE *f, struct fptree *fp)
 
 		for (j = 0; j < sz; j++)
 			fpt_add_transaction(items, j, 0, sz, fp, fp->fpt->root);
+
+		for (j = 0; j < sz; j++) {
+			for (k = 0; k < j; k++)
+				if (items[j] == items[k])
+					break;
+
+			if (k == j)
+				fp->fpt->udcnt[items[j]]++;
+		}
 
 		free(items);
 	}
@@ -252,6 +263,7 @@ void fpt_read_from_file(const char *fname, size_t lmax, struct fptree *fp)
 	printf("OK\n");
 
 	fp->l_max_r = lmax;
+	fp->fpt->udcnt = calloc(fp->n + 1, sizeof(fp->fpt->udcnt[0]));
 
 	printf("Reading docs from file ... ");
 	fflush(stdout);
@@ -270,6 +282,7 @@ void fpt_cleanup(const struct fptree *fp)
 
 	free_doc_tree(fp->fpt->root);
 	free(fp->fpt->graph);
+	free(fp->fpt->udcnt);
 	free(fp->fpt);
 }
 
