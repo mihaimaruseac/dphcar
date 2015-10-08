@@ -26,8 +26,8 @@ struct fptree {
 	size_t alc;
 	/* adjacency list for the graph, opaque */
 	struct graph *graph;
-	/* documents, opaque */
-	struct tree_edge *tree_edges;
+	/* documents as trie, opaque */
+	struct node *root;
 };
 
 /**

@@ -7,7 +7,7 @@
 #include "fp.h"
 #include "globals.h"
 
-static const int end_of_transaction = 0;
+static const size_t end_of_transaction = 0;
 
 struct graph {
 	/* node */
@@ -18,23 +18,22 @@ struct graph {
 	size_t *next;
 };
 
-struct tree_edge {
-#if 0 /* moving to graphs */
-	/* length */
-	size_t sz;
-	/* values */
-	size_t *vals;
-#else
+struct node_data {
 	/* label of edge */
 	size_t label;
 	/* count of transactions passing through edge */
 	size_t count;
-	/* number of children */
+	/* children */
+	struct node *child;
+};
+
+struct node {
+	/* number of children/labels/counts */
 	size_t sz;
-	/* allocated space for children */
+	/* allocated space for children/labels/counts */
 	size_t asz;
-	struct tree_edge *tree_edges;
-#endif
+	/* node data */
+	struct node_data *data;
 };
 
 /* sort graph adjacency list in ascending order of nodes */
@@ -44,9 +43,14 @@ static int fpgraph_cmp(const void *a, const void *b)
 	return ga->n - gb->n;
 }
 
+static int node_data_cmp(const void *a, const void *b)
+{
+	const struct node_data *nda=a, *ndb=b;
+	return nda->label - ndb->label;
+}
+
 #define LINELENGTH 4096
 #define INITIAL_SIZE 100
-
 static size_t* read_line(FILE *f, size_t *pisz)
 {
 	size_t i, l, save=0, isz=0, isp=INITIAL_SIZE, *items;
@@ -97,9 +101,73 @@ static size_t* read_line(FILE *f, size_t *pisz)
 	*pisz = isz;
 	return items;
 }
-
 #undef LINELENGTH
 #undef INITIAL_SIZE
+
+#define INITIAL_SIZE 10
+static struct node *init_node()
+{
+	struct node *n = calloc(1, sizeof(*n));
+
+	n->asz = INITIAL_SIZE;
+	n->data = calloc(n->asz, sizeof(n->data[0]));
+
+	return n;
+}
+#undef INITIAL_SIZE
+
+static struct node *record_transaction_element(size_t elm,
+		struct node *parent)
+{
+	struct node_data elmd = {elm, 0, 0};
+	struct node_data *ndp = bsearch(&elmd, parent->data, parent->sz,
+			sizeof(parent->data[0]), node_data_cmp);
+	struct node *n;
+
+	if (!ndp) {
+		if (parent->sz == parent->asz) {
+			parent->asz *= 2;
+			parent->data = realloc(parent->data,
+					parent->asz * sizeof(parent->data[0]));
+		}
+
+		n = init_node();
+		parent->data[parent->sz].label = elm;
+		parent->data[parent->sz].count = 1;
+		parent->data[parent->sz].child = n;
+		parent->sz++;
+
+		qsort(parent->data, parent->sz, sizeof(parent->data[0]), node_data_cmp);
+		return n;
+	}
+
+	ndp->count++;
+	return ndp->child;
+}
+
+static void fpt_add_transaction(size_t *items, size_t st, size_t c, size_t sz,
+		const struct fptree *fp, struct node *fpn)
+{
+	size_t elm = (st + c >= sz) ? end_of_transaction : items[st + c];
+	struct node *nn;
+
+	if (c >= fp->l_max_r)
+		return;
+
+	nn = record_transaction_element(elm, fpn);
+	fpt_add_transaction(items, st, c + 1, sz, fp, nn);
+}
+
+static void free_doc_tree(struct node *n)
+{
+	size_t i;
+
+	for (i = 0; i < n->sz; i++)
+		free_doc_tree(n->data[i].child);
+
+	free(n->data);
+	free(n);
+}
 
 static void read_edges(FILE *f, struct fptree *fp)
 {
@@ -140,8 +208,7 @@ static void read_docs(FILE *f, struct fptree *fp)
 	free(items);
 
 	fp->l_max_t = 0;
-#if 0 /* moving to graphs */
-	fp->tree_edges = calloc(fp->t, sizeof(fp->tree_edges[0]));
+	fp->root = init_node();
 
 	for (i = 0; i < fp->t; i++) {
 		items = read_line(f, &sz);
@@ -151,17 +218,11 @@ static void read_docs(FILE *f, struct fptree *fp)
 		if (sz > fp->l_max_t)
 			fp->l_max_t = sz;
 
-		/* TODO: check validity of doc path? */
-		fp->tree_edges[i].sz = sz;
-		fp->tree_edges[i].vals = calloc(sz, sizeof(fp->tree_edges[i].vals[0]));
 		for (j = 0; j < sz; j++)
-			fp->tree_edges[i].vals[j] = items[j];
+			fpt_add_transaction(items, j, 0, sz, fp, fp->root);
 
 		free(items);
 	}
-#else
-	(void)i; (void)j;
-#endif
 }
 
 void fpt_read_from_file(const char *fname, size_t lmax, struct fptree *fp)
@@ -195,15 +256,9 @@ void fpt_cleanup(const struct fptree *fp)
 
 	for (i = 0; i < fp->n; i++)
 		free(fp->graph[i].next);
-#if 0 /* moving to graphs */
-	for (i = 0; i < fp->n; i++)
-		free(fp->tree_edges[i].vals);
-#endif
 
+	free_doc_tree(fp->root);
 	free(fp->graph);
-#if 0 /* moving to graphs */
-	free(fp->tree_edges);
-#endif
 }
 
 size_t fpt_item_count(const struct fptree *fp, size_t it)
@@ -216,8 +271,8 @@ size_t fpt_item_count(const struct fptree *fp, size_t it)
 	it++;
 #if 0 /* moving to graphs */
 	for (i = 0; i < fp->t; i++)
-		for (j = 0; j < fp->tree_edges[i].sz; j++)
-			if (fp->tree_edges[i].vals[j] == it)
+		for (j = 0; j < fp->children[i].sz; j++)
+			if (fp->children[i].vals[j] == it)
 				cnt++;
 #else
 	(void)i; (void)j;
@@ -229,11 +284,11 @@ size_t fpt_itemset_count(const struct fptree *fp,
 		const size_t *its, size_t itslen)
 {
 	size_t i, j, ret=0, found;
-	struct tree_edge const *doc;
+	struct node const *doc;
 
 #if 0 /* moving to graphs */
 	for (i = 0; i < fp->t; i++) {
-		doc = &fp->tree_edges[i];
+		doc = &fp->children[i];
 		if (doc->sz < itslen)
 			continue;
 
