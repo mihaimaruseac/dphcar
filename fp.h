@@ -20,6 +20,8 @@ struct fptree {
 	size_t t;
 	/* max transaction length */
 	size_t l_max_t;
+	/* max rule length */
+	size_t l_max_r;
 	/* number of items in adjacency list */
 	size_t alc;
 	/* adjacency list for the graph, opaque */
@@ -31,7 +33,7 @@ struct fptree {
 /**
  * Read a transaction file and construct a fp-tree from it.
  */
-void fpt_read_from_file(const char *fname, struct fptree *fp);
+void fpt_read_from_file(const char *fname, size_t lmax, struct fptree *fp);
 
 /**
  * Cleanup the data structures used in a fp-tree.

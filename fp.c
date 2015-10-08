@@ -164,7 +164,7 @@ static void read_docs(FILE *f, struct fptree *fp)
 #endif
 }
 
-void fpt_read_from_file(const char *fname, struct fptree *fp)
+void fpt_read_from_file(const char *fname, size_t lmax, struct fptree *fp)
 {
 	FILE *f = fopen(fname, "r");
 
@@ -178,6 +178,8 @@ void fpt_read_from_file(const char *fname, struct fptree *fp)
 	fflush(stdout);
 	read_edges(f, fp);
 	printf("OK\n");
+
+	fp->l_max_r = lmax;
 
 	printf("Reading docs from file ... ");
 	fflush(stdout);
