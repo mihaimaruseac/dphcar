@@ -156,6 +156,23 @@ static struct node *record_transaction_element(size_t elm,
 	return ndp->child;
 }
 
+static size_t fpt_search_path(const struct node *n,
+		const size_t *pth, size_t pthlen, size_t p)
+{
+	struct node_data elmd = {pth[p], 0, 0};
+	struct node_data *ndp;
+
+	ndp = bsearch(&elmd, n->data, n->sz, sizeof(n->data[0]), node_data_cmp);
+	if (!ndp)
+		return 0;
+
+	p++;
+	if (p == pthlen)
+		return ndp->count;
+
+	return fpt_search_path(ndp->child, pth, pthlen, p);
+}
+
 static void fpt_add_transaction(size_t *items, size_t st, size_t c, size_t sz,
 		const struct fptree *fp, struct node *fpn)
 {
@@ -301,32 +318,7 @@ size_t fpt_item_count(const struct fptree *fp, size_t it)
 size_t fpt_itemset_count(const struct fptree *fp,
 		const size_t *its, size_t itslen)
 {
-	size_t i, j, ret=0, found;
-	struct node const *doc;
-
-#if 0 /* moving to graphs */
-	for (i = 0; i < fp->t; i++) {
-		doc = &fp->children[i];
-		if (doc->sz < itslen)
-			continue;
-
-		for (j = 0, found = 0; j < doc->sz; j++) {
-			if (doc->vals[j] == its[found]) {
-				found++;
-				if (found == itslen) {
-					found = 0;
-					ret++;
-				}
-			} else
-				found = 0;
-		}
-	}
-#else
-	(void)i; (void)j; (void)found; (void)doc;
-	(void)fp; (void)its; (void)itslen;
-#endif
-
-	return ret;
+	return fpt_search_path(fp->fpt->root, its, itslen, 0);
 }
 
 size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz)
