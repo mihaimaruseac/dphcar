@@ -28,7 +28,7 @@ static struct {
 	/* maximum rule length */
 	size_t l_max_r;
 	/* min alpha value */
-	double minalpha;
+	size_t minalpha;
 	/* max items in generation step */
 	size_t mis;
 	/* number of trees (0 == no tree) */
@@ -66,7 +66,7 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[5], "%lu", &args.l_max_r) != 1 || args.l_max_r < 2 || args.l_max_r > 7)
 		usage(argv[0]);
-	if (sscanf(argv[6], "%lf", &args.minalpha) != 1)
+	if (sscanf(argv[6], "%lu", &args.minalpha) != 1)
 		usage(argv[0]);
 	if (sscanf(argv[7], "%lu", &args.k) != 1)
 		usage(argv[0]);

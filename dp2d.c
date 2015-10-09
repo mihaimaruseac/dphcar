@@ -32,8 +32,7 @@
 #define PRINT_FINAL_RULES 0
 #endif
 
-// TODO: m -> size_t
-static double quality(int x, int y, double m, size_t sfactor)
+static double quality(size_t x, size_t y, size_t m, size_t sfactor)
 {
 	double c;
 
@@ -106,7 +105,7 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 static void process_rule(const struct fptree *fp,
 		const size_t *AB, int ab_length, const size_t *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
-		double u, double m, size_t sfactor)
+		double u, size_t m, size_t sfactor)
 {
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
@@ -167,7 +166,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		const size_t *items, size_t num_items, double eps,
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer,
-		double m, size_t sfactor)
+		size_t m, size_t sfactor)
 {
 	size_t *A = calloc(num_items, sizeof(*A));
 	size_t a_length;
@@ -186,7 +185,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 static void mine_rules_path(const struct fptree *fp,
 		const struct item_count *ic,
 		struct reservoir *reservoir,
-		size_t *rs, size_t rlen, size_t k, double eps, double minalpha,
+		size_t *rs, size_t rlen, size_t k, double eps, size_t minalpha,
 		size_t *items, size_t cn, size_t pos,
 		struct drand48_data *randbuffer)
 {
@@ -222,7 +221,7 @@ static void mine_rules_path(const struct fptree *fp,
 static void mine_rules_length(const struct fptree *fp,
 		const struct item_count *ic,
 		struct histogram *h,
-		size_t rlen, size_t k, double eps, double minalpha,
+		size_t rlen, size_t k, double eps, size_t minalpha,
 		struct drand48_data *randbuffer)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
@@ -260,7 +259,7 @@ static void mine_rules_length(const struct fptree *fp,
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		size_t k, double minalpha, long int seed)
+		size_t k, size_t minalpha, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
@@ -274,7 +273,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	double t1, t2;
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
-			"k=%lu, minalpha=%lf\n",
+			"k=%lu, minalpha=%lu\n",
 			eps, eps_share, k, minalpha);
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -290,7 +289,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	eps = eps - epsilon_step1;
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
-	// TODO: better split into sets, round robin for now
+	/* TODO: better split into sets, round robin for now */
 	lens = fp->has_returns ? fp->l_max_r - 1 : 1;
 	eps /= lens;
 	for (i = 0; i < lens; i++) {
