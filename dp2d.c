@@ -65,12 +65,6 @@ static void free_reservoir_array(struct reservoir *reservoir, int size)
 	free(reservoir);
 }
 
-static int ic_noisy_cmp(const void *a, const void *b)
-{
-	const struct item_count *ia = a, *ib = b;
-	return double_cmp_r(&ia->noisy_count, &ib->noisy_count);
-}
-
 static int reservoir_cmp(const void *a, const void *b)
 {
 	const struct reservoir *ra = a, *rb = b;
@@ -91,8 +85,6 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		if (ic[i].noisy_count < 0)
 			ic[i].noisy_count = 0;
 	}
-
-	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
 #if PRINT_RS_TRACE || PRINT_FINAL_RULES
@@ -242,39 +234,104 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	free(A);
 }
 
+static void mine_rules_path(const struct fptree *fp,
+		const struct item_count *ic,
+		struct histogram *h,
+		size_t rlen, size_t k, double eps,
+		struct drand48_data *randbuffer,
+		size_t *items,
+		size_t cn, size_t pos)
+{
+	size_t *ch, i, chsz;
+
+	items[pos++] = cn;
+
+	if (pos == rlen) {
+		// TODO: generate rules now
+#if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
+		for (i = 0; i < pos; i++)
+			printf("%lu ", items[i]);
+		printf("\n");
+#endif
+
+#if 0 /* moving to graphs */
+		generate_and_add_all_rules(fp, items, mis, eps/k,
+				&rs, reservoir, k, &randbuffer, minalpha);
+#endif
+		return;
+	}
+
+
+	// TODO: check probability and cut early
+
+	ch = fp_grph_children(fp, cn, &chsz);
+	for (i = 0; i < chsz; i++)
+		mine_rules_path(fp, ic, h, rlen, k, eps, randbuffer,
+				items, ch[i], pos);
+	free(ch);
+}
+
+static void mine_rules_length(const struct fptree *fp,
+		const struct item_count *ic,
+		struct histogram *h,
+		size_t rlen, size_t k, double eps,
+		struct drand48_data *randbuffer)
+{
+	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
+	size_t *items = calloc(rlen, sizeof(items[0]));
+	double minc, maxc;
+	size_t i, rs = 0;
+
+	printf("\tlength %s%lu: %lu rules with budget %lf each\n",
+			fp->has_returns?"==":"<=", rlen, k, eps);
+
+	for (i = 1; i <= fp->n; i++) {
+		mine_rules_path(fp, ic, h, rlen, k, eps, randbuffer,
+				items, i, 0);
+	}
+
+#if PRINT_FINAL_RULES
+	print_reservoir(reservoir, rs);
+#endif
+
+	/* move rules from reservoir to histogram */
+	minc = 1; maxc = 0;
+	for (i = 0; i < rs; i++) {
+		if (reservoir[i].c < minc)
+			minc = reservoir[i].c;
+		if (reservoir[i].c > maxc)
+			maxc = reservoir[i].c;
+		histogram_register(h, reservoir[i].c);
+	}
+
+	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+			rs, minc, maxc);
+
+	free_reservoir_array(reservoir, rs);
+	free(items);
+}
+
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		size_t mis, size_t nt, size_t k,
-		double minalpha, long int seed)
+		size_t mis, size_t nt,
+		size_t k, double minalpha, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
-	size_t *ls = calloc(fp->l_max_r - 1, sizeof(ls[0])); /* rule lengths */
 	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
+	size_t *ls = calloc(fp->l_max_r - 1, sizeof(ls[0])); /* rule lengths */
 	double *es = calloc(fp->l_max_r - 1, sizeof(es[0])); /* epsilons */
 	double epsilon_step1 = eps * eps_share;
-	size_t i, lens, rs;
-#if 0 /* moving to graphs */
-	size_t i, j, fm = 0, rs, rsi, ct, csz, tmp, tmp2;
-#else
-	(void)nt; (void)k;
-#endif
 	struct histogram *h = init_histogram();
+	struct timeval starttime, endtime;
 	struct drand48_data randbuffer;
-#if 0 /* moving to graphs */
-	size_t *items, *ch;
-#endif
-	double maxc, minc;
-
-	init_rng(seed, &randbuffer);
-#if 0 /* moving to graphs */
-	items = calloc(mis + 1, sizeof(items[0]));
-#endif
+	size_t i, lens;
+	double t1, t2;
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu, minalpha=%lf\n",
 			eps, eps_share, mis, k, minalpha);
-
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
+	init_rng(seed, &randbuffer);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
 
 #if PRINT_ITEM_TABLE
@@ -293,130 +350,15 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		ls[i] = fp->has_returns ? i + 2 : fp->l_max_r;
 		ks[i] = (k / lens) + ((k % lens) > i);
 		es[i] = eps / ks[i];
-		printf("\tlength %s%lu: %lu rules with budget %lf each\n",
-				fp->has_returns?"==":"<=",
-				ls[i], ks[i], es[i]);
 	}
 
-	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
+	for (i = 0; i < lens; i++)
+		mine_rules_length(fp, ic, h, ls[i], ks[i], es[i], &randbuffer);
 
-	/* select mining domains */
-	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
-	rs = 0; /* empty reservoir */
-
-#if 0 /* moving to graphs */
-	/* initial items */
-	if (nt) {
-		fm = 0;
-		items[0] = ic[fm++].value;
-
-		for (j = 1, i = 0; j < mis;) {
-			ch = fp_grph_children(fp, items[i++], &csz);
-
-			tmp2 = 0;
-			for (rsi = 0; rsi < fp->n; rsi++)
-				for (ct = tmp2; ct < csz; ct++)
-					if (ic[rsi].value == ch[ct]) {
-						tmp = ch[tmp2];
-						ch[tmp2++] = ch[ct];
-						ch[ct] = tmp;
-					}
-
-			for (ct = 0; ct < csz && j < mis; ct++) {
-				for (rsi = 0; rsi < j; rsi++)
-					if (items[rsi] == ch[ct])
-						break;
-				if (rsi < j)
-					continue;
-				items[j++] = ch[ct];
-			}
-
-			free(ch);
-		}
-	} else {
-		for (fm = 0, j = 0; j < mis && fm < fp->n; fm++)
-			items[j++] = ic[fm].value;
-
-		if (j < mis)
-			mis = j;
-	}
-
-	while (1) {
-#if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
-		printf("Domain: %lu: ", fm);
-		for (i = 0; i < mis; i++)
-			printf("%lu ", items[i]);
-		printf("\n");
-#endif
-
-		generate_and_add_all_rules(fp, items, mis, eps/k,
-				&rs, reservoir, k, &randbuffer, minalpha);
-
-		/* move to next set of items */
-		if (nt) {
-			if (fm == nt)
-				break;
-
-			items[0] = ic[fm++].value;
-
-			for (j = 1, i = 0; j < mis;) {
-				ch = fp_grph_children(fp, items[i++], &csz);
-
-				tmp2 = 0;
-				for (rsi = 0; rsi < fp->n; rsi++)
-					for (ct = tmp2; ct < csz; ct++)
-						if (ic[rsi].value == ch[ct]) {
-							tmp = ch[tmp2];
-							ch[tmp2++] = ch[ct];
-							ch[ct] = tmp;
-						}
-
-				for (ct = 0; ct < csz && j < mis; ct++) {
-					for (rsi = 0; rsi < j; rsi++)
-						if (items[rsi] == ch[ct])
-							break;
-					if (rsi < j)
-						continue;
-					items[j++] = ch[ct];
-				}
-
-				free(ch);
-			}
-		} else {
-			if (fm == fp->n)
-				break;
-
-			for (i = 0; i < mis - 1; i++)
-				items[i] = items[i+1];
-			items[mis - 1] = ic[fm++].value;
-		}
-	}
-
-#if PRINT_FINAL_RULES
-	print_reservoir(reservoir, rs);
-#endif
-#endif
-
-	/* move rules from reservoir to histogram */
-	minc = 1; maxc = 0;
-	for (i = 0; i < rs; i++) {
-		if (reservoir[i].c < minc)
-			minc = reservoir[i].c;
-		if (reservoir[i].c > maxc)
-			maxc = reservoir[i].c;
-		histogram_register(h, reservoir[i].c);
-	}
-
-	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
-			rs, minc, maxc);
-
-	free_reservoir_array(reservoir, rs);
-
-	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
-	double t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
-	double t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
+	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
+	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
 
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
@@ -425,9 +367,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	histogram_dump(stdout, h, 1, "\t");
 
 	free_histogram(h);
-#if 0 /* moving to graphs */
-	free(items);
-#endif
 	free(ls);
 	free(ks);
 	free(es);

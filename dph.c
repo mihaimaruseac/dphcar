@@ -98,8 +98,8 @@ int main(int argc, char **argv)
 	fp.has_returns = args.has_returns;
 
 	dp2d(&fp, args.eps, args.eps_share,
-			args.mis, args.nt, args.k, args.minalpha,
-			args.seed);
+			args.mis, args.nt,
+			args.k, args.minalpha, args.seed);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);
