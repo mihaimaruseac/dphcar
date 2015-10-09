@@ -192,19 +192,21 @@ static void mine_rules_path(const struct fptree *fp,
 
 	items[pos++] = cn;
 
-	if (pos == rlen) {
-		// TODO: generate rules now
+	if (pos == rlen || (!fp->has_returns && pos > 1)) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		for (i = 0; i < pos; i++)
 			printf("%lu ", items[i]);
 		printf("\n");
 #endif
 
+		// TODO: add argument for sensitivity
 		generate_and_add_all_rules(fp, items, pos, eps,
 				rs, reservoir, k, randbuffer, minalpha);
-		return;
 	}
 
+	/* stop recursion */
+	if (pos == rlen)
+		return;
 
 	// TODO: check probability and cut early
 
