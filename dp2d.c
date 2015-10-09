@@ -287,13 +287,14 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
 	// TODO: better split into sets, round robin for now
-	lens = fp->l_max_r - 1;
+	lens = fp->has_returns ? fp->l_max_r - 1 : 1;
 	eps /= lens;
 	for (i = 0; i < lens; i++) {
-		ls[i] = i + 2;
+		ls[i] = fp->has_returns ? i + 2 : fp->l_max_r;
 		ks[i] = (k / lens) + ((k % lens) > i);
 		es[i] = eps / ks[i];
-		printf("\tlength %lu: %lu rules with budget %lf each\n",
+		printf("\tlength %s%lu: %lu rules with budget %lf each\n",
+				fp->has_returns?"==":"<=",
 				ls[i], ks[i], es[i]);
 	}
 
