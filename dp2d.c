@@ -167,70 +167,17 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer, double m)
 {
-	size_t i, j, a_length, ab_length;
-	size_t *A, *AB, **next, *nsz;
-	int kp, *ptr;
+	size_t *A = calloc(num_items, sizeof(*A));
+	size_t a_length;
 	double u;
 
-	A = calloc(num_items, sizeof(A[0]));
-	AB = calloc(num_items, sizeof(AB[0]));
-
-	next = calloc(num_items, sizeof(next[0]));
-	ptr = calloc(num_items, sizeof(ptr[0]));
-	nsz = calloc(num_items, sizeof(nsz[0]));
-
-	next[0] = calloc(num_items, sizeof(next[0][0]));
-	for (i = 0; i < num_items; i++)
-		next[0][i] = items[i];
-
-	kp = 0; ptr[0] = -1; nsz[0] = num_items;
-	while (kp >= 0) {
-		ptr[kp]++;
-
-		/* backtrack */
-		if (ptr[kp] == (int)nsz[kp]) {
-			free(next[kp]);
-			next[kp] = 0;
-			kp--;
-			continue;
-		}
-
-		/* check that current item is in current set of items */
-		for (j = 0; j < num_items; j++)
-			if (items[j] == next[kp][ptr[kp]])
-				break;
-		if (j == num_items)
-			continue;
-
-		/* combination generated */
-		if (kp) { /* need at least 2 items */
-			/* fill AB */
-			for (j = 0; j <= (size_t)kp; j++)
-				AB[j] = next[j][ptr[j]];
-			ab_length = kp + 1;
-
-			/* fill A, generate & process rule */
-			for (a_length = 1; a_length < ab_length; a_length++) {
-				A[a_length-1] = AB[a_length-1];
-				drand48_r(randbuffer, &u);
-				process_rule(fp, AB, ab_length, A, a_length,
-						eps, rs, reservoir, k, u, m);
-			}
-		}
-
-		if (kp == (int)(num_items-1)) /* max length */
-			continue;
-
-		/* next */
-		kp++;
-		ptr[kp] = -1;
-		next[kp] = fp_grph_children(fp, next[kp-1][ptr[kp-1]], &nsz[kp]);
+	for (a_length = 1; a_length < num_items; a_length++) {
+		A[a_length-1] = items[a_length-1];
+		drand48_r(randbuffer, &u);
+		process_rule(fp, items, num_items, A, a_length, eps,
+				rs, reservoir, k, u, m);
 	}
 
-	free(next);
-	free(ptr);
-	free(nsz);
-	free(AB);
 	free(A);
 }
 
