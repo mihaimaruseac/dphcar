@@ -243,6 +243,13 @@ static void read_docs(FILE *f, struct fptree *fp)
 
 		free(items);
 	}
+
+	/* check for returns */
+	fp->has_returns = 1;
+	for (i = 1; i <= fp->n && fp->has_returns; i++)
+		if (fp->fpt->udcnt[i] != fp->fpt->root->data[i-1].count)
+			fp->has_returns = 0;
+	fp->has_returns = !fp->has_returns;
 }
 
 void fpt_read_from_file(const char *fname, size_t lmax, struct fptree *fp)

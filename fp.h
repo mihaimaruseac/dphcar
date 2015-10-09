@@ -20,6 +20,8 @@ struct fptree {
 	size_t l_max_t;
 	/* max rule length */
 	size_t l_max_r;
+	/* do we have returns? */
+	int has_returns;
 	/* private data, opaque */
 	struct fptree_private *fpt;
 };

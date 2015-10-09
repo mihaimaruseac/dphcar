@@ -85,8 +85,9 @@ int main(int argc, char **argv)
 
 	fpt_read_from_file(args.tfname, args.l_max_r, &fp);
 	printf("data-struct: nodes: %lu, edges: %lu, transactions: %lu, "
-			"l_max_t: %lu l_max_r: %lu\n",
-			fp.n, fp.e, fp.t, fp.l_max_t, fp.l_max_r);
+			"l_max_t: %lu l_max_r: %lu returns: %d\n",
+			fp.n, fp.e, fp.t, fp.l_max_t, fp.l_max_r,
+			fp.has_returns);
 
 	dp2d(&fp, args.eps, args.eps_share,
 			args.mis, args.nt, args.k, args.minalpha,
