@@ -29,10 +29,8 @@ static struct {
 	size_t l_max_r;
 	/* min alpha value */
 	size_t minalpha;
-	/* max items in generation step */
-	size_t mis;
-	/* number of trees (0 == no tree) */
-	size_t nt;
+	/* min conf value (c0) */
+	double c0;
 	/* number of rules to extract */
 	size_t k;
 	/* random seed */
@@ -41,7 +39,7 @@ static struct {
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE r/n EPS EPS_SHARE L_MAX_R MINALPHA K [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE r/n EPS EPS_SHARE L_MAX_R MINALPHA C0 K [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -54,7 +52,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc < 8 || argc > 9)
+	if (argc < 9 || argc > 10)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (!strncmp(argv[2], "r", 1)) args.has_returns = 1;
@@ -68,10 +66,12 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[6], "%lu", &args.minalpha) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[7], "%lu", &args.k) != 1)
+	if (sscanf(argv[7], "%lf", &args.c0) != 1 || args.c0 < 0 || args.c0 >= 1)
 		usage(argv[0]);
-	if (argc == 9) {
-		if (sscanf(argv[8], "%ld", &args.seed) != 1)
+	if (sscanf(argv[8], "%lu", &args.k) != 1)
+		usage(argv[0]);
+	if (argc == 10) {
+		if (sscanf(argv[9], "%ld", &args.seed) != 1)
 			usage(argv[0]);
 	} else
 		args.seed = 42;
@@ -93,8 +93,8 @@ int main(int argc, char **argv)
 		die("File has returns in transaction but declared as with no returns");
 	fp.has_returns = args.has_returns;
 
-	dp2d(&fp, args.eps, args.eps_share,
-			args.k, args.minalpha, args.seed);
+	dp2d(&fp, args.eps, args.eps_share, args.k,
+			args.minalpha, args.c0, args.seed);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);
