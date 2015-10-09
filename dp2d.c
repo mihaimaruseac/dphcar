@@ -247,14 +247,17 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		double minalpha, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	size_t *ls = calloc(fp->l_max_r - 1, sizeof(ls[0])); /* rule lengths */
+	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
+	double *es = calloc(fp->l_max_r - 1, sizeof(es[0])); /* epsilons */
 	double epsilon_step1 = eps * eps_share;
+	size_t i, lens;
 #if 0 /* moving to graphs */
 	size_t i, j, fm = 0, rs, rsi, ct, csz, tmp, tmp2;
-	struct histogram *h = init_histogram();
 #else
-	size_t i;
 	(void)nt; (void)k;
 #endif
+	struct histogram *h = init_histogram();
 	struct drand48_data randbuffer;
 #if 0 /* moving to graphs */
 	size_t *items, *ch;
@@ -282,6 +285,17 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	eps = eps - epsilon_step1;
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
+
+	// TODO: better split into sets, round robin for now
+	lens = fp->l_max_r - 1;
+	eps /= lens;
+	for (i = 0; i < lens; i++) {
+		ls[i] = i + 2;
+		ks[i] = (k / lens) + ((k % lens) > i);
+		es[i] = eps / ks[i];
+		printf("\tlength %lu: %lu rules with budget %lf each\n",
+				ls[i], ks[i], es[i]);
+	}
 
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
@@ -407,9 +421,14 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
+#endif
 
 	free_histogram(h);
+#if 0 /* moving to graphs */
 	free(items);
 #endif
+	free(ls);
+	free(ks);
+	free(es);
 	free(ic);
 }
