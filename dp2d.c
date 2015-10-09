@@ -21,25 +21,26 @@
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
-#define PRINT_RULE_DOMAIN 1
+#define PRINT_RULE_DOMAIN 0
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 0
+#define PRINT_RS_TRACE 1
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
 #define PRINT_FINAL_RULES 0
 #endif
 
-static double quality(int x, int y, double m)
+// TODO: m -> size_t
+static double quality(int x, int y, double m, size_t sfactor)
 {
 	double c;
 
 	if (x < m) x = m;
 	c = (y + 0.0) / (x + 0.0);
 
-	return m * pow(c, 1);
+	return c * m / sfactor;
 }
 
 struct item_count {
@@ -105,7 +106,7 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 static void process_rule(const struct fptree *fp,
 		const size_t *AB, int ab_length, const size_t *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
-		double u, double m)
+		double u, double m, size_t sfactor)
 {
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
@@ -117,7 +118,7 @@ static void process_rule(const struct fptree *fp,
 	iA = build_itemset(A, a_length);
 	iAB = build_itemset(AB, ab_length);
 	r = build_rule_A_AB(iA, iAB);
-	q = quality(sup_a, sup_ab, m);
+	q = quality(sup_a, sup_ab, m, sfactor);
 	v = log(log(1/u)) - eps * q / 2;
 	c = (sup_ab + 0.0) / (sup_a + 0.0);
 
@@ -165,7 +166,8 @@ static void process_rule(const struct fptree *fp,
 static void generate_and_add_all_rules(const struct fptree *fp,
 		const size_t *items, size_t num_items, double eps,
 		size_t *rs, struct reservoir *reservoir,
-		size_t k, struct drand48_data *randbuffer, double m)
+		size_t k, struct drand48_data *randbuffer,
+		double m, size_t sfactor)
 {
 	size_t *A = calloc(num_items, sizeof(*A));
 	size_t a_length;
@@ -175,7 +177,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		A[a_length-1] = items[a_length-1];
 		drand48_r(randbuffer, &u);
 		process_rule(fp, items, num_items, A, a_length, eps,
-				rs, reservoir, k, u, m);
+				rs, reservoir, k, u, m, sfactor);
 	}
 
 	free(A);
@@ -188,7 +190,7 @@ static void mine_rules_path(const struct fptree *fp,
 		size_t *items, size_t cn, size_t pos,
 		struct drand48_data *randbuffer)
 {
-	size_t *ch, i, chsz;
+	size_t *ch, i, chsz, sf;
 
 	items[pos++] = cn;
 
@@ -199,9 +201,9 @@ static void mine_rules_path(const struct fptree *fp,
 		printf("\n");
 #endif
 
-		// TODO: add argument for sensitivity
+		sf = fp->has_returns ? fp->l_max_t / rlen : 1;
 		generate_and_add_all_rules(fp, items, pos, eps,
-				rs, reservoir, k, randbuffer, minalpha);
+				rs, reservoir, k, randbuffer, minalpha, sf);
 	}
 
 	/* stop recursion */
