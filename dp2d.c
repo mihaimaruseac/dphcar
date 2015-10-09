@@ -21,7 +21,7 @@
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
-#define PRINT_RULE_DOMAIN 0
+#define PRINT_RULE_DOMAIN 1
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
@@ -236,11 +236,10 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 
 static void mine_rules_path(const struct fptree *fp,
 		const struct item_count *ic,
-		struct histogram *h,
-		size_t rlen, size_t k, double eps,
-		struct drand48_data *randbuffer,
-		size_t *items,
-		size_t cn, size_t pos)
+		struct reservoir *reservoir,
+		size_t *rs, size_t rlen, size_t k, double eps, double minalpha,
+		size_t *items, size_t cn, size_t pos,
+		struct drand48_data *randbuffer)
 {
 	size_t *ch, i, chsz;
 
@@ -254,10 +253,8 @@ static void mine_rules_path(const struct fptree *fp,
 		printf("\n");
 #endif
 
-#if 0 /* moving to graphs */
-		generate_and_add_all_rules(fp, items, mis, eps/k,
-				&rs, reservoir, k, &randbuffer, minalpha);
-#endif
+		generate_and_add_all_rules(fp, items, pos, eps,
+				rs, reservoir, k, randbuffer, minalpha);
 		return;
 	}
 
@@ -266,15 +263,15 @@ static void mine_rules_path(const struct fptree *fp,
 
 	ch = fp_grph_children(fp, cn, &chsz);
 	for (i = 0; i < chsz; i++)
-		mine_rules_path(fp, ic, h, rlen, k, eps, randbuffer,
-				items, ch[i], pos);
+		mine_rules_path(fp, ic, reservoir, rs, rlen, k, eps, minalpha,
+				items, ch[i], pos, randbuffer);
 	free(ch);
 }
 
 static void mine_rules_length(const struct fptree *fp,
 		const struct item_count *ic,
 		struct histogram *h,
-		size_t rlen, size_t k, double eps,
+		size_t rlen, size_t k, double eps, double minalpha,
 		struct drand48_data *randbuffer)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
@@ -286,8 +283,8 @@ static void mine_rules_length(const struct fptree *fp,
 			fp->has_returns?"==":"<=", rlen, k, eps);
 
 	for (i = 1; i <= fp->n; i++) {
-		mine_rules_path(fp, ic, h, rlen, k, eps, randbuffer,
-				items, i, 0);
+		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps, minalpha,
+				items, i, 0, randbuffer);
 	}
 
 #if PRINT_FINAL_RULES
@@ -312,7 +309,6 @@ static void mine_rules_length(const struct fptree *fp,
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		size_t mis, size_t nt,
 		size_t k, double minalpha, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
@@ -327,8 +323,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	double t1, t2;
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
-			"mis=%lu, k=%lu, minalpha=%lf\n",
-			eps, eps_share, mis, k, minalpha);
+			"k=%lu, minalpha=%lf\n",
+			eps, eps_share, k, minalpha);
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	init_rng(seed, &randbuffer);
@@ -354,7 +350,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	gettimeofday(&starttime, NULL);
 	for (i = 0; i < lens; i++)
-		mine_rules_length(fp, ic, h, ls[i], ks[i], es[i], &randbuffer);
+		mine_rules_length(fp, ic, h, ls[i], ks[i], es[i], minalpha, &randbuffer);
 
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;

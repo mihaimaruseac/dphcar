@@ -41,7 +41,7 @@ static struct {
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE r/n EPS EPS_SHARE L_MAX_R MINALPHA MIS NT K [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE r/n EPS EPS_SHARE L_MAX_R MINALPHA K [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -54,7 +54,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc < 10 || argc > 11)
+	if (argc < 8 || argc > 9)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
 	if (!strncmp(argv[2], "r", 1)) args.has_returns = 1;
@@ -68,14 +68,10 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[6], "%lf", &args.minalpha) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[7], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
+	if (sscanf(argv[7], "%lu", &args.k) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[8], "%lu", &args.nt) != 1)
-		usage(argv[0]);
-	if (sscanf(argv[9], "%lu", &args.k) != 1)
-		usage(argv[0]);
-	if (argc == 11) {
-		if (sscanf(argv[10], "%ld", &args.seed) != 1)
+	if (argc == 9) {
+		if (sscanf(argv[8], "%ld", &args.seed) != 1)
 			usage(argv[0]);
 	} else
 		args.seed = 42;
@@ -98,7 +94,6 @@ int main(int argc, char **argv)
 	fp.has_returns = args.has_returns;
 
 	dp2d(&fp, args.eps, args.eps_share,
-			args.mis, args.nt,
 			args.k, args.minalpha, args.seed);
 
 	fpt_cleanup(&fp);
