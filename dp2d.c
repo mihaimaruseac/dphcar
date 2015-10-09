@@ -251,7 +251,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
 	double *es = calloc(fp->l_max_r - 1, sizeof(es[0])); /* epsilons */
 	double epsilon_step1 = eps * eps_share;
-	size_t i, lens;
+	size_t i, lens, rs;
 #if 0 /* moving to graphs */
 	size_t i, j, fm = 0, rs, rsi, ct, csz, tmp, tmp2;
 #else
@@ -261,8 +261,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	struct drand48_data randbuffer;
 #if 0 /* moving to graphs */
 	size_t *items, *ch;
-	double maxc, minc;
 #endif
+	double maxc, minc;
 
 	init_rng(seed, &randbuffer);
 #if 0 /* moving to graphs */
@@ -301,11 +301,11 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
-#if 0 /* moving to graphs */
 	/* select mining domains */
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	rs = 0; /* empty reservoir */
 
+#if 0 /* moving to graphs */
 	/* initial items */
 	if (nt) {
 		fm = 0;
@@ -396,6 +396,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if PRINT_FINAL_RULES
 	print_reservoir(reservoir, rs);
 #endif
+#endif
 
 	/* move rules from reservoir to histogram */
 	minc = 1; maxc = 0;
@@ -422,7 +423,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
-#endif
 
 	free_histogram(h);
 #if 0 /* moving to graphs */
