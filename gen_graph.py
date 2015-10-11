@@ -1,3 +1,10 @@
+# params:
+#   seed        - seed for rng
+#   n           - number of nodes
+#   fr          - fill ratio - number of edges 1 = complete graph ($K_n$), 0 = empty graph
+#   num_docs    - number of docs to generate
+#   min_doc_len - min doc len
+#   max_doc_len - max doc len
 import itertools
 import random
 import sys
@@ -7,15 +14,7 @@ def update(edges, x, y):
     l.append(y)
     edges[x]=l
 
-# params:
-#   seed        - seed for rng
-#   n           - number of nodes
-#   fr          - fill ratio - number of edges 1 = complete graph ($K_n$), 0 = empty graph
-#   num_docs    - number of docs to generate
-#   min_doc_len - min doc len
-#   max_doc_len - max doc len
-def main(seed=42, n=10, fr=0.5, num_docs=10,
-        min_doc_len=3, max_doc_len=6):
+def init_args(seed, n, fr, num_docs, min_doc_len, max_doc_len):
     # type conversions
     seed=int(seed)
     n = int(n)
@@ -26,6 +25,20 @@ def main(seed=42, n=10, fr=0.5, num_docs=10,
 
     # init random seed
     random.seed(seed)
+    return seed, n, fr, num_docs, min_doc_len, max_doc_len
+
+def save(n, e, num_docs, edges, docs):
+    print n, e, num_docs
+    for x in edges:
+        print x, ' '.join(map(str, edges[x]))
+    print '--'
+    for d in docs:
+        print ' '.join(map(str, d))
+
+def main_random_original(seed=42, n=10, fr=0.5, num_docs=10,
+        min_doc_len=3, max_doc_len=6):
+    seed, n, fr, num_docs, min_doc_len, max_doc_len = init_args(seed, n, fr,
+            num_docs, min_doc_len, max_doc_len)
 
     # generate graph
     e = int(fr * (n * (n -1) / 2))
@@ -72,13 +85,28 @@ def main(seed=42, n=10, fr=0.5, num_docs=10,
                 cn = cnnx
         docs.append(pth)
 
-    # output datafile
-    print n, e, num_docs
-    for x in edges:
-        print x, ' '.join(map(str, edges[x]))
-    print '--'
-    for d in docs:
-        print ' '.join(map(str, d))
+    save(n, e, num_docs, edges, docs)
+
+def main_ring(seed=42, n=10, fr=0.5, num_docs=10,
+        min_doc_len=3, max_doc_len=6):
+    seed, n, fr, num_docs, min_doc_len, max_doc_len = init_args(seed, n, fr,
+            num_docs, min_doc_len, max_doc_len)
+
+    # generate graph
+    e = n
+    edges = {}
+    for x, y in [(1 + x, 1 + (x + 1) % n) for x in xrange(n)]:
+        update(edges, x, y)
+        update(edges, y, x)
+    # generate docs
+    docs = []
+    for i in xrange(num_docs):
+        doclen = random.randint(min_doc_len, max_doc_len)
+        pth = range(1, doclen + 1)
+        docs.append(pth)
+    save(n, e, num_docs, edges, docs)
 
 if __name__ == '__main__':
+    #main=main_random_original
+    main=main_ring
     main(**dict(map(lambda x: x.split('='), sys.argv[1:])))
