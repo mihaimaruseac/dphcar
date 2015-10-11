@@ -48,6 +48,8 @@ struct item_count {
 	size_t value;
 	size_t real_count;
 	double noisy_count;
+	double smin;
+	double smax;
 };
 
 struct reservoir {
@@ -76,7 +78,12 @@ static int reservoir_cmp(const void *a, const void *b)
 static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
+	double scale = log(10) * fp->l_max_t / eps;
 	size_t i;
+
+#if PRINT_PROBS
+	printf("Scale parameter: %lf\n", scale);
+#endif
 
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
@@ -86,6 +93,12 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		/* TODO: filter some noise */
 		if (ic[i].noisy_count < 0)
 			ic[i].noisy_count = 0;
+		ic[i].smin = ic[i].noisy_count - scale;
+		ic[i].smax = ic[i].noisy_count + scale;
+		if (ic[i].smin < 0) ic[i].smin = 0;
+		if (ic[i].smax < 0) ic[i].smax = 0;
+		if (ic[i].smin > fp->t) ic[i].smin = fp->t;
+		if (ic[i].smax > fp->t) ic[i].smax = fp->t;
 	}
 }
 
@@ -190,9 +203,54 @@ static void mine_rules_path(const struct fptree *fp,
 		size_t *rs, size_t rlen, size_t k, double eps,
 		size_t minalpha, double c0,
 		size_t *items, size_t cn, size_t pos,
-		struct drand48_data *randbuffer)
+		struct drand48_data *randbuffer,
+		double smin, double smax,
+		size_t *pch, size_t pchsz)
 {
-	size_t *ch, i, chsz, sf;
+	size_t *ch, i, chsz, sf, li;
+	double snmin, snmax, t;
+
+	// TODO: check probability and cut early
+	if (!pos) {
+		smin = ic[cn-1].smin;
+		smax = ic[cn-1].smax;
+	} else {
+		li = items[pos - 1];
+		snmin = snmax = 0;
+		for (i = 0; i < pchsz; i++) {
+			if (pch[i] == cn)
+				continue;
+			printf("Adding %lu %lu\n", cn, pch[i]);
+			snmin += ic[pch[i]-1].smin;
+			snmax += ic[pch[i]-1].smax;
+		}
+
+#if PRINT_PROBS
+		printf("For path of length %lu:", pos);
+		for (i = 0; i < pos; i++)
+			printf(" %lu", items[i]);
+		printf("\n\tbounds:\t[%lf, %lf]\n", smin, smax);
+		printf("\tlast %lu [%lf, %lf]\n", li,
+				ic[li-1].smin, ic[li-1].smax);
+		printf("\titem %lu [%lf, %lf]\n", cn,
+				ic[cn-1].smin, ic[cn-1].smax);
+		printf("\tnone -- [%lf, %lf]\n", snmin, snmax);
+#endif
+
+		/* smin = max{0, limin - snmax, smin - snmax} */
+		smin = smin - snmax;
+		t = ic[li-1].smin - snmax;
+		if (smin < t) smin = t;
+		if (smin < 0) smin = 0;
+
+		/* smax = min{limax, cnmax} */
+		smax = ic[li-1].smax;
+		if (smax > ic[cn-1].smax) smax = ic[cn-1].smax;
+
+#if PRINT_PROBS
+		printf("\tnew:\t[%lf, %lf]\n", smin, smax);
+#endif
+	}
 
 	items[pos++] = cn;
 
@@ -212,12 +270,11 @@ static void mine_rules_path(const struct fptree *fp,
 	if (pos == rlen)
 		return;
 
-	// TODO: check probability and cut early
-
 	ch = fp_grph_children(fp, cn, &chsz);
 	for (i = 0; i < chsz; i++)
 		mine_rules_path(fp, ic, reservoir, rs, rlen, k, eps,
-				minalpha, c0, items, ch[i], pos, randbuffer);
+				minalpha, c0, items, ch[i], pos, randbuffer,
+				smin, smax, ch, chsz);
 	free(ch);
 }
 
@@ -238,7 +295,8 @@ static void mine_rules_length(const struct fptree *fp,
 
 	for (i = 1; i <= fp->n; i++) {
 		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps,
-				minalpha, c0, items, i, 0, randbuffer);
+				minalpha, c0, items, i, 0, randbuffer,
+				0, 0, NULL, 0);
 	}
 
 #if PRINT_FINAL_RULES
@@ -287,7 +345,10 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if PRINT_ITEM_TABLE
 	printf("\n");
 	for (i = 0; i < fp->n; i++)
-		printf("%lu %lu %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
+		printf("%lu %lu %lf [%lf, %lf]\n",
+				ic[i].value, ic[i].real_count,
+				ic[i].noisy_count,
+				ic[i].smin, ic[i].smax);
 #endif
 
 	eps = eps - epsilon_step1;
