@@ -17,7 +17,7 @@
 
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 1
+#define PRINT_ITEM_TABLE 0
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
@@ -25,15 +25,15 @@
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 1
+#define PRINT_RS_TRACE 0
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 1
+#define PRINT_FINAL_RULES 0
 #endif
 /* print probabilities */
 #ifndef PRINT_PROBS
-#define PRINT_PROBS 1
+#define PRINT_PROBS 0
 #endif
 
 static double quality(size_t x, size_t y, size_t m, size_t sfactor, double c0)
@@ -223,7 +223,6 @@ static void mine_rules_path(const struct fptree *fp,
 		for (i = 0; i < pchsz; i++) {
 			if (pch[i] == cn)
 				continue;
-			printf("Adding %lu %lu\n", cn, pch[i]);
 			snmin += ic[pch[i]-1].smin;
 			snmax += ic[pch[i]-1].smax;
 		}
