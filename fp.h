@@ -4,6 +4,8 @@
 #ifndef _FP_H
 #define _FP_H
 
+struct histogram;
+
 /**
  * A fp-tree structure.
  *
@@ -48,5 +50,8 @@ void fpt_tree_print(const struct fptree *fp);
 void fpt_table_print(const struct fptree *fp);
 
 size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz);
+
+/** Non private mining */
+void fpt_mine(const struct fptree *fp, struct histogram *h);
 
 #endif

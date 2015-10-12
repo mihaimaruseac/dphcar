@@ -320,6 +320,13 @@ static void mine_rules_length(const struct fptree *fp,
 	free(items);
 }
 
+static struct histogram *non_private_mining(const struct fptree *fp)
+{
+	struct histogram *h = init_histogram();
+	fpt_mine(fp, h);
+	return h;
+}
+
 void dp2d(const struct fptree *fp, double eps, double eps_share,
 		size_t k, size_t minalpha, double c0, long int seed)
 {
@@ -327,10 +334,11 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
 	size_t *ls = calloc(fp->l_max_r - 1, sizeof(ls[0])); /* rule lengths */
 	double *es = calloc(fp->l_max_r - 1, sizeof(es[0])); /* epsilons */
-	double epsilon_step1 = eps * eps_share;
 	struct histogram *h = init_histogram();
+	double epsilon_step1 = eps * eps_share;
 	struct timeval starttime, endtime;
 	struct drand48_data randbuffer;
+	struct histogram *nph; // TODO: histogram for recall and F1
 	size_t i, lens;
 	double t1, t2;
 
@@ -371,13 +379,24 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
-
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
-	printf("Final histogram:\n");
-	histogram_dump(stdout, h, 1, "\t");
+	printf("Step 3: non private mining\n");
+	gettimeofday(&starttime, NULL);
+	nph = non_private_mining(fp);
+	gettimeofday(&endtime, NULL);
+	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
+	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
+	printf("Total time: %5.2lf\n", t2 - t1);
+	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
+	printf("Final private histogram:\n");
+	histogram_dump(stdout, h, 1, "\t");
+	printf("Final non-private histogram:\n");
+	histogram_dump(stdout, nph, 1, "\t");
+
+	free_histogram(nph);
 	free_histogram(h);
 	free(ls);
 	free(ks);

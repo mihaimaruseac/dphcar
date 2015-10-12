@@ -6,6 +6,7 @@
 
 #include "fp.h"
 #include "globals.h"
+#include "histogram.h"
 
 static const size_t end_of_transaction = 0;
 
@@ -186,6 +187,32 @@ static void fpt_add_transaction(size_t *items, size_t st, size_t c, size_t sz,
 	fpt_add_transaction(items, st, c + 1, sz, fp, nn);
 }
 
+static void fpt_mine_path_with(struct histogram *h,
+		const struct node *n, size_t x)
+{
+	size_t i;
+	double v;
+
+	for (i = 0; i < n->sz; i++) {
+		v = (n->data[i].count + 0.0) / (x + 0.0);
+		histogram_register(h, v);
+		if (n->data[i].label != end_of_transaction)
+			fpt_mine_path_with(h, n->data[i].child, x);
+	}
+}
+
+static void fpt_mine_path(struct histogram *h,
+		const struct node *n, size_t x)
+{
+	size_t i;
+
+	fpt_mine_path_with(h, n, x);
+	for (i = 0; i < n->sz; i++)
+		if (n->data[i].label != end_of_transaction)
+			fpt_mine_path(h, n->data[i].child,
+					n->data[i].count);
+}
+
 static void free_doc_tree(struct node *n)
 {
 	size_t i;
@@ -334,4 +361,13 @@ size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz)
 		ret[i] = n->next[i];
 
 	return ret;
+}
+
+void fpt_mine(const struct fptree *fp, struct histogram *h)
+{
+	size_t i;
+
+	for (i = 0; i < fp->fpt->root->sz; i++)
+		fpt_mine_path(h, fp->fpt->root->data[i].child,
+				fp->fpt->root->data[i].count);
 }
