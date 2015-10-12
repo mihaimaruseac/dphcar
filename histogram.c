@@ -6,7 +6,7 @@
 
 static const double c_values[] =
 	{0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0};
-static const int c_num_values = sizeof(c_values) / sizeof(c_values[0]);
+static const size_t c_num_values = sizeof(c_values) / sizeof(c_values[0]);
 
 struct histogram {
 	size_t total;
@@ -22,7 +22,7 @@ struct histogram *init_histogram()
 
 void histogram_register(struct histogram *h, double val)
 {
-	int i;
+	size_t i;
 
 	/* get rid of nan's  and perfect 0's */
 	if (val != val || val == 0)
@@ -36,37 +36,48 @@ void histogram_register(struct histogram *h, double val)
 		}
 }
 
-size_t histogram_get_bin(struct histogram *h, int bin)
+size_t histogram_get_bin(const struct histogram *h, size_t bin)
 {
-	if (bin < 0 || bin >= c_num_values)
+	if (bin >= c_num_values)
 		die("Invalid bin requested");
 	return h->values[bin];
 }
 
-double histogram_bin_bound(struct histogram *h, int bin)
+size_t histogram_get_bin_full(const struct histogram *h, size_t bin)
 {
-	if (bin < 0 || bin >= c_num_values)
+	size_t s = 0, i;
+
+	if (bin >= c_num_values)
 		die("Invalid bin requested");
-	h = h;
-	return c_values[bin];
+
+	for (i = 0; i <= bin; i++)
+		s += h->values[i];
+
+	return s;
 }
 
-size_t histogram_get_all(struct histogram *h)
+size_t histogram_get_all(const struct histogram *h)
 {
 	return h->total;
 }
 
-int histogram_get_count_bins(struct histogram *h)
+double histogram_bin_bound(size_t bin)
 {
-	h = h;
+	if (bin >= c_num_values)
+		die("Invalid bin requested");
+	return c_values[bin];
+}
+
+size_t histogram_get_count_bins()
+{
 	return c_num_values;
 }
 
-void histogram_dump(FILE *f, struct histogram *h, int cumulative,
+void histogram_dump(FILE *f, const struct histogram *h, int cumulative,
 		const char *header)
 {
 	size_t s = 0;
-	int i;
+	size_t i;
 
 	for (i = 0; i < c_num_values; i++) {
 		fprintf(f, "%s%3.2f\t%10lu\t%3.2f", header,
@@ -84,19 +95,19 @@ void histogram_load(FILE *f, struct histogram *h, int cumulative,
 {
 	float c, v;
 	size_t hv;
-	int i;
+	size_t i;
 
 	for (i = 0; i < c_num_values; i++) {
 		if (fscanf(f, header) != 0)
-			die("Unable to read header line %d!", i);
+			die("Unable to read header line %lu!", i);
 		if (fscanf(f, "%f%lu%f", &c, &hv, &v) != 3)
-			die("Unable to read sample data line %d!", i);
+			die("Unable to read sample data line %lu!", i);
 		if ((int)(100 *c) != (int)(100 * c_values[i]))
-			die("Unmatched bin value %d %3.2lf %3.2lf!", i, c, c_values[i]);
+			die("Unmatched bin value %lu %3.2lf %3.2lf!", i, c, c_values[i]);
 		h->values[i] = hv;
 		h->total += hv;
 		if (cumulative && fscanf(f, "%lu%f", &hv, &c) != 2)
-			die("Unable to read cumulative data line %d!", i);
+			die("Unable to read cumulative data line %lu!", i);
 		if (fscanf(f, "\n") != 0)
 			die("Extra output on line!");
 	}

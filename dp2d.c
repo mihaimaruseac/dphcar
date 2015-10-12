@@ -17,7 +17,7 @@
 
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 0
+#define PRINT_ITEM_TABLE 1
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
@@ -29,7 +29,11 @@
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 0
+#define PRINT_FINAL_RULES 1
+#endif
+/* print probabilities */
+#ifndef PRINT_PROBS
+#define PRINT_PROBS 1
 #endif
 
 static double quality(size_t x, size_t y, size_t m, size_t sfactor, double c0)
@@ -210,7 +214,6 @@ static void mine_rules_path(const struct fptree *fp,
 	size_t *ch, i, chsz, sf, li;
 	double snmin, snmax, t;
 
-	// TODO: check probability and cut early
 	if (!pos) {
 		smin = ic[cn-1].smin;
 		smax = ic[cn-1].smax;
@@ -250,6 +253,8 @@ static void mine_rules_path(const struct fptree *fp,
 #if PRINT_PROBS
 		printf("\tnew:\t[%lf, %lf]\n", smin, smax);
 #endif
+
+		// TODO: cut early
 	}
 
 	items[pos++] = cn;
@@ -327,6 +332,38 @@ static struct histogram *non_private_mining(const struct fptree *fp)
 	return h;
 }
 
+static void display_histograms(size_t k,
+		const struct histogram *h,
+		const struct histogram *nph)
+{
+	size_t i, n = histogram_get_count_bins();
+
+	printf("Final private histogram:\n");
+	histogram_dump(stdout, h, 1, "\t");
+	printf("Final non-private histogram:\n");
+	histogram_dump(stdout, nph, 1, "\t");
+
+	printf("\n\t\t");
+	for (i = 0; i < n; i++)
+		printf(" %3.2lf", histogram_bin_bound(i));
+	printf("\nPrecision:\t");
+	for (i = 0; i < n; i++)
+		printf(" %3.2lf", histogram_get_bin_full(h, i)/(k + 0.0));
+	printf("\nRecall:\t\t");
+	for (i = 0; i < n; i++) {
+		size_t p = histogram_get_bin_full(h, i);
+		size_t q = histogram_get_bin_full(nph, i);
+		printf(" %3.2lf", p / (q + 0.0));
+	}
+	printf("\nF1:\t\t");
+	for (i = 0; i < n; i++) {
+		size_t p = histogram_get_bin_full(h, i);
+		size_t q = histogram_get_bin_full(nph, i);
+		printf(" %3.2lf", 2 * (p + 0.0) / (q + k));
+	}
+	printf("\n");
+}
+
 void dp2d(const struct fptree *fp, double eps, double eps_share,
 		size_t k, size_t minalpha, double c0, long int seed)
 {
@@ -375,7 +412,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	for (i = 0; i < lens; i++)
 		mine_rules_length(fp, ic, h, ls[i], ks[i], es[i],
 				minalpha, c0, &randbuffer);
-
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
@@ -391,10 +427,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
-	printf("Final private histogram:\n");
-	histogram_dump(stdout, h, 1, "\t");
-	printf("Final non-private histogram:\n");
-	histogram_dump(stdout, nph, 1, "\t");
+	display_histograms(k, h, nph);
 
 	free_histogram(nph);
 	free_histogram(h);
