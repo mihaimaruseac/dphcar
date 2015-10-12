@@ -194,10 +194,11 @@ static void fpt_mine_path_with(struct histogram *h,
 	double v;
 
 	for (i = 0; i < n->sz; i++) {
+		if (n->data[i].label == end_of_transaction)
+			continue;
 		v = (n->data[i].count + 0.0) / (x + 0.0);
 		histogram_register(h, v);
-		if (n->data[i].label != end_of_transaction)
-			fpt_mine_path_with(h, n->data[i].child, x);
+		fpt_mine_path_with(h, n->data[i].child, x);
 	}
 }
 
