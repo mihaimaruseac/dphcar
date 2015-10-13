@@ -33,7 +33,11 @@
 #endif
 /* print probabilities */
 #ifndef PRINT_PROBS
-#define PRINT_PROBS 0
+#define PRINT_PROBS 1
+#endif
+/* print every step in computing probabilities */
+#ifndef PRINT_PROBS_TRACE
+#define PRINT_PROBS_TRACE 0
 #endif
 
 static double quality(size_t x, size_t y, size_t m, size_t sfactor, double c0)
@@ -98,7 +102,7 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 	double scale = log(10) * fp->l_max_t / eps;
 	size_t i;
 
-#if PRINT_PROBS
+#if PRINT_PROBS_TRACE
 	printf("Scale parameter: %lf\n", scale);
 #endif
 
@@ -134,7 +138,133 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 }
 #endif
 
+static void compute_seq_bound_at(const struct fptree *fp,
+		const struct item_count *ic,
+		const size_t *items, size_t num_items, size_t cur_item,
+		double *pmin, double *pmax)
+{
+	size_t cn = items[cur_item]; /* current item */
+	size_t li; /* last (previous) item */
+	double snmin, snmax, t;
+	size_t i, *ch, chsz;
+
+	if (!cur_item) {
+		*pmin = ic[cn-1].smin;
+		*pmax = ic[cn-1].smax;
+		goto next;
+	}
+
+	if (cur_item == num_items)
+		return;
+
+	li = items[cur_item - 1];
+	ch = fp_grph_children(fp, li, &chsz);
+	snmin = snmax = 0;
+	for (i = 0; i < chsz; i++) {
+		if (ch[i] == cn)
+			continue;
+		snmin += ic[ch[i]-1].smin;
+		snmax += ic[ch[i]-1].smax;
+	}
+	free(ch);
+
+#if PRINT_PROBS_TRACE
+	printf("At item %lu:\n", cn);
+	printf("\tbounds:\t[%lf, %lf]\n", *pmin, *pmax);
+	printf("\tlast %lu [%lf, %lf]\n", li,
+			ic[li-1].smin, ic[li-1].smax);
+	printf("\titem %lu [%lf, %lf]\n", cn,
+			ic[cn-1].smin, ic[cn-1].smax);
+	printf("\trest -- [%lf, %lf]\n", snmin, snmax);
+#endif
+
+	/* smin = max{0, limin - snmax, smin - snmax} */
+	*pmin = *pmin - snmax;
+	t = ic[li-1].smin - snmax;
+	if (*pmin < t) *pmin = t;
+	if (*pmin < 0) *pmin = 0;
+
+	/* smax = min{limax, cnmax} */
+	*pmax = ic[li-1].smax;
+	if (*pmax > ic[cn-1].smax) *pmax = ic[cn-1].smax;
+
+#if PRINT_PROBS_TRACE
+	printf("\tnew:\t[%lf, %lf]\n", *pmin, *pmax);
+#endif
+
+next:
+	compute_seq_bound_at(fp, ic, items, num_items, cur_item + 1, pmin, pmax);
+}
+
+static void compute_seq_bounds(const struct fptree *fp,
+		const struct item_count *ic,
+		const size_t *items, size_t num_items,
+		double *pmin, double *pmax)
+{
+#if PRINT_PROBS || PRINT_PROBS_TRACE
+	size_t i;
+
+	printf("Computing bounds on seq of length %lu:", num_items);
+	for (i = 0; i < num_items; i++)
+		printf(" %lu", items[i]);
+	printf("\n");
+#endif
+
+	*pmin = *pmax = 0;
+	compute_seq_bound_at(fp, ic, items, num_items, 0, pmin, pmax);
+
+#if PRINT_PROBS || PRINT_PROBS_TRACE
+	printf("\t\t seq bounds [%lf, %lf]\n", *pmin, *pmax);
+#endif
+}
+
+static void compute_rule_bounds(const struct fptree *fp,
+		const struct item_count *ic,
+		const size_t *AB, size_t ab_length, size_t a_length,
+		double c0, double *pmin, double *pmax)
+{
+	double b_length = ab_length - a_length;
+	double minsupAB, maxsupAB;
+	double minsupA, maxsupA;
+	double minsupB, maxsupB;
+	double t;
+
+#if PRINT_PROBS || PRINT_PROBS_TRACE
+	size_t i;
+
+	printf("Computing bounds on rule: ");
+	for (i = 0; i < a_length; i++)
+		printf(" %lu", AB[i]);
+	printf(" => ");
+	for (; i < ab_length; i++)
+		printf(" %lu", AB[i]);
+	printf("\n"); // TODO: display bounds on same line
+#endif
+
+	compute_seq_bounds(fp, ic, AB,           ab_length, &minsupAB, &maxsupAB);
+	compute_seq_bounds(fp, ic, AB,            a_length,  &minsupA,  &maxsupA);
+	compute_seq_bounds(fp, ic, AB + a_length, b_length,  &minsupB,  &maxsupB);
+
+	/* smin = max{0, minsupAB - c0 * maxsupA, minsupB - c0 * maxsupA} */
+	*pmin = minsupAB;
+	if (*pmin < minsupB) *pmin = minsupB;
+	*pmin -= c0 * maxsupA;
+	if (*pmin < 0) *pmin = 0;
+
+	/* smax = min{(1 - c0) * maxsupAB, (1- c0) * maxsupA, maxsupAB - c0 * minsupA} */
+	*pmax = maxsupAB;
+	if (*pmax > maxsupA) *pmax = maxsupA;
+	*pmax *= 1 - c0;
+	t = maxsupAB - c0 * minsupA;
+	if (*pmax > t) *pmax = t;
+
+#if PRINT_PROBS || PRINT_PROBS_TRACE
+	printf("\t\trule bounds [%lf, %lf]\n", *pmin, *pmax);
+#endif
+}
+
 static void process_rule(const struct fptree *fp,
+		const struct item_count *ic,
 		const size_t *AB, int ab_length, const size_t *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
 		double u, size_t m, size_t sfactor, double c0)
@@ -142,6 +272,7 @@ static void process_rule(const struct fptree *fp,
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
 	int sup_a, sup_ab;
+	double pmin, pmax;
 	double q, v, c;
 
 	sup_a = fpt_itemset_count(fp, A, a_length);
@@ -151,7 +282,8 @@ static void process_rule(const struct fptree *fp,
 	r = build_rule_A_AB(iA, iAB);
 	q = quality(sup_a, sup_ab, m, sfactor, c0);
 
-	// TODO: rule probability & cut early
+	compute_rule_bounds(fp, ic, AB, ab_length, a_length, c0, &pmin, &pmax);
+	// TODO: cut early
 
 	v = log(log(1/u)) - eps * q / 2;
 	c = (sup_ab + 0.0) / (sup_a + 0.0);
@@ -198,6 +330,7 @@ static void process_rule(const struct fptree *fp,
 }
 
 static void generate_and_add_all_rules(const struct fptree *fp,
+		const struct item_count *ic,
 		const size_t *items, size_t num_items, double eps,
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer,
@@ -211,7 +344,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		A[i] = items[i];
 
 	drand48_r(randbuffer, &u);
-	process_rule(fp, items, num_items, A, a_length, eps,
+	process_rule(fp, ic, items, num_items, A, a_length, eps,
 			rs, reservoir, k, u, m, sfactor, c0);
 
 	free(A);
@@ -223,56 +356,14 @@ static void mine_rules_path(const struct fptree *fp,
 		size_t *rs, size_t rlen, size_t k, double eps,
 		size_t minalpha, double c0,
 		size_t *items, size_t cn, size_t pos,
-		struct drand48_data *randbuffer,
-		double smin, double smax,
-		size_t *pch, size_t pchsz)
+		struct drand48_data *randbuffer)
 {
-	size_t *ch, i, chsz, sf, li;
-	double snmin, snmax, t;
-
-	if (!pos) {
-		smin = ic[cn-1].smin;
-		smax = ic[cn-1].smax;
-	} else {
-		li = items[pos - 1];
-		snmin = snmax = 0;
-		for (i = 0; i < pchsz; i++) {
-			if (pch[i] == cn)
-				continue;
-			snmin += ic[pch[i]-1].smin;
-			snmax += ic[pch[i]-1].smax;
-		}
-
-#if PRINT_PROBS
-		printf("For path of length %lu:", pos);
-		for (i = 0; i < pos; i++)
-			printf(" %lu", items[i]);
-		printf("\n\tbounds:\t[%lf, %lf]\n", smin, smax);
-		printf("\tlast %lu [%lf, %lf]\n", li,
-				ic[li-1].smin, ic[li-1].smax);
-		printf("\titem %lu [%lf, %lf]\n", cn,
-				ic[cn-1].smin, ic[cn-1].smax);
-		printf("\tnone -- [%lf, %lf]\n", snmin, snmax);
-#endif
-
-		/* smin = max{0, limin - snmax, smin - snmax} */
-		smin = smin - snmax;
-		t = ic[li-1].smin - snmax;
-		if (smin < t) smin = t;
-		if (smin < 0) smin = 0;
-
-		/* smax = min{limax, cnmax} */
-		smax = ic[li-1].smax;
-		if (smax > ic[cn-1].smax) smax = ic[cn-1].smax;
-
-#if PRINT_PROBS
-		printf("\tnew:\t[%lf, %lf]\n", smin, smax);
-#endif
-
-		// TODO: cut early
-	}
+	size_t *ch, i, chsz, sf;
+	double smin, smax;
 
 	items[pos++] = cn;
+	compute_seq_bounds(fp, ic, items, pos, &smin, &smax);
+	// TODO: cut early
 
 	if (pos > rlen) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
@@ -282,7 +373,7 @@ static void mine_rules_path(const struct fptree *fp,
 #endif
 
 		sf = fp->has_returns ? fp->l_max_t / rlen : 1;
-		generate_and_add_all_rules(fp, items, pos, eps,
+		generate_and_add_all_rules(fp, ic, items, pos, eps,
 				rs, reservoir, k, randbuffer, minalpha,
 				rlen, sf, c0);
 	}
@@ -294,8 +385,7 @@ static void mine_rules_path(const struct fptree *fp,
 	ch = fp_grph_children(fp, cn, &chsz);
 	for (i = 0; i < chsz; i++)
 		mine_rules_path(fp, ic, reservoir, rs, rlen, k, eps,
-				minalpha, c0, items, ch[i], pos, randbuffer,
-				smin, smax, ch, chsz);
+				minalpha, c0, items, ch[i], pos, randbuffer);
 	free(ch);
 }
 
@@ -316,8 +406,7 @@ static void mine_rules_length(const struct fptree *fp,
 
 	for (i = 1; i <= fp->n; i++) {
 		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps,
-				minalpha, c0, items, i, 0, randbuffer,
-				0, 0, NULL, 0);
+				minalpha, c0, items, i, 0, randbuffer);
 	}
 
 #if PRINT_FINAL_RULES
