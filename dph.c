@@ -30,7 +30,7 @@ static struct {
 	/* min conf value (c0) */
 	double c0;
 	/* support threshold */
-	double smax;
+	double smin;
 	/* rule threshold */
 	double cmin;
 	/* number of rules to extract */
@@ -41,7 +41,7 @@ static struct {
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE r/n EPS EPS_SHARE K L_MAX_R C0 SMAX CMIN [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE r/n EPS EPS_SHARE K L_MAX_R C0 SMIN CMIN [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -70,7 +70,7 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[7], "%lf", &args.c0) != 1 || args.c0 < 0 || args.c0 >= 1)
 		usage(argv[0]);
-	if (sscanf(argv[8], "%lf", &args.smax) != 1 || args.smax < 0 || args.smax >= 1)
+	if (sscanf(argv[8], "%lf", &args.smin) != 1 || args.smin < 0 || args.smin >= 1)
 		usage(argv[0]);
 	if (sscanf(argv[9], "%lf", &args.cmin) != 1 || args.cmin < 0 || args.cmin >= 1)
 		usage(argv[0]);
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	fp.has_returns = args.has_returns;
 
 	dp2d(&fp, args.eps, args.eps_share, args.k, args.c0,
-			args.smax * fp.t, args.cmin * fp.t, args.seed);
+			args.smin * fp.t, args.cmin * fp.t, args.seed);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);
