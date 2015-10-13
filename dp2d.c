@@ -40,29 +40,14 @@
 #define PRINT_PROBS_TRACE 0
 #endif
 
-static double quality(size_t x, size_t y, size_t m, size_t sfactor, double c0)
+static double quality(size_t x, size_t y, size_t sfactor, double c0)
 {
 	double c;
 
-#if 0 /* original quality fun*/
-	if (x < m) x = m;
-	c = (y + 0.0) / (x + 0.0);
-	c -= c0;
-	if (c < 0) c = 0;
-
-	return c * m / sfactor;
-#else
-	(void)m;
-#if 0 /* cosine quality */
-	c = x + c0 * y;
-	return -c / (1 + c0) / sfactor;
-#else /* sine quality */
 	c = y - c0 * x;
 	if (c < 0) c = 0;
 
 	return c / sfactor;
-#endif
-#endif
 }
 
 struct item_count {
@@ -201,9 +186,9 @@ static void compute_seq_bounds(const struct fptree *fp,
 		const size_t *items, size_t num_items,
 		double *pmin, double *pmax)
 {
-#if PRINT_PROBS || PRINT_PROBS_TRACE
 	size_t i;
 
+#if PRINT_PROBS || PRINT_PROBS_TRACE
 	printf("Computing bounds on seq of length %lu:", num_items);
 	for (i = 0; i < num_items; i++)
 		printf(" %lu", items[i]);
@@ -212,6 +197,14 @@ static void compute_seq_bounds(const struct fptree *fp,
 
 	*pmin = *pmax = 0;
 	compute_seq_bound_at(fp, ic, items, num_items, 0, pmin, pmax);
+
+	/* pmax cannot be higher than min{max{sup}} */
+	for (i = 0; i < num_items; i++)
+		if (*pmax > ic[items[i]-1].smax)
+			*pmax = ic[items[i]-1].smax;
+
+	/* ensure valid interval */
+	if (*pmin > *pmax) *pmin = *pmax;
 
 #if PRINT_PROBS || PRINT_PROBS_TRACE
 	printf("\t\t seq bounds [%lf, %lf]\n", *pmin, *pmax);
@@ -258,6 +251,9 @@ static void compute_rule_bounds(const struct fptree *fp,
 	t = maxsupAB - c0 * minsupA;
 	if (*pmax > t) *pmax = t;
 
+	/* ensure valid interval */
+	if (*pmin > *pmax) *pmin = *pmax;
+
 #if PRINT_PROBS || PRINT_PROBS_TRACE
 	printf("\t\trule bounds [%lf, %lf]\n", *pmin, *pmax);
 #endif
@@ -267,7 +263,7 @@ static void process_rule(const struct fptree *fp,
 		const struct item_count *ic,
 		const size_t *AB, int ab_length, const size_t *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
-		double u, size_t m, size_t sfactor, double c0)
+		double u, size_t sfactor, double c0)
 {
 	struct itemset *iA, *iAB;
 	struct rule *r = NULL;
@@ -280,7 +276,7 @@ static void process_rule(const struct fptree *fp,
 	iA = build_itemset(A, a_length);
 	iAB = build_itemset(AB, ab_length);
 	r = build_rule_A_AB(iA, iAB);
-	q = quality(sup_a, sup_ab, m, sfactor, c0);
+	q = quality(sup_a, sup_ab, sfactor, c0);
 
 	compute_rule_bounds(fp, ic, AB, ab_length, a_length, c0, &pmin, &pmax);
 	// TODO: cut early
@@ -334,7 +330,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		const size_t *items, size_t num_items, double eps,
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer,
-		size_t m, size_t a_length, size_t sfactor, double c0)
+		size_t a_length, size_t sfactor, double c0)
 {
 	size_t *A = calloc(a_length, sizeof(*A));
 	size_t i;
@@ -345,7 +341,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 
 	drand48_r(randbuffer, &u);
 	process_rule(fp, ic, items, num_items, A, a_length, eps,
-			rs, reservoir, k, u, m, sfactor, c0);
+			rs, reservoir, k, u, sfactor, c0);
 
 	free(A);
 }
@@ -354,7 +350,7 @@ static void mine_rules_path(const struct fptree *fp,
 		const struct item_count *ic,
 		struct reservoir *reservoir,
 		size_t *rs, size_t rlen, size_t k, double eps,
-		size_t minalpha, double c0,
+		double c0, double sigma_max,
 		size_t *items, size_t cn, size_t pos,
 		struct drand48_data *randbuffer)
 {
@@ -363,7 +359,12 @@ static void mine_rules_path(const struct fptree *fp,
 
 	items[pos++] = cn;
 	compute_seq_bounds(fp, ic, items, pos, &smin, &smax);
-	// TODO: cut early
+	if (smax < sigma_max) {
+#if PRINT_PROBS
+		printf("Cutoff sequence\n");
+#endif
+		return;
+	}
 
 	if (pos > rlen) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
@@ -374,7 +375,7 @@ static void mine_rules_path(const struct fptree *fp,
 
 		sf = fp->has_returns ? fp->l_max_t / rlen : 1;
 		generate_and_add_all_rules(fp, ic, items, pos, eps,
-				rs, reservoir, k, randbuffer, minalpha,
+				rs, reservoir, k, randbuffer,
 				rlen, sf, c0);
 	}
 
@@ -385,7 +386,7 @@ static void mine_rules_path(const struct fptree *fp,
 	ch = fp_grph_children(fp, cn, &chsz);
 	for (i = 0; i < chsz; i++)
 		mine_rules_path(fp, ic, reservoir, rs, rlen, k, eps,
-				minalpha, c0, items, ch[i], pos, randbuffer);
+				c0, sigma_max, items, ch[i], pos, randbuffer);
 	free(ch);
 }
 
@@ -393,7 +394,7 @@ static void mine_rules_length(const struct fptree *fp,
 		const struct item_count *ic,
 		struct histogram *h,
 		size_t rlen, size_t k, double eps,
-		size_t minalpha, double c0,
+		double c0, double sigma_max,
 		struct drand48_data *randbuffer)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
@@ -406,7 +407,7 @@ static void mine_rules_length(const struct fptree *fp,
 
 	for (i = 1; i <= fp->n; i++) {
 		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps,
-				minalpha, c0, items, i, 0, randbuffer);
+				c0, sigma_max, items, i, 0, randbuffer);
 	}
 
 #if PRINT_FINAL_RULES
@@ -470,7 +471,7 @@ static void display_histograms(size_t k,
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_share,
-		size_t k, size_t minalpha, double c0, long int seed)
+		size_t k, double c0, double sigma_max, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
@@ -485,8 +486,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	double t1, t2;
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
-			"k=%lu, minalpha=%lu c0=%lf\n",
-			eps, eps_share, k, minalpha, c0);
+			"k=%lu, c0=%lf\n",
+			eps, eps_share, k, c0);
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	init_rng(seed, &randbuffer);
@@ -516,7 +517,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	gettimeofday(&starttime, NULL);
 	for (i = 0; i < lens; i++)
 		mine_rules_length(fp, ic, h, ls[i], ks[i], es[i],
-				minalpha, c0, &randbuffer);
+				c0, sigma_max, &randbuffer);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
