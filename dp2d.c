@@ -252,6 +252,8 @@ static void compute_rule_bounds(const struct fptree *fp,
 	if (*pmax > t) *pmax = t;
 
 	/* ensure valid interval */
+	if (*pmin < 0) *pmin = 0;
+	if (*pmax < 0) *pmax = 0;
 	if (*pmin > *pmax) *pmin = *pmax;
 
 #if PRINT_PROBS || PRINT_PROBS_TRACE
@@ -279,7 +281,12 @@ static void process_rule(const struct fptree *fp,
 	q = quality(sup_a, sup_ab, sfactor, c0);
 
 	compute_rule_bounds(fp, ic, AB, ab_length, a_length, c0, &pmin, &pmax);
-	// TODO: cut early
+	if (pmax - pmin  < 10) {
+#if PRINT_PROBS
+		printf("Rule cuttoff\n");
+#endif
+		return;
+	}
 
 	v = log(log(1/u)) - eps * q / 2;
 	c = (sup_ab + 0.0) / (sup_a + 0.0);
