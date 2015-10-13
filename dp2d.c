@@ -150,6 +150,9 @@ static void process_rule(const struct fptree *fp,
 	iAB = build_itemset(AB, ab_length);
 	r = build_rule_A_AB(iA, iAB);
 	q = quality(sup_a, sup_ab, m, sfactor, c0);
+
+	// TODO: rule probability & cut early
+
 	v = log(log(1/u)) - eps * q / 2;
 	c = (sup_ab + 0.0) / (sup_a + 0.0);
 
@@ -388,7 +391,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	double epsilon_step1 = eps * eps_share;
 	struct timeval starttime, endtime;
 	struct drand48_data randbuffer;
-	struct histogram *nph; // TODO: histogram for recall and F1
+	struct histogram *nph;
 	size_t i, lens;
 	double t1, t2;
 
