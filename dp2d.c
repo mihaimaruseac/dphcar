@@ -40,12 +40,25 @@ static double quality(size_t x, size_t y, size_t m, size_t sfactor, double c0)
 {
 	double c;
 
+#if 0 /* original quality fun*/
 	if (x < m) x = m;
 	c = (y + 0.0) / (x + 0.0);
 	c -= c0;
 	if (c < 0) c = 0;
 
 	return c * m / sfactor;
+#else
+	(void)m;
+#if 0 /* cosine quality */
+	c = x + c0 * y;
+	return -c / (1 + c0) / sfactor;
+#else /* sine quality */
+	c = y - c0 * x;
+	if (c < 0) c = 0;
+
+	return c / sfactor;
+#endif
+#endif
 }
 
 struct item_count {
@@ -185,18 +198,18 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		const size_t *items, size_t num_items, double eps,
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer,
-		size_t m, size_t sfactor, double c0)
+		size_t m, size_t a_length, size_t sfactor, double c0)
 {
-	size_t *A = calloc(num_items, sizeof(*A));
-	size_t a_length;
+	size_t *A = calloc(a_length, sizeof(*A));
+	size_t i;
 	double u;
 
-	for (a_length = 1; a_length < num_items; a_length++) {
-		A[a_length-1] = items[a_length-1];
-		drand48_r(randbuffer, &u);
-		process_rule(fp, items, num_items, A, a_length, eps,
-				rs, reservoir, k, u, m, sfactor, c0);
-	}
+	for (i = 0; i < a_length; i++)
+		A[i] = items[i];
+
+	drand48_r(randbuffer, &u);
+	process_rule(fp, items, num_items, A, a_length, eps,
+			rs, reservoir, k, u, m, sfactor, c0);
 
 	free(A);
 }
@@ -258,7 +271,7 @@ static void mine_rules_path(const struct fptree *fp,
 
 	items[pos++] = cn;
 
-	if (pos == rlen || (!fp->has_returns && pos > 1)) {
+	if (pos > rlen) {
 #if PRINT_RULE_DOMAIN || PRINT_RS_TRACE
 		for (i = 0; i < pos; i++)
 			printf("%lu ", items[i]);
@@ -267,11 +280,12 @@ static void mine_rules_path(const struct fptree *fp,
 
 		sf = fp->has_returns ? fp->l_max_t / rlen : 1;
 		generate_and_add_all_rules(fp, items, pos, eps,
-				rs, reservoir, k, randbuffer, minalpha, sf, c0);
+				rs, reservoir, k, randbuffer, minalpha,
+				rlen, sf, c0);
 	}
 
 	/* stop recursion */
-	if (pos == rlen)
+	if (pos == fp->l_max_r)
 		return;
 
 	ch = fp_grph_children(fp, cn, &chsz);
@@ -294,8 +308,8 @@ static void mine_rules_length(const struct fptree *fp,
 	double minc, maxc;
 	size_t i, rs = 0;
 
-	printf("\tlength %s%lu: %lu rules with budget %lf each\n",
-			fp->has_returns?"==":"<=", rlen, k, eps);
+	printf("\tlength %s%lu=>*: %lu rules with budget %lf each\n",
+			fp->has_returns?"==":">=", rlen, k, eps);
 
 	for (i = 1; i <= fp->n; i++) {
 		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps,
@@ -402,7 +416,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	lens = fp->has_returns ? fp->l_max_r - 1 : 1;
 	eps /= lens;
 	for (i = 0; i < lens; i++) {
-		ls[i] = fp->has_returns ? i + 2 : fp->l_max_r;
+		ls[i] = fp->has_returns ? lens - i : 1;
 		ks[i] = (k / lens) + ((k % lens) > i);
 		es[i] = eps / ks[i];
 	}
