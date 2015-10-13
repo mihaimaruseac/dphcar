@@ -396,8 +396,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	double t1, t2;
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
-			"k=%lu, minalpha=%lu\n",
-			eps, eps_share, k, minalpha);
+			"k=%lu, minalpha=%lu c0=%lf\n",
+			eps, eps_share, k, minalpha, c0);
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	init_rng(seed, &randbuffer);
