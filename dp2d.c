@@ -517,7 +517,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	/* TODO: better split into sets, round robin for now */
 	lens = fp->has_returns ? fp->l_max_r - 1 : 1;
-	eps /= lens;
+	// no need to eps /= lens; because parallel comp
 	for (i = 0; i < lens; i++) {
 		ls[i] = fp->has_returns ? lens - i : 1;
 		ks[i] = (k / lens) + ((k % lens) > i);
