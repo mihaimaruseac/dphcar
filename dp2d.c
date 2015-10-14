@@ -21,11 +21,11 @@
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
-#define PRINT_RULE_DOMAIN 1
+#define PRINT_RULE_DOMAIN 0
 #endif
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 1
+#define PRINT_RS_TRACE 0
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
@@ -33,7 +33,7 @@
 #endif
 /* print probabilities */
 #ifndef PRINT_PROBS
-#define PRINT_PROBS 1
+#define PRINT_PROBS 0
 #endif
 /* print every step in computing probabilities */
 #ifndef PRINT_PROBS_TRACE
@@ -526,8 +526,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	gettimeofday(&starttime, NULL);
 	for (i = 0; i < lens; i++)
-		mine_rules_length(fp, ic, h, ls[i], ks[i], es[i],
-				c0, sigma_min, cmin, &randbuffer);
+		if (ks[i])
+			mine_rules_length(fp, ic, h, ls[i], ks[i], es[i],
+					c0, sigma_min, cmin, &randbuffer);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;

@@ -291,7 +291,7 @@ static void read_docs(FILE *f, struct fptree *fp)
 
 	/* check for returns */
 	fp->has_returns = 1;
-	for (i = 1; i <= fp->n && fp->has_returns; i++)
+	for (i = 1; i <= fp->n && i < fp->fpt->root->sz && fp->has_returns; i++)
 		if (fp->fpt->udcnt[i] != fp->fpt->root->data[i-1].count)
 			fp->has_returns = 0;
 	fp->has_returns = !fp->has_returns;

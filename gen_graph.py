@@ -107,6 +107,6 @@ def main_ring(seed=42, n=10, fr=0.5, num_docs=10,
     save(n, e, num_docs, edges, docs)
 
 if __name__ == '__main__':
-    #main=main_random_original
-    main=main_ring
+    main=main_random_original
+    #main=main_ring
     main(**dict(map(lambda x: x.split('='), sys.argv[1:])))

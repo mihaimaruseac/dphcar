@@ -66,7 +66,7 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[5], "%lu", &args.k) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[6], "%lu", &args.l_max_r) != 1 || args.l_max_r < 2 || args.l_max_r > 7)
+	if (sscanf(argv[6], "%lu", &args.l_max_r) != 1 || args.l_max_r < 2)
 		usage(argv[0]);
 	if (sscanf(argv[7], "%lf", &args.c0) != 1 || args.c0 < 0 || args.c0 >= 1)
 		usage(argv[0]);
