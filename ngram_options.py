@@ -1,6 +1,8 @@
 # test using ngrams paper
 import sys
 import itertools
+import random
+import numpy
 
 import ngrams.lib.NGramSet
 import ngrams.Sanitizer
@@ -31,7 +33,7 @@ def dump_histogram(rules):
         h[c] = 0
 
     for r in rules:
-        rc = rules[r]
+        rc = rules[r][0]
         for c in cs:
             if rc >= c:
                 h[c] += 1
@@ -39,11 +41,14 @@ def dump_histogram(rules):
     for c in sorted(cs, reverse=True):
         print '{:5.2f}\t{}'.format(c, h[c])
 
-def main(fname, epsilon, rlmax, k):
+def main(fname, epsilon, rlmax, k, seed=42):
     print 'Running ngrams model on {} with budget {:5.2f}.'.format(fname, epsilon)
+    numpy.random.seed(seed)
     n, e, t, lmax, dataset = read_file(fname)
     ngramset = ngrams.lib.NGramSet.NGramSet(lmax, n)
     ngramset.parse_sequences_memory(dataset)
+    ngramset_np = ngrams.lib.NGramSet.NGramSet(lmax, n)
+    ngramset_np.parse_sequences_memory(dataset)
     tree, ngramset = ngrams.Sanitizer.ngram(ngramset, n, budget=epsilon,
             sensitivity=lmax)
 
@@ -55,9 +60,11 @@ def main(fname, epsilon, rlmax, k):
                 x = answer_query(ngramset, a)
                 if  not x: continue
                 y = answer_query(ngramset, ab)
-                top_rules[(a, ab)] = y / x
+                x1 = answer_query(ngramset_np, a)
+                y1 = answer_query(ngramset_np, ab)
+                top_rules[(a, ab)] = (y / x, (y1 + 0.0)/ x1 if x1 else float('nan'))
                 if len(top_rules) > k:
-                    del top_rules[min(top_rules, key=lambda x: top_rules[x])]
+                    del top_rules[min(top_rules, key=lambda x: top_rules[x][0])]
     dump_histogram(top_rules)
 
 if __name__ == '__main__':
@@ -65,4 +72,8 @@ if __name__ == '__main__':
     epsilon = float(sys.argv[2])
     rlmax = int(sys.argv[3])
     k = int(sys.argv[4])
-    main(fname, epsilon, rlmax, k)
+    if len(sys.argv) > 5:
+        seed = int(sys.argv[5])
+    else:
+        seed = 42
+    main(fname, epsilon, rlmax, k, seed)
