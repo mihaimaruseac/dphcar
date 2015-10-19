@@ -3,8 +3,10 @@ import sys
 import itertools
 import random
 import numpy
+import progressbar
 
 import ngrams.lib.NGramSet
+import ngrams.lib.ProgressBar
 import ngrams.Sanitizer
 
 def read_file(fname):
@@ -19,7 +21,7 @@ def read_file(fname):
             if not line: continue
             if line == '--': readingDocs = True
             elif readingDocs:
-                docs.append(map(int, line.split()))
+                docs.append(filter(lambda x: x > 0, map(int, line.split())))
     lmax = max(map(len, docs))
     return n, e, t, lmax, docs
 
@@ -41,39 +43,65 @@ def dump_histogram(rules):
     for c in sorted(cs, reverse=True):
         print '{:5.2f}\t{}'.format(c, h[c])
 
-def main(fname, epsilon, rlmax, k, seed=42):
-    print 'Running ngrams model on {} with budget {:5.2f}.'.format(fname, epsilon)
-    numpy.random.seed(seed)
+def main(fname):
+    non_private_path = fname + '_non_private'
     n, e, t, lmax, dataset = read_file(fname)
     ngramset = ngrams.lib.NGramSet.NGramSet(lmax, n)
     ngramset.parse_sequences_memory(dataset)
+    ngramset.dump(non_private_path)
+    print n, lmax
+
+def mine(fname, n, lmax, rlmax, k, epsilon, seed):
+    print 'Running ngrams model on {} with budget {:5.2f}.'.format(fname, epsilon)
+    numpy.random.seed(seed)
+    non_private_path = fname + '_non_private'
+    ngramset = ngrams.lib.NGramSet.NGramSet(lmax, n)
+    ngramset.load_dump(non_private_path)
     ngramset_np = ngrams.lib.NGramSet.NGramSet(lmax, n)
-    ngramset_np.parse_sequences_memory(dataset)
+    ngramset_np.load_dump(non_private_path)
     tree, ngramset = ngrams.Sanitizer.ngram(ngramset, n, budget=epsilon,
             sensitivity=lmax)
 
     top_rules = {}
     for rl in xrange(2, rlmax + 1):
+        pb = ngrams.lib.ProgressBar.MyProgressBar(
+                'Mining length {}'.format(rl), pow((n + 1), rl))
+        cnt = 0
         for ab in itertools.product(xrange(1, n+1), repeat=rl):
             for al in xrange(1, rl):
-                a = ab[:al]
-                x = answer_query(ngramset, a)
-                if  not x: continue
-                y = answer_query(ngramset, ab)
-                x1 = answer_query(ngramset_np, a)
-                y1 = answer_query(ngramset_np, ab)
-                top_rules[(a, ab)] = (y / x, (y1 + 0.0)/ x1 if x1 else float('nan'))
-                if len(top_rules) > k:
-                    del top_rules[min(top_rules, key=lambda x: top_rules[x][0])]
+                try:
+                    a = ab[:al]
+                    x = answer_query(ngramset, a)
+                    if  not x: continue
+                    y = answer_query(ngramset, ab)
+                    x1 = answer_query(ngramset_np, a)
+                    y1 = answer_query(ngramset_np, ab)
+                    top_rules[(a, ab)] = (y / x, (y1 + 0.0)/ x1 if x1 else float('nan'))
+                    if len(top_rules) > k:
+                        del top_rules[min(top_rules, key=lambda x: top_rules[x][0])]
+                except UnicodeDecodeError:
+                    continue
+                except ValueError:
+                    continue
+            cnt += 1
+            pb.update(cnt)
+        pb.finish()
+
     dump_histogram(top_rules)
 
+building = 0
 if __name__ == '__main__':
-    fname = sys.argv[1]
-    epsilon = float(sys.argv[2])
-    rlmax = int(sys.argv[3])
-    k = int(sys.argv[4])
-    if len(sys.argv) > 5:
-        seed = int(sys.argv[5])
+    if building:
+        main(sys.argv[1])
     else:
-        seed = 42
-    main(fname, epsilon, rlmax, k, seed)
+        fname = sys.argv[1]
+        n = int(sys.argv[2])
+        lmax = int(sys.argv[3])
+        rlmax = int(sys.argv[4])
+        k = int(sys.argv[5])
+        epsilon = float(sys.argv[6])
+        if len(sys.argv) > 7:
+            seed = int(sys.argv[7])
+        else:
+            seed = 42
+        mine(fname, n, lmax, rlmax, k, epsilon, seed)
