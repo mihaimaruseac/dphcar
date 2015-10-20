@@ -39,6 +39,10 @@
 #ifndef PRINT_PROBS_TRACE
 #define PRINT_PROBS_TRACE 0
 #endif
+/* linear cut of the sequence tree */
+#ifndef LINEAR_TREE_CUT
+#define LINEAR_TREE_CUT 1
+#endif
 
 static double quality(size_t x, size_t y, size_t sfactor, double c0)
 {
@@ -487,6 +491,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		size_t k, double c0, double sigma_min, double cmin,
 		long int seed)
 {
+	double fillratio = 2.0 * (0.0 + fp->e) / ((fp->n - 1.0) * fp->n);
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
 	size_t *ls = calloc(fp->l_max_r - 1, sizeof(ls[0])); /* rule lengths */
@@ -500,8 +505,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	size_t i, lens;
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
-			"k=%lu, c0=%lf\n",
-			eps, eps_share, k, c0);
+			"k=%lu, c0=%lf fillratio=%lf\n",
+			eps, eps_share, k, c0, fillratio);
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	init_rng(seed, &randbuffer);
@@ -516,8 +521,16 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 				ic[i].smin, ic[i].smax);
 #endif
 
+#if LINEAR_TREE_CUT
+		fr = powf(fillratio, fp->l_max_r - 2);
+		fr *= powf(fp->n, fp->l_max_r - 2);
+		fr = LINEAR_TREE_CUT / fr;
+		fr = powf(fr, 1.0 / fp->l_max_r);
+#else
+		fr = 1;
+#endif
+
 	eps = eps - epsilon_step1;
-	fr = 1; // TODO: formula
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
 	/* TODO: better split into sets, round robin for now */
