@@ -338,8 +338,7 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 		const size_t *items, size_t num_items, double eps,
 		size_t *rs, struct reservoir *reservoir,
 		size_t k, struct drand48_data *randbuffer,
-		size_t a_length, size_t sfactor, double c0, double cmin,
-		size_t *cutoff)
+		size_t a_length, size_t sfactor, double c0, double cmin)
 {
 	size_t *A = calloc(a_length, sizeof(*A));
 	size_t i;
@@ -351,7 +350,6 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 	drand48_r(randbuffer, &u);
 	process_rule(fp, ic, items, num_items, A, a_length, eps,
 			rs, reservoir, k, u, sfactor, c0, cmin);
-	*cutoff = *cutoff - 1;
 
 	free(A);
 }
@@ -360,7 +358,7 @@ static void mine_rules_path(const struct fptree *fp,
 		const struct item_count *ic,
 		struct reservoir *reservoir,
 		size_t *rs, size_t rlen, size_t k, double eps,
-		size_t *cutoff, double c0, double sigma_min, double cmin,
+		double c0, double sigma_min, double cmin, double fr,
 		size_t *items, size_t cn, size_t pos,
 		struct drand48_data *randbuffer)
 {
@@ -386,7 +384,7 @@ static void mine_rules_path(const struct fptree *fp,
 		sf = fp->has_returns ? fp->l_max_t / rlen : 1;
 		generate_and_add_all_rules(fp, ic, items, pos, eps,
 				rs, reservoir, k, randbuffer,
-				rlen, sf, c0, cmin, cutoff);
+				rlen, sf, c0, cmin);
 	}
 
 	/* stop recursion */
@@ -394,9 +392,10 @@ static void mine_rules_path(const struct fptree *fp,
 		return;
 
 	ch = fp_grph_children(fp, cn, &chsz);
-	for (i = 0; i < chsz && *cutoff; i++)
+	// TODO: get only fr children, sorted/permuted
+	for (i = 0; i < chsz; i++)
 		mine_rules_path(fp, ic, reservoir, rs, rlen, k, eps,
-				cutoff, c0, sigma_min, cmin,
+				c0, sigma_min, cmin, fr,
 				items, ch[i], pos, randbuffer);
 	free(ch);
 }
@@ -404,8 +403,8 @@ static void mine_rules_path(const struct fptree *fp,
 static void mine_rules_length(const struct fptree *fp,
 		const struct item_count *ic,
 		struct histogram *h,
-		size_t rlen, size_t k, double eps, size_t cutoff,
-		double c0, double sigma_min, double cmin,
+		size_t rlen, size_t k, double eps,
+		double c0, double sigma_min, double cmin, double fr,
 		struct drand48_data *randbuffer)
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
@@ -414,12 +413,14 @@ static void mine_rules_length(const struct fptree *fp,
 	size_t i, rs = 0;
 
 	printf("\tlength %s%lu=>*: %lu rules with budget %lf each and "
-			"cutoff %lu\n", fp->has_returns?"==":">=",
-			rlen, k, eps, cutoff);
+			"fillratio %lf\n", fp->has_returns?"==":">=",
+			rlen, k, eps, fr);
 
-	for (i = 1; i <= fp->n && cutoff; i++) {
-		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps, &cutoff,
-				c0, sigma_min, cmin, items, i, 0, randbuffer);
+	// TODO: get only fr children, sorted/permuted
+	for (i = 1; i <= fp->n; i++) {
+		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps,
+				c0, sigma_min, cmin, fr, items, i, 0,
+				randbuffer);
 	}
 
 #if PRINT_FINAL_RULES
@@ -436,8 +437,8 @@ static void mine_rules_length(const struct fptree *fp,
 		histogram_register(h, reservoir[i].c);
 	}
 
-	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf cut: %s\n",
-			rs, minc, maxc, cutoff ? "NO" : "YES");
+	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+			rs, minc, maxc);
 
 	free_reservoir_array(reservoir, rs);
 	free(items);
@@ -490,14 +491,13 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	size_t *ks = calloc(fp->l_max_r - 1, sizeof(ks[0])); /* number of rules */
 	size_t *ls = calloc(fp->l_max_r - 1, sizeof(ls[0])); /* rule lengths */
 	double *es = calloc(fp->l_max_r - 1, sizeof(es[0])); /* epsilons */
-	size_t *co = calloc(fp->l_max_r - 1, sizeof(co[0])); /* cutoffs */
 	struct histogram *h = init_histogram();
 	double epsilon_step1 = eps * eps_share;
 	struct timeval starttime, endtime;
 	struct drand48_data randbuffer;
-	size_t i, lens, cutoff;
 	struct histogram *nph;
-	double t1, t2;
+	double t1, t2, fr;
+	size_t i, lens;
 
 	printf("Running dp2D with eps=%lf, eps_share=%lf, "
 			"k=%lu, c0=%lf\n",
@@ -517,7 +517,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #endif
 
 	eps = eps - epsilon_step1;
-	cutoff = 750000; // TODO: formula
+	fr = 1; // TODO: formula
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
 	/* TODO: better split into sets, round robin for now */
@@ -527,14 +527,13 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 		ls[i] = fp->has_returns ? lens - i : 1;
 		ks[i] = (k / lens) + ((k % lens) > i);
 		es[i] = eps / ks[i];
-		co[i] = cutoff;
 	}
 
 	gettimeofday(&starttime, NULL);
 	for (i = 0; i < lens; i++)
 		if (ks[i])
 			mine_rules_length(fp, ic, h, ls[i], ks[i], es[i],
-					co[i], c0, sigma_min, cmin,
+					c0, sigma_min, cmin, fr,
 					&randbuffer);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
@@ -555,7 +554,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 
 	free_histogram(nph);
 	free_histogram(h);
-	free(co);
 	free(ls);
 	free(ks);
 	free(es);
