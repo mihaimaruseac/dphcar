@@ -42,6 +42,7 @@
 /* linear cut of the sequence tree */
 #ifndef LINEAR_TREE_CUT
 #define LINEAR_TREE_CUT 1
+#define LINEAR_TREE_CUT_CT 1.0
 #endif
 
 static double quality(size_t x, size_t y, size_t sfactor, double c0)
@@ -535,7 +536,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 #if LINEAR_TREE_CUT
 		fr = powf(fillratio, fp->l_max_r - 2);
 		fr *= powf(fp->n, fp->l_max_r - 2);
-		fr = LINEAR_TREE_CUT / fr;
+		fr = LINEAR_TREE_CUT_CT / fr;
 		fr = powf(fr, 1.0 / fp->l_max_r);
 #else
 		fr = 1;
