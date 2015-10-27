@@ -50,6 +50,10 @@ static double quality(size_t x, size_t y, size_t sfactor, double c0)
 
 	c = y - c0 * x;
 	if (c < 0) c = 0;
+#if 0 /* pure sine */
+	c /= sqrt(x*x + y*y);
+	c *= sqrt(2) / (1 - c0);
+#endif
 
 	return c / sfactor;
 }
