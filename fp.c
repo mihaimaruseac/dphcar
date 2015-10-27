@@ -187,7 +187,7 @@ static void fpt_add_transaction(size_t *items, size_t st, size_t c, size_t sz,
 	fpt_add_transaction(items, st, c + 1, sz, fp, nn);
 }
 
-static void fpt_mine_path_with(struct histogram *h,
+static void fpt_mine_path_with(struct histogram *h, size_t t,
 		const struct node *n, size_t x)
 {
 	size_t i;
@@ -196,21 +196,24 @@ static void fpt_mine_path_with(struct histogram *h,
 	for (i = 0; i < n->sz; i++) {
 		if (n->data[i].label == end_of_transaction)
 			continue;
+		if (n->data[i].count <= t)
+			continue;
 		v = (n->data[i].count + 0.0) / (x + 0.0);
 		histogram_register(h, v);
-		fpt_mine_path_with(h, n->data[i].child, x);
+		fpt_mine_path_with(h, t, n->data[i].child, x);
 	}
 }
 
-static void fpt_mine_path(struct histogram *h,
+static void fpt_mine_path(struct histogram *h, size_t t,
 		const struct node *n, size_t x)
 {
 	size_t i;
 
-	fpt_mine_path_with(h, n, x);
+	if (x <= t) return;
+	fpt_mine_path_with(h, t, n, x);
 	for (i = 0; i < n->sz; i++)
 		if (n->data[i].label != end_of_transaction)
-			fpt_mine_path(h, n->data[i].child,
+			fpt_mine_path(h, t, n->data[i].child,
 					n->data[i].count);
 }
 
@@ -366,9 +369,9 @@ size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz)
 
 void fpt_mine(const struct fptree *fp, struct histogram *h)
 {
-	size_t i;
+	size_t i, thrsh = fp->t * 0.05;
 
 	for (i = 0; i < fp->fpt->root->sz; i++)
-		fpt_mine_path(h, fp->fpt->root->data[i].child,
+		fpt_mine_path(h, thrsh, fp->fpt->root->data[i].child,
 				fp->fpt->root->data[i].count);
 }

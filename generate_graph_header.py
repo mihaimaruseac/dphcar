@@ -37,7 +37,7 @@ def main(fname):
         for x, y in zip(d, d[1:]):
             update(graph, x, y)
             update(graph, y, x)
-    n, graph, docs = fix_graph(n, graph, docs)
+    #n, graph, docs = fix_graph(n, graph, docs)
     e = sum(map(lambda x: len(graph[x]), graph)) / 2
     print '{} {} {}'.format(n, e, t)
     for x in xrange(1, n+1):

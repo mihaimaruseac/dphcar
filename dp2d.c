@@ -555,11 +555,13 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	}
 
 	gettimeofday(&starttime, NULL);
+#if 0 /* moving to graphs */
 	for (i = 0; i < lens; i++)
 		if (ks[i])
 			mine_rules_length(fp, ic, h, ls[i], ks[i], es[i],
 					c0, sigma_min, cmin, fr,
 					&randbuffer);
+#endif
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
