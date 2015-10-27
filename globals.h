@@ -32,4 +32,6 @@ double laplace_mechanism(double x, double eps, double sens,
 int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
 		int (*compar)(const void *, const void *));
 
+/* shuffling function */
+void shuffle(size_t *array, size_t nmemb, struct drand48_data *randbuffer);
 #endif

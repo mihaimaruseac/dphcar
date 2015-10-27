@@ -400,7 +400,8 @@ static void mine_rules_path(const struct fptree *fp,
 		return;
 
 	ch = fp_grph_children(fp, cn, &chsz);
-	// TODO: get only fr children, sorted/permuted
+	shuffle(ch, chsz, randbuffer);
+	if (fr < 1) chsz *= fr;
 	for (i = 0; i < chsz; i++)
 		mine_rules_path(fp, ic, reservoir, rs, rlen, k, eps,
 				c0, sigma_min, cmin, fr,
@@ -417,19 +418,25 @@ static void mine_rules_length(const struct fptree *fp,
 {
 	struct reservoir *reservoir = calloc(k, sizeof(reservoir[0]));
 	size_t *items = calloc(fp->l_max_r, sizeof(items[0]));
+	size_t i, rs = 0, *ch, chsz;
 	double minc, maxc;
-	size_t i, rs = 0;
 
 	printf("\tlength %s%lu=>*: %lu rules with budget %lf each and "
 			"fillratio %lf\n", fp->has_returns?"==":">=",
 			rlen, k, eps, fr);
 
-	// TODO: get only fr children, sorted/permuted
-	for (i = 1; i <= fp->n; i++) {
+	chsz = fp->n;
+	ch = calloc(chsz, sizeof(ch[0]));
+	for (i = 0; i < chsz; i++)
+		ch[i] = i + 1;
+	shuffle(ch, chsz, randbuffer);
+	if (fr < 1) chsz *= fr;
+	for (i = 0; i < chsz; i++)
 		mine_rules_path(fp, ic, reservoir, &rs, rlen, k, eps,
-				c0, sigma_min, cmin, fr, items, i, 0,
+				c0, sigma_min, cmin, fr, items, ch[i], 0,
 				randbuffer);
-	}
+
+	free(ch);
 
 #if PRINT_FINAL_RULES
 	print_reservoir(reservoir, rs);

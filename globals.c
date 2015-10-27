@@ -76,3 +76,20 @@ int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
 
 	return low;
 }
+
+void shuffle(size_t *array, size_t n, struct drand48_data *randbuffer)
+{
+	size_t i, j, t;
+	double u;
+
+	if (!n)
+		return;
+
+	for (i = n - 1; i; i--) {
+		drand48_r(randbuffer, &u);
+		j = i * u;
+		t = array[i];
+		array[i] = array[j];
+		array[j] = t;
+	}
+}
