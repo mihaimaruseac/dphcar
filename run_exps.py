@@ -1,17 +1,20 @@
-lens = [5] #3, 5, 7
-ks = [10]
-epsilons = [0.1, 0.25, 0.5, 0.75, 1.0]
+lens = [3, 4]#, 5, 6, 7]
+ks = [10, 25, 50, 100]
+epsilons = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 seeds = [123, 2345, 32525, 4235356, 5462356, 63562367, 73523, 835, 9372835, 10251235366]
 datasets = [
     #"kosarak",
-    "msnbc 17 14795",
-    "mushroom 119 23",
-    "pumsb 255 22",
+    #"msnbc 17 14795",
+    #"mushroom 119 23",
+    #"pumsb 7116 62",
     #"retail"
+    #"taxi100 84 290",
+    "taxi200 154 373",
+    #"taxi500 366 360"
     ]
 dataset_path = 'graphs/datasets'
 
-out_dir = 'out_www/ngram'
+out_dir = 'out_www/ngram2'
 
 ngram_cmd = 'python ngram_options.py'
 

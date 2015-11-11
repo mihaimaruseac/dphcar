@@ -555,7 +555,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_share,
 	}
 
 	gettimeofday(&starttime, NULL);
-#if 0 /* moving to graphs */
+#if 1 /* moving to graphs */
 	for (i = 0; i < lens; i++)
 		if (ks[i])
 			mine_rules_length(fp, ic, h, ls[i], ks[i], es[i],

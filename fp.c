@@ -369,7 +369,7 @@ size_t *fp_grph_children(const struct fptree *fp, size_t node, size_t *sz)
 
 void fpt_mine(const struct fptree *fp, struct histogram *h)
 {
-	size_t i, thrsh = fp->t * 0.05;
+	size_t i, thrsh = fp->t * 0.00;//5;
 
 	for (i = 0; i < fp->fpt->root->sz; i++)
 		fpt_mine_path(h, thrsh, fp->fpt->root->data[i].child,

@@ -54,6 +54,7 @@ def main(fname):
 def mine(fname, n, lmax, rlmax, k, epsilon, seed):
     print 'Running ngrams model on {} with budget {:5.2f}.'.format(fname, epsilon)
     numpy.random.seed(seed)
+    n = min(n, 255)
     non_private_path = fname + '_non_private'
     ngramset = ngrams.lib.NGramSet.NGramSet(lmax, n)
     ngramset.load_dump(non_private_path)
