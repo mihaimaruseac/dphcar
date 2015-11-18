@@ -9,8 +9,10 @@ datasets = [
     #"pumsb 7116 62",
     #"retail"
     #"taxi100 84 290",
-    "taxi200 154 373",
+    #"taxi200 154 373",
     #"taxi500 366 360"
+    "bk11 236 22",
+    #"bk12 35 14",
     ]
 dataset_path = 'graphs/datasets'
 
