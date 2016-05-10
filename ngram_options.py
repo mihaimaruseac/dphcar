@@ -90,7 +90,7 @@ def mine(fname, n, lmax, rlmax, k, epsilon, seed):
 
     dump_histogram(top_rules)
 
-building = 0
+building = 1
 if __name__ == '__main__':
     if building:
         main(sys.argv[1])
