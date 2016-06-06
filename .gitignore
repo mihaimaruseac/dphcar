@@ -13,3 +13,13 @@ csvs/
 shelves_random/
 shelves_random_3/
 shelves_random_7/
+dph-graph
+dph-opt
+dph-orig
+graphs/
+ngram.py
+ngram.pyc
+ngrams
+out_www/
+output_new/
+output_new_old/
