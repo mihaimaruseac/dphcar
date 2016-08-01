@@ -20,9 +20,8 @@ void dp2d(const struct fptree *fp,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed);
 #else
-void dp2d(const struct fptree *fp,
-		double eps, double eps_ratio1, size_t k,
-		long int seed);
+void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
+		double c0, size_t lmax, size_t k, long int seed);
 #endif
 
 #endif

@@ -298,41 +298,30 @@ void dp2d(const struct fptree *fp,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed)
 #else
-void dp2d(const struct fptree *fp,
-		double eps, double eps_ratio1, size_t k,
-		long int seed)
+void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
+		double c0, size_t lmax, size_t k, long int seed)
 #endif
 {
-	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 #if 0
 	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 	size_t **partitions = NULL, *parlens = NULL;
 	struct histogram *h = init_histogram();
-#endif
-	double epsilon_step1 = eps * eps_ratio1;
-#if 0
 	size_t i, j, ip, fm, rs, st, cis, sh;
-#else
-	size_t i;
-#endif
-	struct drand48_data randbuffer;
-#if 0
 	double maxc, minc;
 	int *items;
 #endif
+	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	double epsilon_step1 = eps * eps_ratio1;
+	struct drand48_data randbuffer;
+	size_t i;
 
 	init_rng(seed, &randbuffer);
 #if 0
 	items = calloc(mis + 1, sizeof(items[0]));
 #endif
 
-#if 0
-	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
-			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
-#else
-	printf("Running dp2D with eps=%lf, eps_step1=%lf\n",
-			eps, epsilon_step1);
-#endif
+	printf("Running dp2D with eps=%lf, eps_step1=%lf, k=%lu, c0=%5.2lf, "
+			"rmax=%lu\n", eps, epsilon_step1, k, c0, lmax);
 
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
@@ -345,11 +334,8 @@ void dp2d(const struct fptree *fp,
 #endif
 
 	eps = eps - epsilon_step1;
-#if 0
-	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
-#else
-	printf("Step 2: mining %lu steps with remaining eps: %lf\n", k, eps);
-#endif
+	eps /= k;
+	printf("Step 2: mining %lu steps each with eps %lf\n", k, eps);
 
 #if 0
 	eps /= shelves;
@@ -367,6 +353,8 @@ void dp2d(const struct fptree *fp,
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
+	for (i = 0; i < k; i++) {
+	}
 #if 0
 	for (sh = 0; sh < shelves; sh++) {
 		for (i = 0; i < bins && partitions; i++)
