@@ -21,7 +21,7 @@ void dp2d(const struct fptree *fp,
 		double minalpha, long int seed);
 #else
 void dp2d(const struct fptree *fp,
-		double eps, double eps_ratio1,
+		double eps, double eps_ratio1, size_t k,
 		long int seed);
 #endif
 

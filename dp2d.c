@@ -299,7 +299,7 @@ void dp2d(const struct fptree *fp,
 		double minalpha, long int seed)
 #else
 void dp2d(const struct fptree *fp,
-		double eps, double eps_ratio1,
+		double eps, double eps_ratio1, size_t k,
 		long int seed)
 #endif
 {
@@ -344,10 +344,14 @@ void dp2d(const struct fptree *fp,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
-#if 0
 	eps = eps - epsilon_step1;
+#if 0
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
+#else
+	printf("Step 2: mining %lu steps with remaining eps: %lf\n", k, eps);
+#endif
 
+#if 0
 	eps /= shelves;
 	printf("\t-> per shelf:\t%lf\n", eps);
 
@@ -358,10 +362,12 @@ void dp2d(const struct fptree *fp,
 	for (sh = 0; sh < shelves; sh++)
 		printf(" %lu", ksh[sh]);
 	printf("\n");
+#endif
 
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
+#if 0
 	for (sh = 0; sh < shelves; sh++) {
 		for (i = 0; i < bins && partitions; i++)
 			free(partitions[i]);
@@ -486,6 +492,7 @@ void dp2d(const struct fptree *fp,
 
 		printf("Finished shelf %lu\n", sh);
 	}
+#endif
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
@@ -495,6 +502,7 @@ void dp2d(const struct fptree *fp,
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
+#if 0
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 

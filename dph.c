@@ -36,8 +36,10 @@ static struct {
 	size_t minth;
 	/* max items in generation step */
 	size_t mis;
+#endif
 	/* number of rules to extract */
 	size_t k;
+#if 0
 	/* min alpha value */
 	double minalpha;
 #endif
@@ -50,7 +52,7 @@ static void usage(const char *prg)
 #if 0
 	fprintf(stderr, "Usage: %s TFILE BIN_MODE(n|r|w|d) NUM_BINS NUM_SHELVES EPS EPS_SHARE MINTH MINALHPA MIS K [SEED]\n", prg);
 #endif
-	fprintf(stderr, "Usage: %s TFILE EPS EPS_RATIO_1 [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE EPS EPS_RATIO_1 K [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -66,7 +68,7 @@ static void parse_arguments(int argc, char **argv)
 #if 0
 	if (argc < 11 || argc > 12)
 #else
-	if (argc < 4 || argc > 5)
+	if (argc < 5 || argc > 6)
 #endif
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
@@ -106,15 +108,19 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[9], "%lu", &args.mis) != 1 || args.mis < 2 || args.mis > 7)
 		usage(argv[0]);
-	if (sscanf(argv[10], "%lu", &args.k) != 1)
-		usage(argv[0]);
 #endif
+#if 0
+	if (sscanf(argv[10], "%lu", &args.k) != 1)
+#else
+	if (sscanf(argv[4], "%lu", &args.k) != 1)
+#endif
+		usage(argv[0]);
 #if 0
 	if (argc == 12) {
 		if (sscanf(argv[11], "%ld", &args.seed) != 1)
 #else
-	if (argc == 4) {
-		if (sscanf(argv[3], "%ld", &args.seed) != 1)
+	if (argc == 6) {
+		if (sscanf(argv[5], "%ld", &args.seed) != 1)
 #endif
 			usage(argv[0]);
 	} else
@@ -139,6 +145,7 @@ int main(int argc, char **argv)
 #else
 	dp2d(&fp,
 			args.eps, args.eps_ratio1,
+			args.k,
 			args.seed);
 #endif
 
