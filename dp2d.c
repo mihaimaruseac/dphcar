@@ -90,7 +90,7 @@ static int reservoir_cmp(const void *a, const void *b)
 static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
-	size_t i, tmax = fpt_height(fp);
+	size_t i, tmax = fpt_height(fp) - 1; /* -1 to remove root */
 
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
