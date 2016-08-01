@@ -304,27 +304,42 @@ void dp2d(const struct fptree *fp,
 		double minalpha, long int seed)
 #else
 void dp2d(const struct fptree *fp,
-		double eps,
+		double eps, double eps_ratio1,
 		long int seed)
 #endif
 {
-#if 0
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+#if 0
 	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 	size_t **partitions = NULL, *parlens = NULL;
 	struct histogram *h = init_histogram();
-	double epsilon_step1 = eps * eps_share;
+#endif
+	double epsilon_step1 = eps * eps_ratio1;
+#if 0
 	size_t i, j, ip, fm, rs, st, cis, sh;
+#else
+	size_t i;
+#endif
 	struct drand48_data randbuffer;
+#if 0
 	double maxc, minc;
 	int *items;
+#endif
 
 	init_rng(seed, &randbuffer);
+#if 0
 	items = calloc(mis + 1, sizeof(items[0]));
+#endif
 
+#if 0
 	printf("Running dp2D with minth=%d, eps=%lf, eps_share=%lf, "
 			"mis=%lu, k=%lu\n", minth, eps, eps_share, mis, k);
+#else
+	printf("Running dp2D with eps=%lf, eps_step1=%lf\n",
+			eps, epsilon_step1);
+#endif
 
+#if 0
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
@@ -495,6 +510,6 @@ void dp2d(const struct fptree *fp,
 	free_histogram(h);
 	free(items);
 	free(ksh);
-	free(ic);
 #endif
+	free(ic);
 }

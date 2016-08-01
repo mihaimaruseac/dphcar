@@ -29,9 +29,9 @@ static struct {
 #endif
 	/* global value for epsilon */
 	double eps;
-#if 0
 	/* fraction of epsilon for first step */
-	double eps_share;
+	double eps_ratio1;
+#if 0
 	/* minimum threshold */
 	size_t minth;
 	/* max items in generation step */
@@ -50,7 +50,7 @@ static void usage(const char *prg)
 #if 0
 	fprintf(stderr, "Usage: %s TFILE BIN_MODE(n|r|w|d) NUM_BINS NUM_SHELVES EPS EPS_SHARE MINTH MINALHPA MIS K [SEED]\n", prg);
 #endif
-	fprintf(stderr, "Usage: %s TFILE EPS [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s TFILE EPS EPS_RATIO_1 [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -66,7 +66,7 @@ static void parse_arguments(int argc, char **argv)
 #if 0
 	if (argc < 11 || argc > 12)
 #else
-	if (argc < 3 || argc > 4)
+	if (argc < 4 || argc > 5)
 #endif
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
@@ -95,7 +95,11 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 #if 0
 	if (sscanf(argv[6], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
+#else
+	if (sscanf(argv[3], "%lf", &args.eps_ratio1) != 1 || args.eps_ratio1 < 0 || args.eps_ratio1 >= 1)
+#endif
 		usage(argv[0]);
+#if 0
 	if (sscanf(argv[7], "%lu", &args.minth) != 1)
 		usage(argv[0]);
 	if (sscanf(argv[8], "%lf", &args.minalpha) != 1)
@@ -131,6 +135,10 @@ int main(int argc, char **argv)
 	dp2d(&fp, args.shelves, args.bins, args.bin_mode,
 			args.eps, args.eps_share,
 			args.minth, args.mis, args.k, args.minalpha,
+			args.seed);
+#else
+	dp2d(&fp,
+			args.eps, args.eps_ratio1,
 			args.seed);
 #endif
 
