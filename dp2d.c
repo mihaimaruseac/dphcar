@@ -17,7 +17,7 @@
 
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 0
+#define PRINT_ITEM_TABLE 1
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
@@ -73,13 +73,11 @@ static void free_reservoir_array(struct reservoir *reservoir, int size)
 }
 #endif
 
-#if 0
 static int ic_noisy_cmp(const void *a, const void *b)
 {
 	const struct item_count *ia = a, *ib = b;
 	return double_cmp_r(&ia->noisy_count, &ib->noisy_count);
 }
-#endif
 
 #if 0
 static int reservoir_cmp(const void *a, const void *b)
@@ -89,7 +87,6 @@ static int reservoir_cmp(const void *a, const void *b)
 }
 #endif
 
-#if 0
 static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
@@ -108,7 +105,6 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
-#endif
 
 #if PRINT_RS_TRACE || PRINT_FINAL_RULES
 static void print_reservoir(struct reservoir *reservoir, size_t rs)
@@ -339,7 +335,6 @@ void dp2d(const struct fptree *fp,
 			eps, epsilon_step1);
 #endif
 
-#if 0
 	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
 			epsilon_step1);
 	build_items_table(fp, ic, epsilon_step1, &randbuffer);
@@ -350,6 +345,7 @@ void dp2d(const struct fptree *fp,
 		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
 #endif
 
+#if 0
 	eps = eps - epsilon_step1;
 	printf("Step 2: mining %lu rules with remaining eps: %lf\n", k, eps);
 
