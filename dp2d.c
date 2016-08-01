@@ -90,13 +90,13 @@ static int reservoir_cmp(const void *a, const void *b)
 static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
-	size_t i, tmax = fpt_height(fp) - 1; /* -1 to remove root */
+	size_t i;
 
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
 		ic[i].real_count = fpt_item_count(fp, i);
 		ic[i].noisy_count = laplace_mechanism(ic[i].real_count,
-				eps, tmax, buffer);
+				eps, 1, buffer);
 		/* TODO: filter some noise */
 		if (ic[i].noisy_count < 0)
 			ic[i].noisy_count = 0;
