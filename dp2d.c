@@ -17,7 +17,7 @@
 
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 1
+#define PRINT_ITEM_TABLE 0
 #endif
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
