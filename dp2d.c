@@ -36,6 +36,7 @@
 #define RULE_EXPAND 0
 #endif
 
+#if 0
 static double quality(int x, int y, double m)
 {
 	double c;
@@ -45,6 +46,7 @@ static double quality(int x, int y, double m)
 
 	return m * pow(c, 1);
 }
+#endif
 
 struct item_count {
 	int value;
@@ -60,6 +62,7 @@ struct reservoir {
 	int sx;
 };
 
+#if 0
 static void free_reservoir_array(struct reservoir *reservoir, int size)
 {
 	int i;
@@ -68,19 +71,25 @@ static void free_reservoir_array(struct reservoir *reservoir, int size)
 		free_rule(reservoir[i].r);
 	free(reservoir);
 }
+#endif
 
+#if 0
 static int ic_noisy_cmp(const void *a, const void *b)
 {
 	const struct item_count *ia = a, *ib = b;
 	return double_cmp_r(&ia->noisy_count, &ib->noisy_count);
 }
+#endif
 
+#if 0
 static int reservoir_cmp(const void *a, const void *b)
 {
 	const struct reservoir *ra = a, *rb = b;
 	return double_cmp(&ra->v, &rb->v);
 }
+#endif
 
+#if 0
 static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
@@ -99,6 +108,7 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
+#endif
 
 #if PRINT_RS_TRACE || PRINT_FINAL_RULES
 static void print_reservoir(struct reservoir *reservoir, size_t rs)
@@ -115,6 +125,7 @@ static void print_reservoir(struct reservoir *reservoir, size_t rs)
 }
 #endif
 
+#if 0
 static void process_rule(const struct fptree *fp,
 		const int *AB, int ab_length, const int *A, int a_length,
 		double eps, size_t *rs, struct reservoir *reservoir, size_t k,
@@ -174,7 +185,9 @@ static void process_rule(const struct fptree *fp,
 	free_itemset(iA);
 	free_itemset(iAB);
 }
+#endif
 
+#if 0
 static void generate_and_add_all_rules(const struct fptree *fp,
 		const int *items, size_t num_items, size_t st, double eps,
 		size_t *rs, struct reservoir *reservoir,
@@ -282,12 +295,20 @@ static void split_in_partitions(const struct fptree *fp,
 
 	free(items);
 }
+#endif
 
+#if 0
 void dp2d(const struct fptree *fp,
 		size_t shelves, size_t bins, enum bin_mode bin_mode,
 		double eps, double eps_share, int minth, size_t mis, size_t k,
 		double minalpha, long int seed)
+#else
+void dp2d(const struct fptree *fp,
+		double eps,
+		long int seed)
+#endif
 {
+#if 0
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t *ksh = calloc(shelves, sizeof(ksh[0]));
 	size_t **partitions = NULL, *parlens = NULL;
@@ -475,4 +496,5 @@ void dp2d(const struct fptree *fp,
 	free(items);
 	free(ksh);
 	free(ic);
+#endif
 }
