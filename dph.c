@@ -119,14 +119,12 @@ static void parse_arguments(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-#if 0
 	struct fptree fp;
-#endif
 
 	parse_arguments(argc, argv);
 
-#if 0
 	fpt_read_from_file(args.tfname, &fp);
+#if 0
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
@@ -135,8 +133,8 @@ int main(int argc, char **argv)
 			args.minth, args.mis, args.k, args.minalpha,
 			args.seed);
 
-	fpt_cleanup(&fp);
 #endif
+	fpt_cleanup(&fp);
 	free(args.tfname);
 
 	return 0;
