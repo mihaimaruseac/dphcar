@@ -124,16 +124,16 @@ int main(int argc, char **argv)
 	parse_arguments(argc, argv);
 
 	fpt_read_from_file(args.tfname, &fp);
-#if 0
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
+#if 0
 	dp2d(&fp, args.shelves, args.bins, args.bin_mode,
 			args.eps, args.eps_share,
 			args.minth, args.mis, args.k, args.minalpha,
 			args.seed);
-
 #endif
+
 	fpt_cleanup(&fp);
 	free(args.tfname);
 
