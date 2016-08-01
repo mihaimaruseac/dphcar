@@ -19,14 +19,17 @@
 static struct {
 	/* filename containing the transactions */
 	char *tfname;
+#if 0
 	/* binning mode */
 	enum bin_mode bin_mode;
 	/* number of bins */
 	size_t bins;
 	/* number of shelves */
 	size_t shelves;
+#endif
 	/* global value for epsilon */
 	double eps;
+#if 0
 	/* fraction of epsilon for first step */
 	double eps_share;
 	/* minimum threshold */
@@ -37,13 +40,17 @@ static struct {
 	size_t k;
 	/* min alpha value */
 	double minalpha;
+#endif
 	/* random seed */
 	long int seed;
 } args;
 
 static void usage(const char *prg)
 {
+#if 0
 	fprintf(stderr, "Usage: %s TFILE BIN_MODE(n|r|w|d) NUM_BINS NUM_SHELVES EPS EPS_SHARE MINTH MINALHPA MIS K [SEED]\n", prg);
+#endif
+	fprintf(stderr, "Usage: %s TFILE EPS [SEED]\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -56,9 +63,14 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
+#if 0
 	if (argc < 11 || argc > 12)
+#else
+	if (argc < 3 || argc > 4)
+#endif
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
+#if 0
 	if (!strncmp(argv[2], "n", 1)) args.bin_mode = NONE;
 	else if (!strncmp(argv[2], "r", 1)) args.bin_mode = RANDOM;
 	else if (!strncmp(argv[2], "w", 1)) args.bin_mode = EQUIWIDTH;
@@ -74,8 +86,14 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (args.shelves != 1 && args.bin_mode != RANDOM)
 		die("Only RANDOM binning can have more than 1 shelf!");
+#endif
+#if 0
 	if (sscanf(argv[5], "%lf", &args.eps) != 1 || args.eps < 0)
+#else
+	if (sscanf(argv[2], "%lf", &args.eps) != 1 || args.eps < 0)
+#endif
 		usage(argv[0]);
+#if 0
 	if (sscanf(argv[6], "%lf", &args.eps_share) != 1 || args.eps_share < 0 || args.eps_share >= 1)
 		usage(argv[0]);
 	if (sscanf(argv[7], "%lu", &args.minth) != 1)
@@ -86,8 +104,14 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[10], "%lu", &args.k) != 1)
 		usage(argv[0]);
+#endif
+#if 0
 	if (argc == 12) {
 		if (sscanf(argv[11], "%ld", &args.seed) != 1)
+#else
+	if (argc == 4) {
+		if (sscanf(argv[3], "%ld", &args.seed) != 1)
+#endif
 			usage(argv[0]);
 	} else
 		args.seed = 42;
@@ -95,10 +119,13 @@ static void parse_arguments(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+#if 0
 	struct fptree fp;
+#endif
 
 	parse_arguments(argc, argv);
 
+#if 0
 	fpt_read_from_file(args.tfname, &fp);
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
@@ -109,6 +136,7 @@ int main(int argc, char **argv)
 			args.seed);
 
 	fpt_cleanup(&fp);
+#endif
 	free(args.tfname);
 
 	return 0;
