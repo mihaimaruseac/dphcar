@@ -412,7 +412,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 			printf("\n");
 #endif
 
-			end = update_items(items, lmax, fp->n);
+			/* TODO: last arg would be fp->n or a constant that is
+			 * determined by the code, not a fixed argument */
+			end = update_items(items, lmax, 20);
 		} while (!end);
 		break; /* TODO: remove */
 	}
