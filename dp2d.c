@@ -292,6 +292,53 @@ static void split_in_partitions(const struct fptree *fp,
 }
 #endif
 
+/**
+ * Constructs the next items vector, the next set of rules to be analyzed.
+ */
+static int update_items(size_t *items, size_t lmax, size_t n)
+{
+	size_t ix = lmax - 1, i, ok;
+
+	do {
+		do {
+			/* try next */
+			items[ix]++;
+
+			/* if impossible, move to one below */
+			if (items[ix] == n) {
+				items[ix] = -1; /* before first option */
+				ix--; /* will wrap around, check return */
+				ok = 0; /* this level was not finished */
+				break; /* restart process for ix - 1 */
+			}
+
+			/* check valid */
+			ok = 1;
+			for (i = 0; i < ix && ok; i++)
+				if (items[i] == items[ix])
+					ok = 0;
+
+			/* TODO: check to not generate forbidden set */
+		} while (!ok);
+
+		if (ok)
+			ix++; /* move to next */
+	} while (ix < lmax);
+
+	return ix > lmax;
+}
+
+/**
+ * Initialize the items vector, the first set of rules to be analyzed.
+ */
+static inline void init_items(size_t *items, size_t lmax)
+{
+	size_t i;
+
+	for (i = 0; i < lmax; i++)
+		items[i] = i;
+}
+
 #if 0
 void dp2d(const struct fptree *fp,
 		size_t shelves, size_t bins, enum bin_mode bin_mode,
@@ -308,17 +355,15 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	struct histogram *h = init_histogram();
 	size_t i, j, ip, fm, rs, st, cis, sh;
 	double maxc, minc;
-	int *items;
 #endif
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
 	struct drand48_data randbuffer;
-	size_t i;
+	size_t i, j, end;
+	size_t *items;
 
 	init_rng(seed, &randbuffer);
-#if 0
-	items = calloc(mis + 1, sizeof(items[0]));
-#endif
+	items = calloc(lmax, sizeof(items[0]));
 
 	printf("Running dp2D with eps=%lf, eps_step1=%lf, k=%lu, c0=%5.2lf, "
 			"rmax=%lu\n", eps, epsilon_step1, k, c0, lmax);
@@ -354,6 +399,22 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	gettimeofday(&starttime, NULL);
 
 	for (i = 0; i < k; i++) {
+		init_items(items, lmax);
+		do {
+#if 0
+			for (j = 0; j < lmax; j++)
+				printf("%lu ", items[j]);
+			printf("\n");
+#endif
+#if 0
+			for (j = 0; j < lmax; j++)
+				printf("%d ", ic[j].value);
+			printf("\n");
+#endif
+
+			end = update_items(items, lmax, fp->n);
+		} while (!end);
+		break; /* TODO: remove */
 	}
 #if 0
 	for (sh = 0; sh < shelves; sh++) {
@@ -499,8 +560,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	free(parlens);
 	free(partitions);
 	free_histogram(h);
-	free(items);
 	free(ksh);
 #endif
+	free(items);
 	free(ic);
 }
