@@ -297,35 +297,34 @@ static void split_in_partitions(const struct fptree *fp,
  */
 static int update_items(size_t *items, size_t lmax, size_t n)
 {
-	size_t ix = lmax - 1, i, ok;
+	size_t ix = lmax - 1, ok;
 
 	do {
 		do {
 			/* try next */
+			ok = 1;
 			items[ix]++;
 
 			/* if impossible, move to one below */
 			if (items[ix] == n) {
-				items[ix] = -1; /* before first option */
-				ix--; /* will wrap around, check return */
+				if (!ix) return 1; /* end of generation */
+				ix--;
 				ok = 0; /* this level was not finished */
 				break; /* restart process for ix - 1 */
 			}
 
-			/* check valid */
-			ok = 1;
-			for (i = 0; i < ix && ok; i++)
-				if (items[i] == items[ix])
-					ok = 0;
-
 			/* TODO: check to not generate forbidden set */
 		} while (!ok);
 
-		if (ok)
+		if (ok) {
 			ix++; /* move to next */
+			if (ix == lmax)
+				return 0; /* all generated */
+			items[ix] = items[ix - 1]; /* before first option */
+		}
 	} while (ix < lmax);
 
-	return ix > lmax;
+	return 0; /* notreached */
 }
 
 /**
