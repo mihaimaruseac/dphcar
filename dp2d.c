@@ -329,6 +329,8 @@ static void analyze_items(size_t *items, size_t lmax, const struct fptree *fp,
 				AB[i], (sup_ab + 0.0)/sup_a, q, u, v);
 #endif
 	}
+
+	free(AB);
 }
 
 /**
