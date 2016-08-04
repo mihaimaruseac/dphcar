@@ -1,3 +1,4 @@
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,7 +22,11 @@
 #endif
 /* print the rule lattice generation step debug info */
 #ifndef PRINT_RULE_LATTICE
-#define PRINT_RULE_LATTICE 1
+#define PRINT_RULE_LATTICE 0
+#endif
+/* print changes to the selected rule */
+#ifndef PRINT_RULE_LATTICE_TRACE
+#define PRINT_RULE_LATTICE_TRACE 1
 #endif
 #if 0
 /* print the rules generated at each step and their quality */
@@ -44,9 +49,10 @@
 
 static double quality(int x, int y, double c0)
 {
-	double q = x - y / c0;
-	if (q < 0) return 0;
-	return q;
+	double q = -x + y / c0;
+	//TODO: asymmetry around c0 line
+	//if (q > 0) return 0;
+	return -fabs(q);
 }
 
 struct item_count {
@@ -296,14 +302,15 @@ static void split_in_partitions(const struct fptree *fp,
 /**
  * Analyze the current items to see if we can select a good rule lattice.
  */
-static void analyze_items(size_t *items, size_t lmax, const struct fptree *fp,
-		const struct item_count *ic, double c0, double eps,
-		struct drand48_data *randbuffer)
+static void analyze_items(size_t *items, size_t lmax,
+		double *bv, size_t *bitems,
+		const struct fptree *fp, const struct item_count *ic,
+		double c0, double eps, struct drand48_data *randbuffer)
 {
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	int sup_ab, sup_a;
 	double q, u, v;
-	size_t i;
+	size_t i, j, k;
 
 	for (i = 0; i < lmax; i++)
 		AB[i] = ic[items[i]].value;
@@ -328,6 +335,24 @@ static void analyze_items(size_t *items, size_t lmax, const struct fptree *fp,
 		printf("\t%3d -> {}: c=%7.6f q=%5.2f u=%5.2f v=%5.2f\n",
 				AB[i], (sup_ab + 0.0)/sup_a, q, u, v);
 #endif
+
+		if (v < *bv) {
+			*bv = v;
+			for (j = 0; j < lmax; j++)
+				bitems[j] = items[j];
+			k = bitems[0];
+			bitems[0] = bitems[i];
+			bitems[i] = k;
+#if PRINT_RULE_LATTICE_TRACE
+			printf("Selected items: %lu(%d) -> ",
+					bitems[0], ic[bitems[0]].value);
+			for (j = 1; j < lmax; j++)
+				printf("%lu(%d) ", bitems[j],
+						ic[bitems[j]].value);
+			printf(": c=%7.6f q=%5.2f u=%5.2f v=%5.2f\n",
+					(sup_ab + 0.0)/sup_a, q, u, v);
+#endif
+		}
 	}
 
 	free(AB);
@@ -399,8 +424,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
 	struct drand48_data randbuffer;
-	size_t i, end;
-	size_t *items;
+	size_t *items, *bitems;
+	size_t i, j, end;
+	double bv;
 
 	init_rng(seed, &randbuffer);
 	items = calloc(lmax, sizeof(items[0]));
@@ -440,14 +466,28 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 
 	for (i = 0; i < k; i++) {
 		init_items(items, lmax);
+		bitems = calloc(lmax, sizeof(bitems[0]));
+		bv = DBL_MAX;
 		do {
-			analyze_items(items, lmax, fp, ic, c0, eps,
-					&randbuffer);
+			analyze_items(items, lmax, &bv, bitems, fp, ic, c0,
+					eps, &randbuffer);
 
 			/* TODO: last arg would be fp->n or a constant that is
 			 * determined by the code, not a fixed argument */
 			end = update_items(items, lmax, 20);
 		} while (!end);
+
+#if PRINT_RULE_LATTICE_TRACE
+		printf("Selected items: %lu(%d) -> ",
+				bitems[0], ic[bitems[0]].value);
+		for (j = 1; j < lmax; j++)
+			printf("%lu(%d) ", bitems[j],
+					ic[bitems[j]].value);
+		printf("\n");
+#endif
+		/* TODO: remove bitems from future items */
+
+		free(bitems);
 		break; /* TODO: remove */
 	}
 #if 0
