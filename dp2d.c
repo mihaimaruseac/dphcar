@@ -22,7 +22,7 @@
 #endif
 /* print the rule lattice generation step debug info */
 #ifndef PRINT_RULE_LATTICE
-#define PRINT_RULE_LATTICE 0
+#define PRINT_RULE_LATTICE 1
 #endif
 /* print changes to the selected rule */
 #ifndef PRINT_RULE_LATTICE_TRACE
@@ -343,8 +343,9 @@ static void analyze_items(size_t *items, size_t lmax,
 			k = bitems[0];
 			bitems[0] = bitems[i];
 			bitems[i] = k;
+
 #if PRINT_RULE_LATTICE_TRACE
-			printf("Selected items: %lu(%d) -> ",
+			printf("Current best items: %lu(%d) -> ",
 					bitems[0], ic[bitems[0]].value);
 			for (j = 1; j < lmax; j++)
 				printf("%lu(%d) ", bitems[j],
@@ -359,9 +360,32 @@ static void analyze_items(size_t *items, size_t lmax,
 }
 
 /**
+ * Checks whether the current items vector is forbidden (already generated).
+ */
+static inline int already_seen(size_t *items, size_t lmax,
+		size_t *seen, size_t seenlen)
+{
+	size_t i, j, ix = 0;
+
+	while (ix < seenlen) {
+		for (i = 0, j = ix; i < lmax; i++, j++)
+			if (items[i] != seen[j]) {
+				ix += lmax;
+				break;
+			}
+
+		if (i == lmax)
+			return 1;
+	}
+
+	return 0;
+}
+
+/**
  * Constructs the next items vector, the next set of rules to be analyzed.
  */
-static int update_items(size_t *items, size_t lmax, size_t n)
+static int update_items(size_t *items, size_t lmax, size_t n,
+		size_t *seen, size_t seenlen)
 {
 	size_t ix = lmax - 1, ok;
 
@@ -379,7 +403,9 @@ static int update_items(size_t *items, size_t lmax, size_t n)
 				break; /* restart process for ix - 1 */
 			}
 
-			/* TODO: check to not generate forbidden set */
+			/* check to not generate seen set */
+			if (already_seen(items, lmax, seen, seenlen))
+				ok = 0; /* get next set */
 		} while (!ok);
 
 		if (ok) {
@@ -396,12 +422,16 @@ static int update_items(size_t *items, size_t lmax, size_t n)
 /**
  * Initialize the items vector, the first set of rules to be analyzed.
  */
-static inline void init_items(size_t *items, size_t lmax)
+static inline void init_items(size_t *items, size_t lmax, size_t n,
+		size_t *seen, size_t seenlen)
 {
 	size_t i;
 
 	for (i = 0; i < lmax; i++)
 		items[i] = i;
+
+	if (already_seen(items, lmax, seen, seenlen))
+		update_items(items, lmax, n, seen, seenlen);
 }
 
 #if 0
@@ -423,9 +453,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 #endif
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
+	size_t i, j, end, seenix, numits;
 	struct drand48_data randbuffer;
-	size_t *items, *bitems;
-	size_t i, j, end;
+	size_t *items, *bitems, *seen;
 	double bv;
 
 	init_rng(seed, &randbuffer);
@@ -446,6 +476,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 
 	eps = eps - epsilon_step1;
 	eps /= k;
+	seen = calloc(k * lmax, sizeof(seen[0]));
 	printf("Step 2: mining %lu steps each with eps %lf\n", k, eps);
 
 #if 0
@@ -464,17 +495,17 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
+	seenix = 0;
+	/* TODO: should be fp->n or a constant that is determined by code */
+	numits = 20;
 	for (i = 0; i < k; i++) {
-		init_items(items, lmax);
+		init_items(items, lmax, numits, seen, seenix);
 		bitems = calloc(lmax, sizeof(bitems[0]));
 		bv = DBL_MAX;
 		do {
 			analyze_items(items, lmax, &bv, bitems, fp, ic, c0,
 					eps, &randbuffer);
-
-			/* TODO: last arg would be fp->n or a constant that is
-			 * determined by the code, not a fixed argument */
-			end = update_items(items, lmax, 20);
+			end = update_items(items, lmax, numits, seen, seenix);
 		} while (!end);
 
 #if PRINT_RULE_LATTICE_TRACE
@@ -485,10 +516,14 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 					ic[bitems[j]].value);
 		printf("\n");
 #endif
-		/* TODO: remove bitems from future items */
+		/* TODO: extract rules from bitems */
+
+		/* remove bitems from future items */
+		qsort(bitems, lmax, sizeof(bitems[0]), int_cmp);
+		for (j = 0; j < lmax; j++)
+			seen[seenix++] = bitems[j];
 
 		free(bitems);
-		break; /* TODO: remove */
 	}
 #if 0
 	for (sh = 0; sh < shelves; sh++) {
@@ -636,6 +671,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	free_histogram(h);
 	free(ksh);
 #endif
+	free(seen);
 	free(items);
 	free(ic);
 }
