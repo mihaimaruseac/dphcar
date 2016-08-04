@@ -70,25 +70,22 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
-#if 0
-static void generate_and_add_all_rules(const struct fptree *fp,
-		const int *items, size_t num_items, size_t st, double eps,
-		size_t *rs, struct reservoir *reservoir,
-		size_t k, struct drand48_data *randbuffer, double m)
+static void generate_rules(const size_t *items, size_t lmax,
+		const struct fptree *fp, const struct item_count *ic,
+		double *minc, double *maxc)
 {
-	size_t i, j, l, max=1<<num_items, a_length, ab_length, max2;
+	size_t i, j, l, max=1<<lmax, max2, a_length, ab_length;
 	int *A, *AB;
-	double u;
 
-	A = calloc(num_items, sizeof(A[0]));
-	AB = calloc(num_items, sizeof(AB[0]));
+	A = calloc(lmax, sizeof(A[0]));
+	AB = calloc(lmax, sizeof(AB[0]));
 
 	/* generate rule's AB */
-	for (i = st; i < max; i++) {
+	for (i = 0; i < max; i++) {
 		ab_length = 0;
-		for (j = 0; j < num_items; j++)
+		for (j = 0; j < lmax; j++)
 			if (i & (1 << j))
-				AB[ab_length++] = items[j];
+				AB[ab_length++] = ic[items[j]].value;
 		if (ab_length < 2) continue;
 
 		max2 = (1 << ab_length) - 1;
@@ -97,20 +94,13 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 			for (l = 0; l < ab_length; l++)
 				if (j & (1 << l))
 					A[a_length++] = AB[l];
-			drand48_r(randbuffer, &u);
-			process_rule(fp, AB, ab_length, A, a_length,
-					eps, rs, reservoir, k, u, m);
+
+			/* TODO: process rule */
 		}
 	}
 
 	free(A);
 	free(AB);
-}
-#endif
-
-static void generate_rules(const size_t *bitems, size_t lmax,
-		const struct fptree *fp, double *minc, double *maxc)
-{
 }
 
 /**
@@ -308,8 +298,11 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 					ic[bitems[j]].value);
 		printf("\n");
 #endif
-		/* TODO: extract rules from bitems */
-		generate_rules(bitems, lmax, fp, &minc, &maxc);
+
+		generate_rules(bitems, lmax, fp, ic, &minc, &maxc);
+#if 0
+	histogram_register(h, reservoir[i].c);
+#endif
 
 		/* remove bitems from future items */
 		qsort(bitems, lmax, sizeof(bitems[0]), int_cmp);
@@ -318,59 +311,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 
 		free(bitems);
 	}
+
 #if 0
-	/* move rules from reservoir to histogram */
-	minc = 1; maxc = 0;
-#if RULE_EXPAND
-	struct rule_table *rt = init_rule_table();
-	for (i = 0; i < rs; i++) {
-		struct rule *r = reservoir[i].r, *nr1, *nr2;
-		int *items = calloc(r->B->length, sizeof(items[0]));
-		struct itemset *A, *AB, *ABprime;
-		int supA, supAB;
-		size_t k1, nis;
-
-		save_rule2(rt, r, reservoir[i].c);
-
-		st = 1 << r->B->length; st--;
-		AB = build_itemset_add_items(r->A, r->B->items, r->B->length);
-		for (j = 1; j < st; j++) {
-			nis = 0;
-			for (k1 = 0; k1 < r->B->length; k1++)
-				if ((1 << k1) & j)
-					items[nis++] = r->B->items[k1];
-
-			ABprime = build_itemset_del_items(AB, items, nis);
-			nr1 = build_rule_A_AB(r->A, ABprime);
-			supAB = fpt_itemset_count(fp, ABprime->items, ABprime->length);
-			supA = fpt_itemset_count(fp, r->A->items, r->A->length);
-			save_rule2(rt, nr1, supAB / (supA + 0.0));
-
-			A = build_itemset_add_items(r->A, items, nis);
-			nr2 = build_rule_A_AB(A, AB);
-			supAB = fpt_itemset_count(fp, AB->items, AB->length);
-			supA = fpt_itemset_count(fp, A->items, A->length);
-			save_rule2(rt, nr2, supAB / (supA + 0.0));
-		}
-	}
-
-	for (i = 0; i < rt->sz; i++) {
-		if (rt->c[i] < minc)
-			minc = rt->c[i];
-		if (rt->c[i] > maxc)
-			maxc = rt->c[i];
-		histogram_register(h, rt->c[i]);
-	}
-#else
-	for (i = 0; i < rs; i++) {
-		if (reservoir[i].c < minc)
-			minc = reservoir[i].c;
-		if (reservoir[i].c > maxc)
-			maxc = reservoir[i].c;
-		histogram_register(h, reservoir[i].c);
-	}
-#endif
-
 	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
 #if RULE_EXPAND
 			rt->sz,
