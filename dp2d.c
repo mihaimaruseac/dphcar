@@ -108,10 +108,15 @@ static void generate_and_add_all_rules(const struct fptree *fp,
 }
 #endif
 
+static void generate_rules(const size_t *bitems, size_t lmax,
+		const struct fptree *fp, double *minc, double *maxc)
+{
+}
+
 /**
  * Analyze the current items to see if we can select a good rule lattice.
  */
-static void analyze_items(size_t *items, size_t lmax,
+static void analyze_items(const size_t *items, size_t lmax,
 		double *bv, size_t *bitems,
 		const struct fptree *fp, const struct item_count *ic,
 		double c0, double eps, struct drand48_data *randbuffer)
@@ -171,8 +176,8 @@ static void analyze_items(size_t *items, size_t lmax,
 /**
  * Checks whether the current items vector is forbidden (already generated).
  */
-static inline int already_seen(size_t *items, size_t lmax,
-		size_t *seen, size_t seenlen)
+static inline int already_seen(const size_t *items, size_t lmax,
+		const size_t *seen, size_t seenlen)
 {
 	size_t i, j, ix = 0;
 
@@ -194,7 +199,7 @@ static inline int already_seen(size_t *items, size_t lmax,
  * Constructs the next items vector, the next set of rules to be analyzed.
  */
 static int update_items(size_t *items, size_t lmax, size_t n,
-		size_t *seen, size_t seenlen)
+		const size_t *seen, size_t seenlen)
 {
 	size_t ix = lmax - 1, ok;
 
@@ -232,7 +237,7 @@ static int update_items(size_t *items, size_t lmax, size_t n,
  * Initialize the items vector, the first set of rules to be analyzed.
  */
 static inline void init_items(size_t *items, size_t lmax, size_t n,
-		size_t *seen, size_t seenlen)
+		const size_t *seen, size_t seenlen)
 {
 	size_t i;
 
@@ -246,12 +251,15 @@ static inline void init_items(size_t *items, size_t lmax, size_t n,
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		double c0, size_t lmax, size_t k, long int seed)
 {
+#if 0
+	struct histogram *h = init_histogram();
+#endif
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
 	size_t i, j, end, seenix, numits;
 	struct drand48_data randbuffer;
 	size_t *items, *bitems, *seen;
-	double bv;
+	double bv, minc, maxc;
 
 	init_rng(seed, &randbuffer);
 	items = calloc(lmax, sizeof(items[0]));
@@ -280,6 +288,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	seenix = 0;
 	/* TODO: should be fp->n or a constant that is determined by code */
 	numits = 20;
+	minc = 1;
+	maxc = 0;
 	for (i = 0; i < k; i++) {
 		init_items(items, lmax, numits, seen, seenix);
 		bitems = calloc(lmax, sizeof(bitems[0]));
@@ -299,6 +309,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		printf("\n");
 #endif
 		/* TODO: extract rules from bitems */
+		generate_rules(bitems, lmax, fp, &minc, &maxc);
 
 		/* remove bitems from future items */
 		qsort(bitems, lmax, sizeof(bitems[0]), int_cmp);
@@ -308,10 +319,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		free(bitems);
 	}
 #if 0
-	while (1) {
-		generate_and_add_all_rules(fp, items, cis, st, eps/k_now,
-				&rs, reservoir, k_now, &randbuffer, minalpha);
-	}
 	/* move rules from reservoir to histogram */
 	minc = 1; maxc = 0;
 #if RULE_EXPAND
