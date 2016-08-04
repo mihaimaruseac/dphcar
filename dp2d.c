@@ -75,18 +75,23 @@ static void generate_rules(const size_t *items, size_t lmax,
 		double *minc, double *maxc)
 {
 	size_t i, j, l, max=1<<lmax, max2, a_length, ab_length;
+	struct itemset *a, *ab;
+	int sup_ab, sup_a;
+	struct rule *r;
 	int *A, *AB;
+	double c;
 
 	A = calloc(lmax, sizeof(A[0]));
 	AB = calloc(lmax, sizeof(AB[0]));
 
-	/* generate rule's AB */
 	for (i = 0; i < max; i++) {
 		ab_length = 0;
 		for (j = 0; j < lmax; j++)
 			if (i & (1 << j))
 				AB[ab_length++] = ic[items[j]].value;
 		if (ab_length < 2) continue;
+
+		ab = build_itemset(AB, ab_length);
 
 		max2 = (1 << ab_length) - 1;
 		for (j = 1; j < max2; j++) {
@@ -95,8 +100,27 @@ static void generate_rules(const size_t *items, size_t lmax,
 				if (j & (1 << l))
 					A[a_length++] = AB[l];
 
-			/* TODO: process rule */
+			/* TODO: check to not generate the same rule */
+
+			sup_ab = fpt_itemset_count(fp, AB, ab_length);
+			sup_a = fpt_itemset_count(fp, A, a_length);
+			c = (sup_ab + 0.0) / sup_a;
+			if (c < *minc) *minc = c;
+			if (c > *maxc) *maxc = c;
+
+			a = build_itemset(A, a_length);
+			r = build_rule_A_AB(a, ab);
+
+#if PRINT_FINAL_RULES
+			print_rule(r);
+			printf(" | c=%7.6f\n", c);
+#endif
+
+			free_rule(r);
+			free_itemset(a);
 		}
+
+		free_itemset(ab);
 	}
 
 	free(A);
@@ -312,15 +336,17 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		free(bitems);
 	}
 
-#if 0
 	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
+#if 0
 #if RULE_EXPAND
 			rt->sz,
 #else
 			rs,
 #endif
-			minc, maxc);
+#else
+			0,
 #endif
+			minc, maxc);
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
