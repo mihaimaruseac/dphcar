@@ -19,6 +19,11 @@
 #ifndef PRINT_ITEM_TABLE
 #define PRINT_ITEM_TABLE 0
 #endif
+/* print the rule lattice generation step debug info */
+#ifndef PRINT_RULE_LATTICE
+#define PRINT_RULE_LATTICE 1
+#endif
+#if 0
 /* print the rules generated at each step and their quality */
 #ifndef PRINT_RULE_DOMAIN
 #define PRINT_RULE_DOMAIN 0
@@ -35,18 +40,14 @@
 #ifndef RULE_EXPAND
 #define RULE_EXPAND 0
 #endif
-
-#if 0
-static double quality(int x, int y, double m)
-{
-	double c;
-
-	if (x < m) x = m;
-	c = (y + 0.0) / (x + 0.0);
-
-	return m * pow(c, 1);
-}
 #endif
+
+static double quality(int x, int y, double c0)
+{
+	double q = x - y / c0;
+	if (q < 0) return 0;
+	return q;
+}
 
 struct item_count {
 	int value;
@@ -293,6 +294,44 @@ static void split_in_partitions(const struct fptree *fp,
 #endif
 
 /**
+ * Analyze the current items to see if we can select a good rule lattice.
+ */
+static void analyze_items(size_t *items, size_t lmax, const struct fptree *fp,
+		const struct item_count *ic, double c0, double eps,
+		struct drand48_data *randbuffer)
+{
+	int *AB = calloc(lmax, sizeof(AB[0]));
+	int sup_ab, sup_a;
+	double q, u, v;
+	size_t i;
+
+	for (i = 0; i < lmax; i++)
+		AB[i] = ic[items[i]].value;
+
+	sup_ab = fpt_itemset_count(fp, AB, lmax);
+
+#if PRINT_RULE_LATTICE
+	printf("Analyzing new set of items: ");
+	for (i = 0; i < lmax; i++)
+		printf("%3d ", AB[i]);
+	printf(" | support: %d\n", sup_ab);
+#endif
+
+	/* try for each corner item */
+	for (i = 0; i < lmax; i++) {
+		sup_a = ic[items[i]].real_count;
+		q = quality(sup_a, sup_ab, c0);
+		drand48_r(randbuffer, &u);
+		v = log(log(1/u)) - eps * q / 2;
+
+#if PRINT_RULE_LATTICE
+		printf("\t%3d -> {}: c=%7.6f q=%5.2f u=%5.2f v=%5.2f\n",
+				AB[i], (sup_ab + 0.0)/sup_a, q, u, v);
+#endif
+	}
+}
+
+/**
  * Constructs the next items vector, the next set of rules to be analyzed.
  */
 static int update_items(size_t *items, size_t lmax, size_t n)
@@ -358,7 +397,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
 	struct drand48_data randbuffer;
-	size_t i, j, end;
+	size_t i, end;
 	size_t *items;
 
 	init_rng(seed, &randbuffer);
@@ -400,16 +439,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	for (i = 0; i < k; i++) {
 		init_items(items, lmax);
 		do {
-#if 0
-			for (j = 0; j < lmax; j++)
-				printf("%lu ", items[j]);
-			printf("\n");
-#endif
-#if 0
-			for (j = 0; j < lmax; j++)
-				printf("%d ", ic[j].value);
-			printf("\n");
-#endif
+			analyze_items(items, lmax, fp, ic, c0, eps,
+					&randbuffer);
 
 			/* TODO: last arg would be fp->n or a constant that is
 			 * determined by the code, not a fixed argument */
