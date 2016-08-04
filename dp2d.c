@@ -22,11 +22,15 @@
 #endif
 /* print the rule lattice generation step debug info */
 #ifndef PRINT_RULE_LATTICE
-#define PRINT_RULE_LATTICE 1
+#define PRINT_RULE_LATTICE 0
 #endif
 /* print changes to the selected rule */
 #ifndef PRINT_RULE_LATTICE_TRACE
-#define PRINT_RULE_LATTICE_TRACE 1
+#define PRINT_RULE_LATTICE_TRACE 0
+#endif
+/* print the returned rules */
+#ifndef PRINT_FINAL_RULES
+#define PRINT_FINAL_RULES 1
 #endif
 #if 0
 /* print the rules generated at each step and their quality */
@@ -36,10 +40,6 @@
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
 #define PRINT_RS_TRACE 0
-#endif
-/* print the returned rules */
-#ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 0
 #endif
 /* do rule expansion */
 #ifndef RULE_EXPAND
@@ -508,7 +508,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 			end = update_items(items, lmax, numits, seen, seenix);
 		} while (!end);
 
-#if PRINT_RULE_LATTICE_TRACE
+#if PRINT_RULE_LATTICE_TRACE || PRINT_FINAL_RULES
 		printf("Selected items: %lu(%d) -> ",
 				bitems[0], ic[bitems[0]].value);
 		for (j = 1; j < lmax; j++)
