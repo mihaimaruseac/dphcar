@@ -70,14 +70,32 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 }
 
+#if PRINT_FINAL_RULES
+static void print_this_rule(const int *A, const int* AB,
+		size_t a_length, size_t ab_length, double c)
+{
+	size_t i, j;
+
+	for (i = 0; i < a_length; i++)
+		printf("%d ", A[i]);
+	printf("-> ");
+	for (i = 0; i < ab_length; i++) {
+		for (j = 0; j < a_length; j++)
+			if (AB[i] == A[j])
+				j = 2 * a_length;
+		if (j == a_length)
+			printf("%d ", AB[i]);
+	}
+	printf("| c=%7.6f\n", c);
+}
+#endif
+
 static void generate_rules(const size_t *items, size_t lmax,
 		const struct fptree *fp, const struct item_count *ic,
 		double *minc, double *maxc)
 {
 	size_t i, j, l, max=1<<lmax, max2, a_length, ab_length;
-	struct itemset *a, *ab;
 	int sup_ab, sup_a;
-	struct rule *r;
 	int *A, *AB;
 	double c;
 
@@ -90,8 +108,6 @@ static void generate_rules(const size_t *items, size_t lmax,
 			if (i & (1 << j))
 				AB[ab_length++] = ic[items[j]].value;
 		if (ab_length < 2) continue;
-
-		ab = build_itemset(AB, ab_length);
 
 		max2 = (1 << ab_length) - 1;
 		for (j = 1; j < max2; j++) {
@@ -108,19 +124,10 @@ static void generate_rules(const size_t *items, size_t lmax,
 			if (c < *minc) *minc = c;
 			if (c > *maxc) *maxc = c;
 
-			a = build_itemset(A, a_length);
-			r = build_rule_A_AB(a, ab);
-
 #if PRINT_FINAL_RULES
-			print_rule(r);
-			printf(" | c=%7.6f\n", c);
+			print_this_rule(A, AB, a_length, ab_length, c);
 #endif
-
-			free_rule(r);
-			free_itemset(a);
 		}
-
-		free_itemset(ab);
 	}
 
 	free(A);
