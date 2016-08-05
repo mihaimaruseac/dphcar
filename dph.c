@@ -84,11 +84,8 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	if (args.priv_mode == PRIVATE)
-		dp2d(&fp, args.eps, args.eps_ratio1, args.c0, args.lmax,
-				args.k, args.seed);
-	else
-		dp2d_np(&fp, args.c0, args.lmax, args.k);
+	dp2d(&fp, args.eps, args.eps_ratio1, args.c0, args.lmax, args.k,
+			args.seed, args.priv_mode);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);

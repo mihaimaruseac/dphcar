@@ -59,18 +59,21 @@ static int ic_noisy_cmp(const void *a, const void *b)
 }
 
 static void build_items_table(const struct fptree *fp, struct item_count *ic,
-		double eps, struct drand48_data *buffer)
+		double eps, struct drand48_data *buffer, int private)
 {
 	size_t i;
 
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
 		ic[i].real_count = fpt_item_count(fp, i);
-		ic[i].noisy_count = laplace_mechanism(ic[i].real_count,
-				eps, 1, buffer);
-		/* TODO: filter some noise */
-		if (ic[i].noisy_count < 0)
-			ic[i].noisy_count = 0;
+		if (private) {
+			ic[i].noisy_count = laplace_mechanism(
+					ic[i].real_count, eps, 1, buffer);
+			/* TODO: filter some noise */
+			if (ic[i].noisy_count < 0)
+				ic[i].noisy_count = 0;
+		} else
+			ic[i].noisy_count = ic[i].real_count;
 	}
 
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
@@ -321,56 +324,36 @@ static inline void init_items(size_t *items, size_t lmax, size_t n,
 		update_items(items, lmax, n, seen, seenlen);
 }
 
-void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
-		double c0, size_t lmax, size_t k, long int seed)
+/**
+ * Step 2 of mining, private.
+ */
+static void step2(const struct fptree *fp, const struct item_count *ic,
+		struct histogram *h, size_t numits, size_t lmax,
+		double *minc, double *maxc, double c0, size_t k, double eps,
+		struct drand48_data *randbuffer)
 {
-	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
-	size_t i, j, end, seenix, seenitsix, numits;
-	double epsilon_step1 = eps * eps_ratio1;
-	struct histogram *h = init_histogram();
-	struct drand48_data randbuffer;
+	size_t i, j, end, seenix, seenitsix;
 	size_t *items, *bitems, *seen;
-	double bv, minc, maxc;
 	int *seenits;
+	double bv;
 
-	init_rng(seed, &randbuffer);
+	printf("Step 2: mining %lu steps each with eps %lf, numitems=%lu\n",
+			k, eps, numits);
+
 	items = calloc(lmax, sizeof(items[0]));
-
-	printf("Running dp2D with eps=%lf, eps_step1=%lf, k=%lu, c0=%5.2lf, "
-			"rmax=%lu\n", eps, epsilon_step1, k, c0, lmax);
-
-	printf("Step 1: compute noisy counts for items with eps_1 = %lf\n",
-			epsilon_step1);
-	build_items_table(fp, ic, epsilon_step1, &randbuffer);
-
-#if PRINT_ITEM_TABLE
-	printf("\n");
-	for (i = 0; i < fp->n; i++)
-		printf("%d %d %lf\n", ic[i].value, ic[i].real_count, ic[i].noisy_count);
-#endif
-
-	eps = eps - epsilon_step1;
-	eps /= k;
-	seen = calloc(k * lmax, sizeof(seen[0]));
 	seenits = calloc(k * (lmax+ 1) * (1 << lmax), sizeof(seenits[0]));
-	printf("Step 2: mining %lu steps each with eps %lf\n", k, eps);
-
-	struct timeval starttime;
-	gettimeofday(&starttime, NULL);
-
+	seen = calloc(k * lmax, sizeof(seen[0]));
 	seenix = 0;
 	seenitsix = 0;
-	/* TODO: should be fp->n or a constant that is determined by code */
-	numits = 20;
-	minc = 1;
-	maxc = 0;
+
 	for (i = 0; i < k; i++) {
 		init_items(items, lmax, numits, seen, seenix);
 		bitems = calloc(lmax, sizeof(bitems[0]));
 		bv = DBL_MAX;
+
 		do {
 			analyze_items(items, lmax, &bv, bitems, fp, ic, c0,
-					eps, &randbuffer);
+					eps, randbuffer);
 			end = update_items(items, lmax, numits, seen, seenix);
 		} while (!end);
 
@@ -383,7 +366,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		printf("\n");
 #endif
 
-		generate_rules(bitems, lmax, fp, ic, &minc, &maxc, h,
+		generate_rules(bitems, lmax, fp, ic, minc, maxc, h,
 				seenits, &seenitsix);
 
 		/* remove bitems from future items */
@@ -394,27 +377,87 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		free(bitems);
 	}
 
+	free(seenits);
+	free(items);
+	free(seen);
+}
+
+/**
+ * Step 2 of mining, not private.
+ */
+static void step2_np(const struct fptree *fp, const struct item_count *ic,
+		struct histogram *h, size_t numits, size_t lmax,
+		double *minc, double *maxc, double c0)
+{
+	printf("Step 2: mining all rules of top %lu items\n", numits);
+}
+
+#if PRINT_ITEM_TABLE
+static inline void print_item_table(const struct item_count *ic, size_t n)
+{
+	size_t i;
+
+	printf("\n");
+	for (i = 0; i < n; i++)
+		printf("%d %d %lf\n", ic[i].value, ic[i].real_count,
+				ic[i].noisy_count);
+}
+#endif
+
+void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
+		double c0, size_t lmax, size_t k, long int seed, int private)
+{
+	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	double epsilon_step1 = eps * eps_ratio1;
+	struct histogram *h = init_histogram();
+	struct timeval starttime, endtime;
+	struct drand48_data randbuffer;
+	double minc, maxc, t1, t2;
+	size_t numits;
+
+	init_rng(seed, &randbuffer);
+
+	if (private) {
+		printf("Running private method with eps=%lf, eps_step1=%lf, "
+				"k=%lu, c0=%5.2lf, rmax=%lu\n", eps,
+				epsilon_step1, k, c0, lmax);
+		printf("Step 1: compute noisy counts for items with "
+				"eps_1 = %lf\n", epsilon_step1);
+	} else {
+		printf("Running non-private method with k=%lu, c0=%5.2lf, "
+				"rmax=%lu\n", k, c0, lmax);
+		printf("Step 1: obtain the counts for single items\n");
+	}
+
+	build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
+#if PRINT_ITEM_TABLE
+	print_item_table(ic, fp->n);
+#endif
+
+	/* TODO: should be fp->n or a constant that is determined by code */
+	numits = 20;
+	minc = 1;
+	maxc = 0;
+
+	gettimeofday(&starttime, NULL);
+	if (private)
+		step2(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
+				(eps - epsilon_step1) / k, &randbuffer);
+	else
+		step2_np(fp, ic, h, numits, lmax, &minc, &maxc, c0);
+	gettimeofday(&endtime, NULL);
+	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
+	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
+
 	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
 			histogram_get_all(h), minc, maxc);
-
-	struct timeval endtime;
-	gettimeofday(&endtime, NULL);
-	double t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
-	double t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
-
 	printf("Total time: %5.2lf\n", t2 - t1);
-	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
+	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec,
+			endtime.tv_sec, endtime.tv_usec);
 
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
 	free_histogram(h);
-	free(seenits);
-	free(items);
-	free(seen);
 	free(ic);
-}
-
-void dp2d_np(const struct fptree *fp, double c0, size_t lmax, long int seed)
-{
 }
