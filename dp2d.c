@@ -90,9 +90,51 @@ static void print_this_rule(const int *A, const int* AB,
 }
 #endif
 
+/**
+ * Checks whether the current itemset has been generated previously
+ */
+static inline int its_already_seen(int *its, size_t itslen,
+		const int *seen, size_t seenlen)
+{
+	size_t ix = 0, i, j;
+
+	qsort(its, itslen, sizeof(its[0]), int_cmp);
+	while (ix < seenlen) {
+		/* check length first */
+		if (seen[ix] != (int)itslen)
+			goto nothere;
+
+		/* same length, check by items */
+		for (i = 0, j = ix + 1; i < itslen; i++, j++)
+			if (its[i] != seen[j])
+				goto nothere;
+
+		return 1;
+nothere:
+		ix += seen[ix] + 1;
+	}
+
+	return 0;
+}
+
+/**
+ * Updates the list of itemsets that were generated.
+ */
+static inline void update_seen_its(const int *its, size_t itslen,
+		int *seen, size_t *seenlen)
+{
+	size_t ix = *seenlen, i;
+
+	seen[ix++] = itslen;
+	for (i = 0; i < itslen; i++)
+		seen[ix++] = its[i];
+
+	*seenlen = ix;
+}
+
 static void generate_rules(const size_t *items, size_t lmax,
 		const struct fptree *fp, const struct item_count *ic,
-		double *minc, double *maxc)
+		double *minc, double *maxc, int *seen, size_t *seenix)
 {
 	size_t i, j, l, max=1<<lmax, max2, a_length, ab_length;
 	int sup_ab, sup_a;
@@ -107,7 +149,11 @@ static void generate_rules(const size_t *items, size_t lmax,
 		for (j = 0; j < lmax; j++)
 			if (i & (1 << j))
 				AB[ab_length++] = ic[items[j]].value;
-		if (ab_length < 2) continue;
+		if (ab_length < 2)
+			continue;
+		if (its_already_seen(AB, ab_length, seen, *seenix))
+			continue;
+		update_seen_its(AB, ab_length, seen, seenix);
 
 		max2 = (1 << ab_length) - 1;
 		for (j = 1; j < max2; j++) {
@@ -115,8 +161,6 @@ static void generate_rules(const size_t *items, size_t lmax,
 			for (l = 0; l < ab_length; l++)
 				if (j & (1 << l))
 					A[a_length++] = AB[l];
-
-			/* TODO: check to not generate the same rule */
 
 			sup_ab = fpt_itemset_count(fp, AB, ab_length);
 			sup_a = fpt_itemset_count(fp, A, a_length);
@@ -276,11 +320,12 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	struct histogram *h = init_histogram();
 #endif
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	size_t i, j, end, seenix, seenitsix, numits;
 	double epsilon_step1 = eps * eps_ratio1;
-	size_t i, j, end, seenix, numits;
 	struct drand48_data randbuffer;
 	size_t *items, *bitems, *seen;
 	double bv, minc, maxc;
+	int *seenits;
 
 	init_rng(seed, &randbuffer);
 	items = calloc(lmax, sizeof(items[0]));
@@ -301,12 +346,14 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	eps = eps - epsilon_step1;
 	eps /= k;
 	seen = calloc(k * lmax, sizeof(seen[0]));
+	seenits = calloc(k * (lmax+ 1) * (1 << lmax), sizeof(seenits[0]));
 	printf("Step 2: mining %lu steps each with eps %lf\n", k, eps);
 
 	struct timeval starttime;
 	gettimeofday(&starttime, NULL);
 
 	seenix = 0;
+	seenitsix = 0;
 	/* TODO: should be fp->n or a constant that is determined by code */
 	numits = 20;
 	minc = 1;
@@ -330,7 +377,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		printf("\n");
 #endif
 
-		generate_rules(bitems, lmax, fp, ic, &minc, &maxc);
+		generate_rules(bitems, lmax, fp, ic, &minc, &maxc,
+				seenits, &seenitsix);
 #if 0
 	histogram_register(h, reservoir[i].c);
 #endif
@@ -369,7 +417,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 
 	free_histogram(h);
 #endif
-	free(seen);
+	free(seenits);
 	free(items);
+	free(seen);
 	free(ic);
 }
