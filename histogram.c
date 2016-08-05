@@ -36,14 +36,14 @@ void histogram_register(struct histogram *h, double val)
 		}
 }
 
-size_t histogram_get_bin(struct histogram *h, int bin)
+size_t histogram_get_bin(const struct histogram *h, int bin)
 {
 	if (bin < 0 || bin >= c_num_values)
 		die("Invalid bin requested");
 	return h->values[bin];
 }
 
-double histogram_bin_bound(struct histogram *h, int bin)
+double histogram_bin_bound(const struct histogram *h, int bin)
 {
 	if (bin < 0 || bin >= c_num_values)
 		die("Invalid bin requested");
@@ -51,18 +51,18 @@ double histogram_bin_bound(struct histogram *h, int bin)
 	return c_values[bin];
 }
 
-size_t histogram_get_all(struct histogram *h)
+size_t histogram_get_all(const struct histogram *h)
 {
 	return h->total;
 }
 
-int histogram_get_count_bins(struct histogram *h)
+int histogram_get_count_bins(const struct histogram *h)
 {
 	h = h;
 	return c_num_values;
 }
 
-void histogram_dump(FILE *f, struct histogram *h, int cumulative,
+void histogram_dump(FILE *f, const struct histogram *h, int cumulative,
 		const char *header)
 {
 	size_t s = 0;

@@ -134,7 +134,8 @@ static inline void update_seen_its(const int *its, size_t itslen,
 
 static void generate_rules(const size_t *items, size_t lmax,
 		const struct fptree *fp, const struct item_count *ic,
-		double *minc, double *maxc, int *seen, size_t *seenix)
+		double *minc, double *maxc, struct histogram *h,
+		int *seen, size_t *seenix)
 {
 	size_t i, j, l, max=1<<lmax, max2, a_length, ab_length;
 	int sup_ab, sup_a;
@@ -167,6 +168,7 @@ static void generate_rules(const size_t *items, size_t lmax,
 			c = (sup_ab + 0.0) / sup_a;
 			if (c < *minc) *minc = c;
 			if (c > *maxc) *maxc = c;
+			histogram_register(h, c);
 
 #if PRINT_FINAL_RULES
 			print_this_rule(A, AB, a_length, ab_length, c);
@@ -316,12 +318,10 @@ static inline void init_items(size_t *items, size_t lmax, size_t n,
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		double c0, size_t lmax, size_t k, long int seed)
 {
-#if 0
-	struct histogram *h = init_histogram();
-#endif
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	size_t i, j, end, seenix, seenitsix, numits;
 	double epsilon_step1 = eps * eps_ratio1;
+	struct histogram *h = init_histogram();
 	struct drand48_data randbuffer;
 	size_t *items, *bitems, *seen;
 	double bv, minc, maxc;
@@ -377,11 +377,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		printf("\n");
 #endif
 
-		generate_rules(bitems, lmax, fp, ic, &minc, &maxc,
+		generate_rules(bitems, lmax, fp, ic, &minc, &maxc, h,
 				seenits, &seenitsix);
-#if 0
-	histogram_register(h, reservoir[i].c);
-#endif
 
 		/* remove bitems from future items */
 		qsort(bitems, lmax, sizeof(bitems[0]), int_cmp);
@@ -392,16 +389,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	}
 
 	printf("Rules saved: %lu, minconf: %3.2lf, maxconf: %3.2lf\n",
-#if 0
-#if RULE_EXPAND
-			rt->sz,
-#else
-			rs,
-#endif
-#else
-			0,
-#endif
-			minc, maxc);
+			histogram_get_all(h), minc, maxc);
 
 	struct timeval endtime;
 	gettimeofday(&endtime, NULL);
@@ -411,12 +399,10 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	printf("Total time: %5.2lf\n", t2 - t1);
 	printf("%ld %ld %ld %ld\n", starttime.tv_sec, starttime.tv_usec, endtime.tv_sec, endtime.tv_usec);
 
-#if 0
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
 	free_histogram(h);
-#endif
 	free(seenits);
 	free(items);
 	free(seen);
