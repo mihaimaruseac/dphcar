@@ -30,13 +30,19 @@
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 1
+#define PRINT_FINAL_RULES 0
+#endif
+/* asymmetric quality function */
+#ifndef ASYMMETRIC_Q
+#define ASYMMETRIC_Q 0
 #endif
 
 static double quality(int x, int y, double c0)
 {
 	double q = -x + y / c0;
-	/* TODO: asymmetry around c0 line */
+#if ASYMMETRIC_Q
+	if (q > 0) q = 0;
+#endif
 	return -fabs(q);
 }
 
