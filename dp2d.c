@@ -463,17 +463,13 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		printf("Step 1: obtain the counts for single items\n");
 	}
 
-	numits = build_items_table(fp, ic, epsilon_step1, &randbuffer,
-			private);
+	numits = build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
 
-	/* TODO: should be fp->n or a constant that is determined by code */
-	//numits = 20;
 	minc = 1;
 	maxc = 0;
-
 	gettimeofday(&starttime, NULL);
 	if (private)
 		step2(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
