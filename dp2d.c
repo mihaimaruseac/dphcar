@@ -16,6 +16,10 @@
 
 #define MICROSECONDS 1000000L
 
+/* scale factor for noise */
+#ifndef SCALE_FACTOR
+#define SCALE_FACTOR 2.3 /* log(10) = 2.3, 90% of noise */
+#endif
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
 #define PRINT_ITEM_TABLE 0
@@ -58,7 +62,7 @@ static int ic_noisy_cmp(const void *a, const void *b)
 	return double_cmp_r(&ia->noisy_count, &ib->noisy_count);
 }
 
-static void build_items_table(const struct fptree *fp, struct item_count *ic,
+static size_t build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer, int private)
 {
 	size_t i;
@@ -69,7 +73,6 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 		if (private) {
 			ic[i].noisy_count = laplace_mechanism(
 					ic[i].real_count, eps, 1, buffer);
-			/* TODO: filter some noise */
 			if (ic[i].noisy_count < 0)
 				ic[i].noisy_count = 0;
 		} else
@@ -77,6 +80,12 @@ static void build_items_table(const struct fptree *fp, struct item_count *ic,
 	}
 
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+
+	for (i = 0; i < fp->n; i++)
+		if (ic[i].noisy_count < SCALE_FACTOR / eps)
+			return i;
+
+	return fp->n;
 }
 
 #if PRINT_FINAL_RULES
@@ -454,13 +463,14 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		printf("Step 1: obtain the counts for single items\n");
 	}
 
-	build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
+	numits = build_items_table(fp, ic, epsilon_step1, &randbuffer,
+			private);
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
 
 	/* TODO: should be fp->n or a constant that is determined by code */
-	numits = 20;
+	//numits = 20;
 	minc = 1;
 	maxc = 0;
 
