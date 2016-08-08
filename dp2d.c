@@ -141,18 +141,44 @@ static inline void update_seen_its(const int *its, size_t itslen,
 	*seenlen = ix;
 }
 
+static void generate_rules_from_itemset(const int *AB, size_t ab_length,
+		const struct fptree *fp, double *minc, double *maxc,
+		struct histogram *h)
+{
+	int *A = calloc(ab_length, sizeof(A[0]));
+	size_t i, j, max, a_length;
+	int sup_ab, sup_a;
+	double c;
+
+	max = (1 << ab_length) - 1;
+	for (i = 1; i < max; i++) {
+		a_length = 0;
+		for (j = 0; j < ab_length; j++)
+			if (i & (1 << j))
+				A[a_length++] = AB[j];
+
+		sup_ab = fpt_itemset_count(fp, AB, ab_length);
+		sup_a = fpt_itemset_count(fp, A, a_length);
+		c = (sup_ab + 0.0) / sup_a;
+		if (c < *minc) *minc = c;
+		if (c > *maxc) *maxc = c;
+		histogram_register(h, c);
+
+#if PRINT_FINAL_RULES
+		print_this_rule(A, AB, a_length, ab_length, c);
+#endif
+	}
+
+	free(A);
+}
+
 static void generate_rules(const size_t *items, size_t lmax,
 		const struct fptree *fp, const struct item_count *ic,
 		double *minc, double *maxc, struct histogram *h,
 		int *seen, size_t *seenix)
 {
-	size_t i, j, l, max=1<<lmax, max2, a_length, ab_length;
-	int sup_ab, sup_a;
-	int *A, *AB;
-	double c;
-
-	A = calloc(lmax, sizeof(A[0]));
-	AB = calloc(lmax, sizeof(AB[0]));
+	int *AB = calloc(lmax, sizeof(AB[0]));
+	size_t i, j, max=1<<lmax, ab_length;
 
 	for (i = 0; i < max; i++) {
 		ab_length = 0;
@@ -164,28 +190,9 @@ static void generate_rules(const size_t *items, size_t lmax,
 		if (its_already_seen(AB, ab_length, seen, *seenix))
 			continue;
 		update_seen_its(AB, ab_length, seen, seenix);
-
-		max2 = (1 << ab_length) - 1;
-		for (j = 1; j < max2; j++) {
-			a_length = 0;
-			for (l = 0; l < ab_length; l++)
-				if (j & (1 << l))
-					A[a_length++] = AB[l];
-
-			sup_ab = fpt_itemset_count(fp, AB, ab_length);
-			sup_a = fpt_itemset_count(fp, A, a_length);
-			c = (sup_ab + 0.0) / sup_a;
-			if (c < *minc) *minc = c;
-			if (c > *maxc) *maxc = c;
-			histogram_register(h, c);
-
-#if PRINT_FINAL_RULES
-			print_this_rule(A, AB, a_length, ab_length, c);
-#endif
-		}
+		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc, h);
 	}
 
-	free(A);
 	free(AB);
 }
 
@@ -387,9 +394,27 @@ static void step2(const struct fptree *fp, const struct item_count *ic,
  */
 static void step2_np(const struct fptree *fp, const struct item_count *ic,
 		struct histogram *h, size_t numits, size_t lmax,
-		double *minc, double *maxc, double c0)
+		double *minc, double *maxc)
 {
+	size_t *items = calloc(lmax, sizeof(items[0]));
+	int *AB = calloc(lmax, sizeof(AB[0]));
+	size_t clen, i, end;
+
 	printf("Step 2: mining all rules of top %lu items\n", numits);
+
+	for (clen = 2; clen <= lmax; clen++) {
+		init_items(items, clen, numits, NULL, 0);
+		do {
+			for (i = 0; i < clen; i++)
+				AB[i] = ic[items[i]].value;
+			generate_rules_from_itemset(AB, clen, fp,
+					minc, maxc, h);
+			end = update_items(items, clen, numits, NULL, 0);
+		} while (!end);
+	}
+
+	free(AB);
+	free(items);
 }
 
 #if PRINT_ITEM_TABLE
@@ -444,7 +469,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		step2(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
 				(eps - epsilon_step1) / k, &randbuffer);
 	else
-		step2_np(fp, ic, h, numits, lmax, &minc, &maxc, c0);
+		step2_np(fp, ic, h, numits, lmax, &minc, &maxc);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;

@@ -38,7 +38,7 @@ static struct {
 static void usage(const char *prg)
 {
 	fprintf(stderr, "Usage: %s PRIV_MODE(n|p) TFILE EPS EPS_RATIO_1 C0 RLEN K [SEED]\n", prg);
-	fprintf(stderr, "\tWhen PRIV_MODE is n (non-private) EPS*, K and SEED are ignored\n");
+	fprintf(stderr, "\tWhen PRIV_MODE is n (non-private) only TFILE and RLEN are not ignored\n");
 	exit(EXIT_FAILURE);
 }
 
