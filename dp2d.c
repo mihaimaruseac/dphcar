@@ -343,7 +343,7 @@ static inline void init_items(size_t *items, size_t lmax, size_t n,
 /**
  * Step 2 of mining, private.
  */
-static void step2(const struct fptree *fp, const struct item_count *ic,
+static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		struct histogram *h, size_t numits, size_t lmax,
 		double *minc, double *maxc, double c0, size_t k, double eps,
 		struct drand48_data *randbuffer)
@@ -401,7 +401,7 @@ static void step2(const struct fptree *fp, const struct item_count *ic,
 /**
  * Step 2 of mining, not private.
  */
-static void step2_np(const struct fptree *fp, const struct item_count *ic,
+static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
 		struct histogram *h, size_t numits, size_t lmax,
 		double *minc, double *maxc)
 {
@@ -472,10 +472,10 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	maxc = 0;
 	gettimeofday(&starttime, NULL);
 	if (private)
-		step2(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
+		mine_rules(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
 				(eps - epsilon_step1) / k, &randbuffer);
 	else
-		step2_np(fp, ic, h, numits, lmax, &minc, &maxc);
+		mine_rules_np(fp, ic, h, numits, lmax, &minc, &maxc);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
