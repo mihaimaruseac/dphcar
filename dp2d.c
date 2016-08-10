@@ -440,6 +440,21 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 }
 #endif
 
+static void count_edges(const struct fptree *fp, const struct item_count *ic,
+		double c0)
+{
+
+	size_t i, j, edges = 0;
+	double t;
+
+	for (i = 0; i < fp->n; i++) {
+		t = c0 * ic[i].noisy_count;
+		for (j = i + 1; j < fp->n && ic[j].noisy_count >= t; j++);
+		edges += (j - i);
+	}
+	printf("Graph would have %lu edges.\n", edges);
+}
+
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		double c0, size_t lmax, size_t k, long int seed, int private)
 {
@@ -468,35 +483,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
-
-#if 0
-	/* dump pairs, to be removed/moved to own function */
-	{
-		size_t i, j;
-		int supi, supj, supij;
-		double ci, cj;
-
-		size_t cnt = fp->n; /* should it be numits? other val? */
-		int *ij = calloc(2, sizeof(ij[0]));
-		for (i = 0; i < cnt; i++) {
-			supi = ic[i].real_count;
-			ij[0] = ic[i].value;
-			for (j = i + 1; j < cnt; j++) {
-				supj = ic[j].real_count;
-				ij[1] = ic[j].value;
-				supij = fpt_itemset_count(fp, ij, 2);
-				ci = (supij + 0.0) / supi;
-				cj = (supij + 0.0) / supj;
-				printf("%5lu/%5d %5lu/%5d: %5d %5d %5d %5.2lf %5.2lf %5.2lf %5.2lf\n",
-						i, ij[0], j, ij[1],
-						supi, supj, supij, ci, cj,
-						2 * ci * cj / (ci + cj),
-						div_or_zero(supj, supi));
-			}
-		}
-	}
+	count_edges(fp, ic, c0);
 	exit(0);
-#endif
 
 	minc = 1;
 	maxc = 0;
