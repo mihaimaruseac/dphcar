@@ -468,7 +468,34 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
+
+#if 1
+	/* dump pairs, to be removed/moved to own function */
+	{
+		size_t i, j;
+		int supi, supj, supij;
+		double ci, cj;
+
+		size_t cnt = fp->n; /* should it be numits? other val? */
+		int *ij = calloc(2, sizeof(ij[0]));
+		for (i = 0; i < cnt; i++) {
+			supi = ic[i].real_count;
+			ij[0] = ic[i].value;
+			for (j = i + 1; j < cnt; j++) {
+				supj = ic[j].real_count;
+				ij[1] = ic[j].value;
+				supij = fpt_itemset_count(fp, ij, 2);
+				ci = (supij + 0.0) / supi;
+				cj = (supij + 0.0) / supj;
+				printf("%5lu/%5d %5lu/%5d: %5d %5d %5d %5.2lf %5.2lf %5.2lf\n",
+						i, ij[0], j, ij[1],
+						supi, supj, supij, ci, cj,
+						2 * ci * cj / (ci + cj));
+			}
+		}
+	}
 	exit(0);
+#endif
 
 	minc = 1;
 	maxc = 0;
