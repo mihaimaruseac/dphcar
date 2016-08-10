@@ -22,7 +22,7 @@
 #endif
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 0
+#define PRINT_ITEM_TABLE 1
 #endif
 /* print the rule lattice generation step debug info */
 #ifndef PRINT_RULE_LATTICE
@@ -81,6 +81,7 @@ static size_t build_items_table(const struct fptree *fp, struct item_count *ic,
 
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
 
+	printf("Noise scale: %5.2f\n", SCALE_FACTOR/eps);
 	for (i = 0; i < fp->n; i++)
 		if (ic[i].noisy_count < SCALE_FACTOR / eps)
 			return i;
@@ -433,8 +434,11 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 
 	printf("\n");
 	for (i = 0; i < n; i++)
-		printf("%d %d %lf\n", ic[i].value, ic[i].real_count,
+		printf("%d[%5.2lf - %5.2lf]%d %d %lf\n", i, (i + 0.0)/n,
+				(i + 1.0) / (pow(3, i+1) - 2 * i - 3),
+				ic[i].value, ic[i].real_count,
 				ic[i].noisy_count);
+	exit(0);
 }
 #endif
 
