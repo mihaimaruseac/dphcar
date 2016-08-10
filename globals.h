@@ -32,4 +32,9 @@ double laplace_mechanism(double x, double eps, double sens,
 int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
 		int (*compar)(const void *, const void *));
 
+/**
+ * Divides a by b and returns 0 instead of nan values.
+ */
+double div_or_zero(double a, double b);
+
 #endif

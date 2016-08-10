@@ -169,7 +169,7 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 
 		sup_ab = fpt_itemset_count(fp, AB, ab_length);
 		sup_a = fpt_itemset_count(fp, A, a_length);
-		c = (sup_ab + 0.0) / sup_a;
+		c = div_or_zero(sup_ab, sup_a);
 		if (c < *minc) *minc = c;
 		if (c > *maxc) *maxc = c;
 		histogram_register(h, c);

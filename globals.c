@@ -76,3 +76,10 @@ int bsearch_i(const void *key, const void *base, size_t nmemb, size_t size,
 
 	return low;
 }
+
+double div_or_zero(double a, double b)
+{
+	double r = a / b;
+	if (r != r) return 0; /* nan */
+	return r;
+}
