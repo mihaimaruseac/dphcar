@@ -353,7 +353,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	int *seenits;
 	double bv;
 
-	printf("Step 2: mining %lu steps each with eps %lf, numitems=%lu\n",
+	printf("Mining %lu steps each with eps %lf, numitems=%lu\n",
 			k, eps, numits);
 
 	items = calloc(lmax, sizeof(items[0]));
@@ -409,7 +409,7 @@ static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	size_t clen, i, end;
 
-	printf("Step 2: mining all rules of top %lu items\n", numits);
+	printf("Mining all rules of top %lu items\n", numits);
 
 	for (clen = 2; clen <= lmax; clen++) {
 		init_items(items, clen, numits, NULL, 0);
@@ -455,12 +455,11 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		printf("Running private method with eps=%lf, eps_step1=%lf, "
 				"k=%lu, c0=%5.2lf, rmax=%lu\n", eps,
 				epsilon_step1, k, c0, lmax);
-		printf("Step 1: compute noisy counts for items with "
+		printf("Compute noisy counts for items with "
 				"eps_1 = %lf\n", epsilon_step1);
 	} else {
 		printf("Running non-private method with k=%lu, c0=%5.2lf, "
 				"rmax=%lu\n", k, c0, lmax);
-		printf("Step 1: obtain the counts for single items\n");
 	}
 
 	numits = build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
