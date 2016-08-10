@@ -434,11 +434,9 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 
 	printf("\n");
 	for (i = 0; i < n; i++)
-		printf("%d[%5.2lf - %5.2lf]%d %d %lf\n", i, (i + 0.0)/n,
-				(i + 1.0) / (pow(3, i+1) - 2 * i - 3),
+		printf("%5d[%5.2lf] %5d %7d %9.2lf\n", i, (i + 1.0)/n,
 				ic[i].value, ic[i].real_count,
 				ic[i].noisy_count);
-	exit(0);
 }
 #endif
 
@@ -470,13 +468,15 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
+	exit(0);
 
 	minc = 1;
 	maxc = 0;
+	eps = eps - epsilon_step1;
 	gettimeofday(&starttime, NULL);
 	if (private)
 		mine_rules(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
-				(eps - epsilon_step1) / k, &randbuffer);
+				eps / k, &randbuffer);
 	else
 		mine_rules_np(fp, ic, h, numits, lmax, &minc, &maxc);
 	gettimeofday(&endtime, NULL);
