@@ -22,7 +22,7 @@
 #endif
 /* print the noisy counts for each item */
 #ifndef PRINT_ITEM_TABLE
-#define PRINT_ITEM_TABLE 1
+#define PRINT_ITEM_TABLE 0
 #endif
 /* print the rule lattice generation step debug info */
 #ifndef PRINT_RULE_LATTICE
@@ -469,7 +469,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	print_item_table(ic, fp->n);
 #endif
 
-#if 1
+#if 0
 	/* dump pairs, to be removed/moved to own function */
 	{
 		size_t i, j;
@@ -487,10 +487,11 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 				supij = fpt_itemset_count(fp, ij, 2);
 				ci = (supij + 0.0) / supi;
 				cj = (supij + 0.0) / supj;
-				printf("%5lu/%5d %5lu/%5d: %5d %5d %5d %5.2lf %5.2lf %5.2lf\n",
+				printf("%5lu/%5d %5lu/%5d: %5d %5d %5d %5.2lf %5.2lf %5.2lf %5.2lf\n",
 						i, ij[0], j, ij[1],
 						supi, supj, supij, ci, cj,
-						2 * ci * cj / (ci + cj));
+						2 * ci * cj / (ci + cj),
+						div_or_zero(supj, supi));
 			}
 		}
 	}
