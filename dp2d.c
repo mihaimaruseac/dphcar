@@ -43,6 +43,7 @@
 
 static double quality(int x, int y, double c0, struct drand48_data *buffer)
 {
+	(void)buffer;
 	double q = -x + y / c0;
 #if ASYMMETRIC_Q
 	if (q > 0) q = 0;
