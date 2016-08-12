@@ -450,19 +450,21 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 }
 #endif
 
-static void count_edges(const struct fptree *fp, const struct item_count *ic,
-		double c0)
+static void count_cliques(const struct fptree *fp, const struct item_count *ic,
+		double c0, size_t lmax)
 {
 
-	size_t i, j, edges = 0;
+	size_t i, j;
+	double cliques = 0;
 	double t;
 
-	for (i = 0; i < fp->n; i++) {
-		t = c0 * ic[i].noisy_count;
-		for (j = i + 1; j < fp->n && ic[j].noisy_count >= t; j++);
-		edges += (j - i);
+	for (i = lmax-1; i < fp->n; i++) {
+		t = c0 * ic[i-lmax+1].noisy_count;
+		for (j = i; j < fp->n && ic[j].noisy_count >= t; j++);
+		printf("i=%lu j=%lu delta=%lf\n", i, j, pow((j-i), lmax));
+		cliques += pow((j - i), lmax);
 	}
-	printf("Graph would have %lu edges.\n", edges);
+	printf("Graph would have %lf cliques.\n", cliques);
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
@@ -493,7 +495,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
-	count_edges(fp, ic, c0);
+	count_cliques(fp, ic, c0, lmax);
 
 	minc = 1;
 	maxc = 0;
