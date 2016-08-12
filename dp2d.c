@@ -41,7 +41,7 @@
 #define ASYMMETRIC_Q 0
 #endif
 
-static double quality(int x, int y, double c0)
+static double quality(int x, int y, double c0, struct drand48_data *buffer)
 {
 	double q = -x + y / c0;
 #if ASYMMETRIC_Q
@@ -234,7 +234,7 @@ static void analyze_items(const size_t *items, size_t lmax,
 	/* try for each corner item */
 	for (i = 0; i < lmax; i++) {
 		sup_a = ic[items[i]].real_count;
-		q = quality(sup_a, sup_ab, c0);
+		q = quality(sup_a, sup_ab, c0, randbuffer);
 		drand48_r(randbuffer, &u);
 		v = log(log(1/u)) - eps * q / 2;
 
