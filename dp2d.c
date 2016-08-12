@@ -478,7 +478,8 @@ static void count_cliques(const struct fptree *fp, const struct item_count *ic,
 }
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
-		double c0, size_t lmax, size_t k, long int seed, int private)
+		double c0, size_t lmax, size_t k, long int seed, int private,
+		size_t ni)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
@@ -509,7 +510,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 
 	minc = 1;
 	maxc = 0;
-	numits = 69;
+	numits = ni;
 	eps = eps - epsilon_step1;
 	gettimeofday(&starttime, NULL);
 	if (private)
