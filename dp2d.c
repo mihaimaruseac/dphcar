@@ -40,6 +40,10 @@
 #ifndef ASYMMETRIC_Q
 #define ASYMMETRIC_Q 0
 #endif
+/* clique cutoff */
+#ifndef CLIQUE_CUTTOF
+#define CLIQUE_CUTTOF 0
+#endif
 
 static double quality(int x, int y, double c0, struct drand48_data *buffer)
 {
@@ -296,7 +300,12 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 		size_t lmax, size_t n, const size_t *seen, size_t seenlen)
 {
 	size_t ix = lmax - 1, ok;
+#if CLIQUE_CUTTOF
 	double t = c0 * ic[items[0]].noisy_count;
+#else
+	(void)ic;
+	(void)c0;
+#endif
 
 	do {
 		do {
@@ -305,7 +314,11 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 			items[ix]++;
 
 			/* if impossible or undesirable, move to one below */
-			if (items[ix] == n || ic[items[ix]].noisy_count < t) {
+			if (items[ix] == n
+#if CLIQUE_CUTTOF
+					|| ic[items[ix]].noisy_count < t
+#endif
+					) {
 				if (!ix) return 1; /* end of generation */
 				ix--;
 				ok = 0; /* this level was not finished */
@@ -454,6 +467,7 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 }
 #endif
 
+#if CLIQUE_CUTTOF
 static void count_cliques(const struct fptree *fp, const struct item_count *ic,
 		double c0, size_t lmax)
 {
@@ -465,17 +479,14 @@ static void count_cliques(const struct fptree *fp, const struct item_count *ic,
 	for (i = lmax-1; i < fp->n; i++) {
 		t = c0 * ic[i-lmax+1].noisy_count;
 		if (t == 0) break;
-		//printf("Threshold for i=%lu: %lf (from %lf)\n", i, t, ic[i-lmax+1].noisy_count);
-		for (j = i; j < fp->n; j++) {
-			//printf("At j=%lu: nc=%lf\n", j, ic[j].noisy_count);
+		for (j = i; j < fp->n; j++)
 			if (ic[j].noisy_count < t)
 				break;
-		}
-		//printf("i=%lu j=%lu delta=%lf\n", i, j, pow((j-i), lmax));
 		cliques += pow((j - i), lmax);
 	}
 	printf("Graph would have %lf cliques.\n", cliques);
 }
+#endif
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		double c0, size_t lmax, size_t k, long int seed, int private,
@@ -506,7 +517,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
+#if CLIQUE_CUTTOF
 	count_cliques(fp, ic, c0, lmax);
+#endif
 
 	minc = 1;
 	maxc = 0;
