@@ -291,10 +291,11 @@ static inline int already_seen(const size_t *items, size_t lmax,
 /**
  * Constructs the next items vector, the next set of rules to be analyzed.
  */
-static int update_items(size_t *items, size_t lmax, size_t n,
-		const size_t *seen, size_t seenlen)
+static int update_items(const struct item_count *ic, double c0, size_t *items,
+		size_t lmax, size_t n, const size_t *seen, size_t seenlen)
 {
 	size_t ix = lmax - 1, ok;
+	double t = c0 * ic[items[0]].noisy_count;
 
 	do {
 		do {
@@ -302,8 +303,8 @@ static int update_items(size_t *items, size_t lmax, size_t n,
 			ok = 1;
 			items[ix]++;
 
-			/* if impossible, move to one below */
-			if (items[ix] == n) {
+			/* if impossible or undesirable, move to one below */
+			if (items[ix] == n || ic[items[ix]].noisy_count < t) {
 				if (!ix) return 1; /* end of generation */
 				ix--;
 				ok = 0; /* this level was not finished */
@@ -329,7 +330,8 @@ static int update_items(size_t *items, size_t lmax, size_t n,
 /**
  * Initialize the items vector, the first set of rules to be analyzed.
  */
-static inline void init_items(size_t *items, size_t lmax, size_t n,
+static inline void init_items(const struct item_count *ic, double c0,
+		size_t *items, size_t lmax, size_t n,
 		const size_t *seen, size_t seenlen)
 {
 	size_t i;
@@ -338,7 +340,7 @@ static inline void init_items(size_t *items, size_t lmax, size_t n,
 		items[i] = i;
 
 	if (already_seen(items, lmax, seen, seenlen))
-		update_items(items, lmax, n, seen, seenlen);
+		update_items(ic, c0, items, lmax, n, seen, seenlen);
 }
 
 /**
@@ -350,9 +352,10 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		struct drand48_data *randbuffer)
 {
 	size_t i, j, end, seenix, seenitsix;
+	struct timeval starttime, endtime;
 	size_t *items, *bitems, *seen;
+	double bv, t1, t2;
 	int *seenits;
-	double bv;
 
 	printf("Mining %lu steps each with eps %lf, numitems=%lu\n",
 			k, eps, numits);
@@ -364,14 +367,16 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	seenitsix = 0;
 
 	for (i = 0; i < k; i++) {
-		init_items(items, lmax, numits, seen, seenix);
+		gettimeofday(&starttime, NULL);
+		init_items(ic, c0, items, lmax, numits, seen, seenix);
 		bitems = calloc(lmax, sizeof(bitems[0]));
 		bv = DBL_MAX;
 
 		do {
 			analyze_items(items, lmax, &bv, bitems, fp, ic, c0,
 					eps, randbuffer);
-			end = update_items(items, lmax, numits, seen, seenix);
+			end = update_items(ic, c0, items, lmax, numits,
+					seen, seenix);
 		} while (!end);
 
 #if PRINT_RULE_LATTICE_TRACE || PRINT_FINAL_RULES
@@ -392,6 +397,10 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 			seen[seenix++] = bitems[j];
 
 		free(bitems);
+		gettimeofday(&endtime, NULL);
+		t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
+		t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
+		printf("Round %lu time: %5.2lf\n", i, t2 - t1);
 	}
 
 	free(seenits);
@@ -403,7 +412,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
  * Step 2 of mining, not private.
  */
 static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
-		struct histogram *h, size_t numits, size_t lmax,
+		struct histogram *h, size_t numits, size_t lmax, double c0,
 		double *minc, double *maxc)
 {
 	size_t *items = calloc(lmax, sizeof(items[0]));
@@ -413,13 +422,14 @@ static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
 	printf("Mining all rules of top %lu items\n", numits);
 
 	for (clen = 2; clen <= lmax; clen++) {
-		init_items(items, clen, numits, NULL, 0);
+		init_items(ic, c0, items, clen, numits, NULL, 0);
 		do {
 			for (i = 0; i < clen; i++)
 				AB[i] = ic[items[i]].value;
 			generate_rules_from_itemset(AB, clen, fp,
 					minc, maxc, h);
-			end = update_items(items, clen, numits, NULL, 0);
+			end = update_items(ic, c0, items, clen, numits,
+					NULL, 0);
 		} while (!end);
 	}
 
@@ -484,7 +494,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	print_item_table(ic, fp->n);
 #endif
 	count_edges(fp, ic, c0);
-	exit(0);
 
 	minc = 1;
 	maxc = 0;
@@ -494,7 +503,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		mine_rules(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
 				eps / k, &randbuffer);
 	else
-		mine_rules_np(fp, ic, h, numits, lmax, &minc, &maxc);
+		mine_rules_np(fp, ic, h, numits, lmax, c0, &minc, &maxc);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
