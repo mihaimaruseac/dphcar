@@ -464,8 +464,14 @@ static void count_cliques(const struct fptree *fp, const struct item_count *ic,
 
 	for (i = lmax-1; i < fp->n; i++) {
 		t = c0 * ic[i-lmax+1].noisy_count;
-		for (j = i; j < fp->n && ic[j].noisy_count >= t; j++);
-		printf("i=%lu j=%lu delta=%lf\n", i, j, pow((j-i), lmax));
+		if (t == 0) break;
+		//printf("Threshold for i=%lu: %lf (from %lf)\n", i, t, ic[i-lmax+1].noisy_count);
+		for (j = i; j < fp->n; j++) {
+			//printf("At j=%lu: nc=%lf\n", j, ic[j].noisy_count);
+			if (ic[j].noisy_count < t)
+				break;
+		}
+		//printf("i=%lu j=%lu delta=%lf\n", i, j, pow((j-i), lmax));
 		cliques += pow((j - i), lmax);
 	}
 	printf("Graph would have %lf cliques.\n", cliques);
@@ -503,6 +509,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 
 	minc = 1;
 	maxc = 0;
+	numits = 69;
 	eps = eps - epsilon_step1;
 	gettimeofday(&starttime, NULL);
 	if (private)
