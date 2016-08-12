@@ -330,7 +330,7 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 /**
  * Initialize the items vector, the first set of rules to be analyzed.
  */
-static inline void init_items(const struct item_count *ic, double c0,
+static inline int init_items(const struct item_count *ic, double c0,
 		size_t *items, size_t lmax, size_t n,
 		const size_t *seen, size_t seenlen)
 {
@@ -340,7 +340,9 @@ static inline void init_items(const struct item_count *ic, double c0,
 		items[i] = i;
 
 	if (already_seen(items, lmax, seen, seenlen))
-		update_items(ic, c0, items, lmax, n, seen, seenlen);
+		return update_items(ic, c0, items, lmax, n, seen, seenlen);
+
+	return 0;
 }
 
 /**
@@ -368,16 +370,17 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 
 	for (i = 0; i < k; i++) {
 		gettimeofday(&starttime, NULL);
-		init_items(ic, c0, items, lmax, numits, seen, seenix);
+		end = init_items(ic, c0, items, lmax, numits, seen, seenix);
+		if (end) break;
 		bitems = calloc(lmax, sizeof(bitems[0]));
 		bv = DBL_MAX;
 
-		do {
+		while (!end) {
 			analyze_items(items, lmax, &bv, bitems, fp, ic, c0,
 					eps, randbuffer);
 			end = update_items(ic, c0, items, lmax, numits,
 					seen, seenix);
-		} while (!end);
+		}
 
 #if PRINT_RULE_LATTICE_TRACE || PRINT_FINAL_RULES
 		printf("Selected items: %lu(%d) -> ",
@@ -422,15 +425,15 @@ static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
 	printf("Mining all rules of top %lu items\n", numits);
 
 	for (clen = 2; clen <= lmax; clen++) {
-		init_items(ic, c0, items, clen, numits, NULL, 0);
-		do {
+		end = init_items(ic, c0, items, clen, numits, NULL, 0);
+		while (!end) {
 			for (i = 0; i < clen; i++)
 				AB[i] = ic[items[i]].value;
 			generate_rules_from_itemset(AB, clen, fp,
 					minc, maxc, h);
 			end = update_items(ic, c0, items, clen, numits,
 					NULL, 0);
-		} while (!end);
+		}
 	}
 
 	free(AB);
