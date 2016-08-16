@@ -365,7 +365,7 @@ static inline int init_items(const struct item_count *ic, double c0,
 static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		struct histogram *h, size_t numits, size_t lmax,
 		double *minc, double *maxc, double c0, size_t k, double eps,
-		struct drand48_data *randbuffer)
+		struct drand48_data *randbuffer, double tmx)
 {
 	size_t i, j, end, seenix, seenitsix;
 	struct timeval starttime, endtime;
@@ -384,6 +384,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 
 	for (i = 0; i < k; i++) {
 		gettimeofday(&starttime, NULL);
+		t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 		end = init_items(ic, c0, items, lmax, numits, seen, seenix);
 		if (end) break;
 		bitems = calloc(lmax, sizeof(bitems[0]));
@@ -394,6 +395,14 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 					eps, randbuffer);
 			end = update_items(ic, c0, items, lmax, numits,
 					seen, seenix);
+
+			/* determine time spent in sampling to quit early when
+			 * it expires
+			 */
+			gettimeofday(&endtime, NULL);
+			t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
+			if (t2 - t1 > tmx)
+				break;
 		}
 
 #if PRINT_RULE_LATTICE_TRACE || PRINT_FINAL_RULES
@@ -415,7 +424,6 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 
 		free(bitems);
 		gettimeofday(&endtime, NULL);
-		t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 		t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
 		printf("Round %lu time: %5.2lf\n", i, t2 - t1);
 	}
@@ -490,7 +498,7 @@ static void count_cliques(const struct fptree *fp, const struct item_count *ic,
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		double c0, size_t lmax, size_t k, long int seed, int private,
-		size_t ni)
+		size_t ni, double tmx)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
@@ -529,7 +537,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	gettimeofday(&starttime, NULL);
 	if (private)
 		mine_rules(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
-				eps / k, &randbuffer);
+				eps / k, &randbuffer, tmx);
 	else
 		mine_rules_np(fp, ic, h, numits, lmax, c0, &minc, &maxc);
 	gettimeofday(&endtime, NULL);

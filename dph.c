@@ -33,13 +33,15 @@ static struct {
 	size_t k;
 	/* num items (to be removed later) */
 	size_t ni;
+	/* timeout (in seconds) */
+	double tmx;
 	/* random seed */
 	long int seed;
 } args;
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s PRIV_MODE(n|p) TFILE EPS EPS_RATIO_1 C0 RLEN K NI [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s PRIV_MODE(n|p) TFILE EPS EPS_RATIO_1 C0 RLEN K NI TIMEOUT [SEED]\n", prg);
 	fprintf(stderr, "\tWhen PRIV_MODE is n (non-private) only TFILE and RLEN are not ignored\n");
 	exit(EXIT_FAILURE);
 }
@@ -53,7 +55,7 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc < 9 || argc > 10)
+	if (argc < 10 || argc > 11)
 		usage(argv[0]);
 	if (!strncmp(argv[1], "n", 1)) args.priv_mode = NONPRIVATE;
 	else if (!strncmp(argv[1], "p", 1)) args.priv_mode = PRIVATE;
@@ -71,8 +73,10 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[8], "%lu", &args.ni) != 1)
 		usage(argv[0]);
-	if (argc == 10) {
-		if (sscanf(argv[9], "%ld", &args.seed) != 1)
+	if (sscanf(argv[9], "%lf", &args.tmx) != 1)
+		usage(argv[0]);
+	if (argc == 11) {
+		if (sscanf(argv[10], "%ld", &args.seed) != 1)
 			usage(argv[0]);
 	} else
 		args.seed = 42;
@@ -89,7 +93,7 @@ int main(int argc, char **argv)
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
 	dp2d(&fp, args.eps, args.eps_ratio1, args.c0, args.lmax, args.k,
-			args.seed, args.priv_mode, args.ni);
+			args.seed, args.priv_mode, args.ni, args.tmx);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);
