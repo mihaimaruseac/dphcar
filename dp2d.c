@@ -297,7 +297,8 @@ static inline int already_seen(const size_t *items, size_t lmax,
  * Constructs the next items vector, the next set of rules to be analyzed.
  */
 static int update_items(const struct item_count *ic, double c0, size_t *items,
-		size_t lmax, size_t n, const size_t *seen, size_t seenlen)
+		size_t lmax, size_t n, const size_t *seen, size_t seenlen,
+		size_t rf)
 {
 	size_t ix = lmax - 1, ok;
 #if CLIQUE_CUTTOF
@@ -311,10 +312,10 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 		do {
 			/* try next */
 			ok = 1;
-			items[ix]++;
+			items[ix] += rf;
 
 			/* if impossible or undesirable, move to one below */
-			if (items[ix] == n
+			if (items[ix] >= n
 #if CLIQUE_CUTTOF
 					|| ic[items[ix]].noisy_count < t
 #endif
@@ -354,7 +355,7 @@ static inline int init_items(const struct item_count *ic, double c0,
 		items[i] = i;
 
 	if (already_seen(items, lmax, seen, seenlen))
-		return update_items(ic, c0, items, lmax, n, seen, seenlen);
+		return update_items(ic, c0, items, lmax, n, seen, seenlen, 1);
 
 	return 0;
 }
@@ -365,7 +366,7 @@ static inline int init_items(const struct item_count *ic, double c0,
 static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		struct histogram *h, size_t numits, size_t lmax,
 		double *minc, double *maxc, double c0, size_t k, double eps,
-		struct drand48_data *randbuffer, double tmx)
+		struct drand48_data *randbuffer, size_t rf)
 {
 	size_t i, j, end, seenix, seenitsix;
 	struct timeval starttime, endtime;
@@ -394,15 +395,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 			analyze_items(items, lmax, &bv, bitems, fp, ic, c0,
 					eps, randbuffer);
 			end = update_items(ic, c0, items, lmax, numits,
-					seen, seenix);
-
-			/* determine time spent in sampling to quit early when
-			 * it expires
-			 */
-			gettimeofday(&endtime, NULL);
-			t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
-			if (t2 - t1 > tmx)
-				break;
+					seen, seenix, rf);
 		}
 
 #if PRINT_RULE_LATTICE_TRACE || PRINT_FINAL_RULES
@@ -454,7 +447,7 @@ static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
 			generate_rules_from_itemset(AB, clen, fp,
 					minc, maxc, h);
 			end = update_items(ic, c0, items, clen, numits,
-					NULL, 0);
+					NULL, 0, 1);
 		}
 	}
 
@@ -498,7 +491,7 @@ static void count_cliques(const struct fptree *fp, const struct item_count *ic,
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 		double c0, size_t lmax, size_t k, long int seed, int private,
-		size_t ni, double tmx)
+		size_t ni, size_t rf)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
@@ -537,7 +530,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	gettimeofday(&starttime, NULL);
 	if (private)
 		mine_rules(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
-				eps / k, &randbuffer, tmx);
+				eps / k, &randbuffer, rf);
 	else
 		mine_rules_np(fp, ic, h, numits, lmax, c0, &minc, &maxc);
 	gettimeofday(&endtime, NULL);

@@ -33,15 +33,15 @@ static struct {
 	size_t k;
 	/* num items (to be removed later) */
 	size_t ni;
-	/* timeout (in seconds) */
-	double tmx;
+	/* reduction factor */
+	size_t rf;
 	/* random seed */
 	long int seed;
 } args;
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s PRIV_MODE(n|p) TFILE EPS EPS_RATIO_1 C0 RLEN K NI TIMEOUT [SEED]\n", prg);
+	fprintf(stderr, "Usage: %s PRIV_MODE(n|p) TFILE EPS EPS_RATIO_1 C0 RLEN K NI REDFACT [SEED]\n", prg);
 	fprintf(stderr, "\tWhen PRIV_MODE is n (non-private) only TFILE and RLEN are not ignored\n");
 	exit(EXIT_FAILURE);
 }
@@ -73,7 +73,7 @@ static void parse_arguments(int argc, char **argv)
 		usage(argv[0]);
 	if (sscanf(argv[8], "%lu", &args.ni) != 1)
 		usage(argv[0]);
-	if (sscanf(argv[9], "%lf", &args.tmx) != 1)
+	if (sscanf(argv[9], "%lu", &args.rf) != 1 || args.rf < 1)
 		usage(argv[0]);
 	if (argc == 11) {
 		if (sscanf(argv[10], "%ld", &args.seed) != 1)
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
 	dp2d(&fp, args.eps, args.eps_ratio1, args.c0, args.lmax, args.k,
-			args.seed, args.priv_mode, args.ni, args.tmx);
+			args.seed, args.priv_mode, args.ni, args.rf);
 
 	fpt_cleanup(&fp);
 	free(args.tfname);
