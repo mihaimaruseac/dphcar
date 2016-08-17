@@ -1,10 +1,7 @@
 #!/bin/bash
 
-#datafiles="mushroom retail pumsb_star"
-#datafiles="pumsb_star" # TODO: need to run retail 5
-datafiles="retail"
-#rmaxes="3 5"
-rmaxes="5"
+datafiles="mushroom retail pumsb_star"
+rmaxes="3 5"
 nis=`seq 10 10 2500`
 rfs="10 20 50 80 100 200 500 1000 5000 10000"
 seeds="42 132 243 314 4562"
