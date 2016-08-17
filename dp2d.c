@@ -312,7 +312,11 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 		do {
 			/* try next */
 			ok = 1;
-			items[ix] += rf;
+			if (ix == lmax - 1) { /* here we can skip */
+				items[ix] += rf;
+				rf = items[ix] - n + 1;
+			} else
+				items[ix]++;
 
 			/* if impossible or undesirable, move to one below */
 			if (items[ix] >= n
@@ -327,8 +331,10 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 			}
 
 			/* check to not generate seen set */
-			if (already_seen(items, lmax, seen, seenlen))
+			if (already_seen(items, lmax, seen, seenlen)) {
+				rf = 1;
 				ok = 0; /* get next set */
+			}
 		} while (!ok);
 
 		if (ok) {
