@@ -331,7 +331,8 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 			}
 
 			/* check to not generate seen set */
-			if (already_seen(items, lmax, seen, seenlen)) {
+			if (ix == lmax - 1 &&
+				already_seen(items, lmax, seen, seenlen)) {
 				rf = 1;
 				ok = 0; /* get next set */
 			}
