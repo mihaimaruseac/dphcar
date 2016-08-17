@@ -17,10 +17,10 @@ for r, _, files in os.walk(sys.argv[1]):
             k = None
             for line in f:
                 if line.startswith("./dph"):
-                    _, _, ds, eps, es, c0, rmax, k, nits, _ = line.split()
+                    _, _, ds, eps, es, c0, rmax, k, nits, rf, _ = line.split()
                     k = ds.split('/')[-1].split('.')[0],\
                         float(eps), float(es), float(c0),\
-                        int(rmax), int(k), int(nits)
+                        int(rmax), int(k), int(rf), int(nits)
                 elif line.startswith("Round"):
                     add_to_dict(times, k, float(line.split()[-1]))
                 elif line.startswith("\t0.50"):
@@ -36,7 +36,7 @@ for k in times:
 def plot_exp(exps, ix, title, ylabel):
     for k in exps:
         fname = "{}_{}.png".format('_'.join(title.split()), '_'.join(map(str, k)))
-        f = plt.figure()
+        #f = plt.figure()
         plt.title("{} for {}".format(title, k))
         plt.xlabel("num items")
         plt.ylabel(ylabel)
@@ -48,6 +48,7 @@ def plot_exp(exps, ix, title, ylabel):
         ymax = max([max(it[ix]) for it in exps[k]])
         plt.axis([-0.1, 1.1*xmax, -0.1, 1.1*ymax])
         plt.savefig(fname)
+        plt.clf()
 
 plot_exp(exps, 1, "Time", "time (s)")
 plot_exp(exps, 2, "Rule count", "# rules")
