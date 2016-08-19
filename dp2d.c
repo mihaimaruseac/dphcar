@@ -44,6 +44,10 @@
 #ifndef CLIQUE_CUTTOF
 #define CLIQUE_CUTTOF 0
 #endif
+/* uniform ("proper") reduction method */
+#ifndef UNIFORM_REDUCTION
+#define UNIFORM_REDUCTION 1
+#endif
 
 static double quality(int x, int y, double c0, struct drand48_data *buffer)
 {
@@ -312,11 +316,15 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 		do {
 			/* try next */
 			ok = 1;
+#if UNIFORM_REDUCTION
 			if (ix == lmax - 1) { /* here we can skip */
+#endif
 				items[ix] += rf;
+#if UNIFORM_REDUCTION
 				rf = items[ix] - n + 1;
 			} else
 				items[ix]++;
+#endif
 
 			/* if impossible or undesirable, move to one below */
 			if (items[ix] >= n
@@ -333,7 +341,9 @@ static int update_items(const struct item_count *ic, double c0, size_t *items,
 			/* check to not generate seen set */
 			if (ix == lmax - 1 &&
 				already_seen(items, lmax, seen, seenlen)) {
+#if UNIFORM_REDUCTION
 				rf = 1;
+#endif
 				ok = 0; /* get next set */
 			}
 		} while (!ok);
