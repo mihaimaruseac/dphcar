@@ -33,7 +33,7 @@ for k in times:
     k1, ni = k[:-1], k[-1]
     add_to_dict(exps, k1, (ni, times[k], rules[k], precs[k]))
 
-def plot_exp(exps, ix, title, ylabel):
+def plot_exp(exps, ix, title, ylabel, _ymax=None):
     for k in exps:
         fname = "{}_{}.png".format('_'.join(title.split()), '_'.join(map(str, k)))
         #f = plt.figure()
@@ -45,11 +45,11 @@ def plot_exp(exps, ix, title, ylabel):
             ys = it[ix]
             plt.plot([x]*len(ys), ys, 'bo')
         xmax = max([it[0] for it in exps[k]])
-        ymax = max([max(it[ix]) for it in exps[k]])
+        ymax = max([max(it[ix]) for it in exps[k]]) if _ymax is None else _ymax
         plt.axis([-0.1, 1.1*xmax, -0.1, 1.1*ymax])
         plt.savefig(fname)
         plt.clf()
 
 plot_exp(exps, 1, "Time", "time (s)")
 plot_exp(exps, 2, "Rule count", "# rules")
-plot_exp(exps, 3, "Precision", "precision")
+plot_exp(exps, 3, "Precision", "precision", 1)
