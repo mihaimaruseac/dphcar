@@ -14,6 +14,7 @@
 #include "dp2d.h"
 #include "fp.h"
 #include "globals.h"
+#include "rs.h"
 
 /* Command line arguments */
 static struct {
@@ -82,8 +83,40 @@ static void parse_arguments(int argc, char **argv)
 		args.seed = 42;
 }
 
+static void print_fun(void *it)
+{
+	int *i = it;
+	printf("%d", *i);
+}
+
+static void *clone_fun(const void *it)
+{
+	const int *i = it;
+	int *ret = calloc(1, sizeof(*ret));
+	*ret = *i;
+	return ret;
+}
+
+static void free_fun(void *it)
+{
+	free(it);
+}
+
 int main(int argc, char **argv)
 {
+	struct reservoir *r = init_reservoir(3);
+	struct drand48_data rbf;
+	init_rng(42, &rbf);
+	int i;
+
+	for (i = 0; i < 20; i++)
+		add_to_reservoir(r, &i, i,
+#if PRINT_RS_TRACE
+		print_fun,
+#endif
+		clone_fun, free_fun, &rbf);
+	free_reservoir(r, free_fun);
+#if 0
 	struct fptree fp;
 
 	parse_arguments(argc, argv);
@@ -99,4 +132,5 @@ int main(int argc, char **argv)
 	free(args.tfname);
 
 	return 0;
+#endif
 }

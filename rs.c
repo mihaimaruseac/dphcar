@@ -65,9 +65,9 @@ static void print_reservoir(struct reservoir *r, void (*print_fun)(void *it))
 
 	printf("Reservoir now:\n");
 	for (i = 0; i < r->actual; i++) {
-		printf("\t");
-		print_fun(&r->its[i]);
-		printf("\n");
+		printf("\t|");
+		print_fun(&r->its[i].item_ptr);
+		printf("| w=%lf v=%lf\n", r->its[i].w, r->its[i].v);
 	}
 }
 #endif
