@@ -83,11 +83,13 @@ static void parse_arguments(int argc, char **argv)
 		args.seed = 42;
 }
 
+#if PRINT_RS_TRACE
 static void print_fun(void *it)
 {
 	int *i = it;
 	printf("%d", *i);
 }
+#endif
 
 static void *clone_fun(const void *it)
 {
@@ -104,18 +106,18 @@ static void free_fun(void *it)
 
 int main(int argc, char **argv)
 {
-	struct reservoir *r = init_reservoir(3);
+	struct reservoir *r = init_reservoir(3,
+#if PRINT_RS_TRACE
+		print_fun,
+#endif
+		clone_fun, free_fun);
 	struct drand48_data rbf;
 	init_rng(42, &rbf);
 	int i;
 
 	for (i = 0; i < 20; i++)
-		add_to_reservoir(r, &i, i,
-#if PRINT_RS_TRACE
-		print_fun,
-#endif
-		clone_fun, free_fun, &rbf);
-	free_reservoir(r, free_fun);
+		add_to_reservoir(r, &i, i, &rbf);
+	free_reservoir(r);
 #if 0
 	struct fptree fp;
 
