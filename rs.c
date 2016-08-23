@@ -8,6 +8,7 @@
 struct reservoir_item {
 	void *item_ptr;
 	double w;
+	double u;
 	double v;
 };
 
@@ -60,10 +61,11 @@ static inline double generate_random_uniform(struct drand48_data *randbuffer)
 }
 
 static void store_item_at(struct reservoir *r, size_t ix,
-		const void *it, double w, double v)
+		const void *it, double w, double u, double v)
 {
 	r->its[ix].item_ptr = r->clone_fun(it);
 	r->its[ix].w = w;
+	r->its[ix].u = u;
 	r->its[ix].v = v;
 }
 
@@ -82,17 +84,18 @@ static void print_reservoir(struct reservoir *r)
 	for (i = 0; i < r->actual; i++) {
 		printf("\t|");
 		r->print_fun(&r->its[i].item_ptr);
-		printf("| w=%lf v=%lf\n", r->its[i].w, r->its[i].v);
+		printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n",
+				r->its[i].w, r->its[i].u, r->its[i].v);
 	}
 }
 #endif
 
 static void store_item(struct reservoir *r, const void *it,
-		double w, double v)
+		double w, double u, double v)
 {
 	/* not a full reservoir yet */
 	if (r->actual < r->sz) {
-		store_item_at(r, r->actual, it, w, v);
+		store_item_at(r, r->actual, it, w, u, v);
 		r->actual++;
 		goto end;
 	}
@@ -102,7 +105,7 @@ static void store_item(struct reservoir *r, const void *it,
 		return;
 
 	r->free_fun(r->its[r->sz-1].item_ptr);
-	store_item_at(r, r->sz - 1, it, w, v);
+	store_item_at(r, r->sz - 1, it, w, u, v);
 
 end:
 	if (r->actual == r->sz) {
@@ -118,7 +121,7 @@ void add_to_reservoir(struct reservoir *r, const void *it, double w,
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = -log(u)/w;
-	store_item(r, it, w, v);
+	store_item(r, it, w, u, v);
 }
 
 void add_to_reservoir_log(struct reservoir *r, const void *it, double logw,
@@ -126,5 +129,5 @@ void add_to_reservoir_log(struct reservoir *r, const void *it, double logw,
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
-	store_item(r, it, logw, v);
+	store_item(r, it, logw, u, v);
 }
