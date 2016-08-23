@@ -42,23 +42,41 @@ static inline double generate_random_uniform(struct drand48_data *randbuffer)
 	return u;
 }
 
-static void store_item(struct reservoir *r, void *it, double w, double v)
+static void store_item(struct reservoir *r, void *it, double w, double v
+#if PRINT_RS_TRACE
+		, void (*print_fun)(void *it)
+#endif
+		)
 {
 	/* TODO */
 }
 
 void add_to_reservoir(struct reservoir *r, void *it, double w,
+#if PRINT_RS_TRACE
+		void (*print_fun)(void *it),
+#endif
 		struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = -log(u)/w;
-	store_item(r, it, w, v);
+	store_item(r, it, w, v
+#if PRINT_RS_TRACE
+			, print_fun
+#endif
+			);
 }
 
 void add_to_reservoir_log(struct reservoir *r, void *it, double logw,
+#if PRINT_RS_TRACE
+		void (*print_fun)(void *it),
+#endif
 		struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
-	store_item(r, it, logw, v);
+	store_item(r, it, logw, v
+#if PRINT_RS_TRACE
+			, print_fun
+#endif
+			);
 }
