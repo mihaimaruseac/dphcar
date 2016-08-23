@@ -99,18 +99,13 @@ static void *clone_fun(const void *it)
 	return ret;
 }
 
-static void free_fun(void *it)
-{
-	free(it);
-}
-
 int main(int argc, char **argv)
 {
 	struct reservoir *r = init_reservoir(3,
 #if PRINT_RS_TRACE
 		print_fun,
 #endif
-		clone_fun, free_fun);
+		clone_fun, free);
 	struct drand48_data rbf;
 	init_rng(42, &rbf);
 	int i;
