@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 	int i;
 
 	for (i = 0; i < 20; i++)
-		add_to_reservoir(r, &i, i, &rbf);
+		add_to_reservoir(r, &i, i+1, &rbf);
 	free_reservoir(r);
 #if 0
 	struct fptree fp;
