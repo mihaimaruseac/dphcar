@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,7 +7,7 @@
 struct reservoir_item {
 	void *item_ptr;
 	double w;
-	double u;
+	double v;
 };
 
 struct reservoir {
@@ -32,4 +33,32 @@ void free_reservoir(struct reservoir *r)
 		free(r->its[i].item_ptr);
 	free(r->its);
 	free(r);
+}
+
+static inline double generate_random_uniform(struct drand48_data *randbuffer)
+{
+	double u;
+	drand48_r(randbuffer, &u);
+	return u;
+}
+
+static void store_item(struct reservoir *r, void *it, double w, double v)
+{
+	/* TODO */
+}
+
+void add_to_reservoir(struct reservoir *r, void *it, double w,
+		struct drand48_data *randbuffer)
+{
+	double u = generate_random_uniform(randbuffer);
+	double v = -log(u)/w;
+	store_item(r, it, w, v);
+}
+
+void add_to_reservoir_log(struct reservoir *r, void *it, double logw,
+		struct drand48_data *randbuffer)
+{
+	double u = generate_random_uniform(randbuffer);
+	double v = log(log(1/u)) - logw;
+	store_item(r, it, logw, v);
 }
