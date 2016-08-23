@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "globals.h"
 #include "rs.h"
 
 struct reservoir_item {
@@ -42,16 +43,50 @@ static inline double generate_random_uniform(struct drand48_data *randbuffer)
 	return u;
 }
 
-static void store_item(struct reservoir *r, void *it, double w, double v
-#if PRINT_RS_TRACE
-		, void (*print_fun)(void *it)
-#endif
-		)
+static void store_item_at(struct reservoir *r, size_t ix,
+		const void *it, double w, double v)
 {
-	/* TODO */
+	r->its[ix].item_ptr = it; /* TODO: need cloning here */
+	r->its[ix].w = w;
+	r->its[ix].v = v;
 }
 
-void add_to_reservoir(struct reservoir *r, void *it, double w,
+static int reservoir_cmp(const void *a, const void *b)
+{
+	const struct reservoir_item *ra = a, *rb = b;
+	return double_cmp(&ra->v, &rb->v);
+}
+
+static void store_item(struct reservoir *r, const void *it, double w,
+#if PRINT_RS_TRACE
+		void (*print_fun)(void *it),
+#endif
+		double v)
+{
+	/* not a full reservoir yet */
+	if (r->actual < r->sz) {
+		store_item_at(r, r->actual, it, w, v);
+		r->actual++;
+		goto end;
+	}
+
+	/* no changes to the reservoir */
+	if (v >= r->its[r->sz - 1].v)
+		return;
+
+	/* TODO: cleanup old element at r->sz - 1 */
+	store_item_at(r, r->sz - 1, it, w, v);
+
+end:
+	if (r->actual == r->sz) {
+		qsort(r->its, r->sz, sizeof(r->its[0]), reservoir_cmp);
+#if PRINT_RS_TRACE
+		print_reservoir(r, print_fun);
+#endif
+	}
+}
+
+void add_to_reservoir(struct reservoir *r, const void *it, double w,
 #if PRINT_RS_TRACE
 		void (*print_fun)(void *it),
 #endif
@@ -59,14 +94,14 @@ void add_to_reservoir(struct reservoir *r, void *it, double w,
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = -log(u)/w;
-	store_item(r, it, w, v
+	store_item(r, it, w,
 #if PRINT_RS_TRACE
-			, print_fun
+			print_fun,
 #endif
-			);
+			v);
 }
 
-void add_to_reservoir_log(struct reservoir *r, void *it, double logw,
+void add_to_reservoir_log(struct reservoir *r, const void *it, double logw,
 #if PRINT_RS_TRACE
 		void (*print_fun)(void *it),
 #endif
@@ -74,9 +109,9 @@ void add_to_reservoir_log(struct reservoir *r, void *it, double logw,
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
-	store_item(r, it, logw, v
+	store_item(r, it, logw,
 #if PRINT_RS_TRACE
-			, print_fun
+			print_fun,
 #endif
-			);
+			v);
 }
