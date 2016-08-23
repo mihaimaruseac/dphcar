@@ -1,17 +1,14 @@
 .PHONY: all clean
 
 TARGET = ./dph
-NPTARGET = ./nph
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0
-LDFLAGS = -lm -lmpfr -lgmp
-OBJS = dp2d.o fp.o globals.o rule.o histogram.o
+LDFLAGS = -lm
+OBJS = dp2d.o fp.o globals.o rule.o histogram.o rs.o
 
-all: $(TARGET) $(NPTARGET)
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
 
-$(NPTARGET): $(OBJS)
-
 clean:
-	@$(RM) $(OBJS) $(TARGET) $(NPTARGET)
+	@$(RM) $(OBJS) $(TARGET)
