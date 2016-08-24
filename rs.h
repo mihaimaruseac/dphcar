@@ -31,7 +31,7 @@ void add_to_reservoir(struct reservoir *r, const void *it, size_t nmemb,
 void add_to_reservoir_log(struct reservoir *r, const void *it, size_t nmemb,
 		size_t sz, double logw, struct drand48_data *randbuffer);
 
-struct init_reservoir_iterator *reservoir_iterator(struct reservoir *r);
+struct reservoir_iterator *init_reservoir_iterator(struct reservoir *r);
 void free_reservoir_iterator(struct reservoir_iterator *ri);
 
 /**
