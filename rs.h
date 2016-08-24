@@ -11,6 +11,7 @@
 #endif
 
 struct reservoir;
+struct reservoir_iterator;
 struct drand48_data;
 
 /* Notice one extra parameter when tracing the reservoir */
@@ -24,6 +25,14 @@ void add_to_reservoir(struct reservoir *r, const void *it, size_t nmemb,
 		size_t sz, double w, struct drand48_data *randbuffer);
 void add_to_reservoir_log(struct reservoir *r, const void *it, size_t nmemb,
 		size_t sz, double logw, struct drand48_data *randbuffer);
+
+struct reservoir_iterator *reservoir_iterator(struct reservoir *r);
+void free_reservoir_iterator(struct reservoir_iterator *ri);
+
+/**
+ * Returns next item in reservoir or NULL if no more items can be found.
+ */
+void *next_item(struct reservoir_iterator *ri);
 
 /* utility functions */
 void *shallow_clone(const void *it, size_t sz);

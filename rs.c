@@ -23,6 +23,11 @@ struct reservoir {
 	void (*free_fun)(void *it);
 };
 
+struct reservoir_iterator {
+	struct reservoir *reservoir;
+	size_t current_pos;
+};
+
 struct reservoir *init_reservoir(size_t sz,
 		void (*print_fun)(const void *it, size_t nmemb),
 		void *(*clone_fun)(const void *it, size_t sz),
@@ -125,6 +130,28 @@ void add_to_reservoir_log(struct reservoir *r, const void *it, size_t nmemb,
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
 	store_item(r, it, nmemb, sz, logw, u, v);
+}
+
+struct reservoir_iterator *reservoir_iterator(struct reservoir *r)
+{
+	struct reservoir_iterator *ret = calloc(1, sizeof(*ret));
+	ret->reservoir = r;
+	ret->current_pos = 0;
+	return ret;
+}
+
+void free_reservoir_iterator(struct reservoir_iterator *ri)
+{
+	/* note that ri->reservoir is not freed */
+	free(ri);
+}
+
+void *next_item(struct reservoir_iterator *ri)
+{
+	if (ri->current_pos == ri->reservoir->actual)
+		return NULL;
+
+	return ri->reservoir->its[ri->current_pos++].item_ptr;
 }
 
 void *shallow_clone(const void *it, size_t sz)
