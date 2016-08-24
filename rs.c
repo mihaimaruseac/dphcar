@@ -139,3 +139,8 @@ void *shallow_clone(const void *it, size_t sz)
 	memcpy(ret, it, sz);
 	return ret;
 }
+
+void no_print(void *it)
+{
+	(void)it;
+}
