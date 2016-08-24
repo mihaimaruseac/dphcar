@@ -18,13 +18,13 @@ struct reservoir {
 	size_t actual;
 	size_t sz;
 	/* utility functions */
-	void (*print_fun)(void *it);
+	void (*print_fun)(const void *it, size_t nmemb);
 	void *(*clone_fun)(const void *it, size_t sz);
 	void (*free_fun)(void *it);
 };
 
 struct reservoir *init_reservoir(size_t sz,
-		void (*print_fun)(void *it),
+		void (*print_fun)(const void *it, size_t nmemb),
 		void *(*clone_fun)(const void *it, size_t sz),
 		void (*free_fun)(void *it))
 {
@@ -71,22 +71,22 @@ static int reservoir_cmp(const void *a, const void *b)
 }
 
 #if PRINT_RS_TRACE
-static void print_reservoir(struct reservoir *r)
+static void print_reservoir(struct reservoir *r, size_t nmemb)
 {
 	size_t i;
 
 	printf("Reservoir now:\n");
 	for (i = 0; i < r->actual; i++) {
 		printf("\t|");
-		r->print_fun(r->its[i].item_ptr);
+		r->print_fun(r->its[i].item_ptr, nmemb);
 		printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n",
 				r->its[i].w, r->its[i].u, r->its[i].v);
 	}
 }
 #endif
 
-static void store_item(struct reservoir *r, const void *it, size_t sz,
-		double w, double u, double v)
+static void store_item(struct reservoir *r, const void *it, size_t nmemb,
+		size_t sz, double w, double u, double v)
 {
 	/* not a full reservoir yet */
 	if (r->actual < r->sz) {
@@ -106,25 +106,25 @@ end:
 	if (r->actual == r->sz) {
 		qsort(r->its, r->sz, sizeof(r->its[0]), reservoir_cmp);
 #if PRINT_RS_TRACE
-		print_reservoir(r);
+		print_reservoir(r, nmemb);
 #endif
 	}
 }
 
-void add_to_reservoir(struct reservoir *r, const void *it, size_t sz,
-		double w, struct drand48_data *randbuffer)
+void add_to_reservoir(struct reservoir *r, const void *it, size_t nmemb,
+		size_t sz, double w, struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = -log(u)/w;
-	store_item(r, it, sz, w, u, v);
+	store_item(r, it, nmemb, sz, w, u, v);
 }
 
-void add_to_reservoir_log(struct reservoir *r, const void *it, size_t sz,
-		double logw, struct drand48_data *randbuffer)
+void add_to_reservoir_log(struct reservoir *r, const void *it, size_t nmemb,
+		size_t sz, double logw, struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
-	store_item(r, it, sz, logw, u, v);
+	store_item(r, it, nmemb, sz, logw, u, v);
 }
 
 void *shallow_clone(const void *it, size_t sz)
@@ -134,7 +134,8 @@ void *shallow_clone(const void *it, size_t sz)
 	return ret;
 }
 
-void no_print(void *it)
+void no_print(const void *it, size_t nmemb)
 {
 	(void)it;
+	(void)nmemb;
 }
