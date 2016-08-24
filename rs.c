@@ -149,12 +149,17 @@ void free_reservoir_iterator(struct reservoir_iterator *ri)
 	free(ri);
 }
 
-void *next_item(struct reservoir_iterator *ri)
+void *next_item(struct reservoir_iterator *ri, size_t *nmemb)
 {
+	void *iptr;
+
 	if (ri->current_pos == ri->reservoir->actual)
 		return NULL;
 
-	return ri->reservoir->its[ri->current_pos++].item_ptr;
+	iptr = ri->reservoir->its[ri->current_pos].item_ptr;
+	if (nmemb) *nmemb = ri->reservoir->its[ri->current_pos].nmemb;
+	ri->current_pos++;
+	return iptr;
 }
 
 void *shallow_clone(const void *it, size_t nmemb, size_t sz)

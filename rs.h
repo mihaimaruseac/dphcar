@@ -31,8 +31,9 @@ void free_reservoir_iterator(struct reservoir_iterator *ri);
 
 /**
  * Returns next item in reservoir or NULL if no more items can be found.
+ * Updates nmemb if not NULL.
  */
-void *next_item(struct reservoir_iterator *ri);
+void *next_item(struct reservoir_iterator *ri, size_t *nmemb);
 
 /* utility functions */
 void *shallow_clone(const void *it, size_t nmemb, size_t sz);
