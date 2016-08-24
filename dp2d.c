@@ -20,10 +20,6 @@
 #ifndef PRINT_ITEM_TABLE
 #define PRINT_ITEM_TABLE 0
 #endif
-/* print the rule lattice generation step debug info */
-#ifndef PRINT_RULE_LATTICE
-#define PRINT_RULE_LATTICE 0
-#endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
 #define PRINT_FINAL_RULES 1
