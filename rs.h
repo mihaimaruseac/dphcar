@@ -17,14 +17,14 @@ struct reservoir *init_reservoir(size_t sz,
 #if PRINT_RS_TRACE
 		void (*print_fun)(void *it),
 #endif
-		void *(*clone_fun)(const void *it),
+		void *(*clone_fun)(const void *it, size_t sz),
 		void (*free_fun)(void *it));
 void free_reservoir(struct reservoir *r);
 
 /* Notice one extra parameter when tracing the reservoir */
-void add_to_reservoir(struct reservoir *r, const void *it, double w,
-		struct drand48_data *randbuffer);
-void add_to_reservoir_log(struct reservoir *r, const void *it, double logw,
-		struct drand48_data *randbuffer);
+void add_to_reservoir(struct reservoir *r, const void *it, size_t sz,
+		double w, struct drand48_data *randbuffer);
+void add_to_reservoir_log(struct reservoir *r, const void *it, size_t sz,
+		double logw, struct drand48_data *randbuffer);
 
 #endif

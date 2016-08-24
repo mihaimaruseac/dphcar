@@ -20,7 +20,7 @@ struct reservoir {
 #if PRINT_RS_TRACE
 	void (*print_fun)(void *it);
 #endif
-	void *(*clone_fun)(const void *it);
+	void *(*clone_fun)(const void *it, size_t sz);
 	void (*free_fun)(void *it);
 };
 
@@ -28,7 +28,7 @@ struct reservoir *init_reservoir(size_t sz,
 #if PRINT_RS_TRACE
 		void (*print_fun)(void *it),
 #endif
-		void *(*clone_fun)(const void *it),
+		void *(*clone_fun)(const void *it, size_t sz),
 		void (*free_fun)(void *it))
 {
 	struct reservoir *ret = calloc(1, sizeof(*ret));
@@ -61,9 +61,9 @@ static inline double generate_random_uniform(struct drand48_data *randbuffer)
 }
 
 static void store_item_at(struct reservoir *r, size_t ix,
-		const void *it, double w, double u, double v)
+		const void *it, size_t sz, double w, double u, double v)
 {
-	r->its[ix].item_ptr = r->clone_fun(it);
+	r->its[ix].item_ptr = r->clone_fun(it, sz);
 	r->its[ix].w = w;
 	r->its[ix].u = u;
 	r->its[ix].v = v;
@@ -90,12 +90,12 @@ static void print_reservoir(struct reservoir *r)
 }
 #endif
 
-static void store_item(struct reservoir *r, const void *it,
+static void store_item(struct reservoir *r, const void *it, size_t sz,
 		double w, double u, double v)
 {
 	/* not a full reservoir yet */
 	if (r->actual < r->sz) {
-		store_item_at(r, r->actual, it, w, u, v);
+		store_item_at(r, r->actual, it, sz, w, u, v);
 		r->actual++;
 		goto end;
 	}
@@ -105,7 +105,7 @@ static void store_item(struct reservoir *r, const void *it,
 		return;
 
 	r->free_fun(r->its[r->sz-1].item_ptr);
-	store_item_at(r, r->sz - 1, it, w, u, v);
+	store_item_at(r, r->sz - 1, it, sz, w, u, v);
 
 end:
 	if (r->actual == r->sz) {
@@ -116,18 +116,18 @@ end:
 	}
 }
 
-void add_to_reservoir(struct reservoir *r, const void *it, double w,
-		struct drand48_data *randbuffer)
+void add_to_reservoir(struct reservoir *r, const void *it, size_t sz,
+		double w, struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = -log(u)/w;
-	store_item(r, it, w, u, v);
+	store_item(r, it, sz, w, u, v);
 }
 
-void add_to_reservoir_log(struct reservoir *r, const void *it, double logw,
-		struct drand48_data *randbuffer)
+void add_to_reservoir_log(struct reservoir *r, const void *it, size_t sz,
+		double logw, struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
-	store_item(r, it, logw, u, v);
+	store_item(r, it, sz, logw, u, v);
 }
