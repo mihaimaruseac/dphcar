@@ -7,7 +7,7 @@
 #include "rs.h"
 
 struct reservoir_item {
-	void *item_ptr;
+	const void *item_ptr;
 	size_t nmemb; /* number of members of item */
 	size_t sz; /* size of one member of item */
 	double w;
@@ -50,7 +50,7 @@ void free_reservoir(struct reservoir *r)
 	size_t i;
 
 	for (i = 0;  i < r->actual; i++)
-		r->free_fun(r->its[i].item_ptr);
+		r->free_fun((void*)r->its[i].item_ptr);
 	free(r->its);
 	free(r);
 }
@@ -108,7 +108,7 @@ static void store_item(struct reservoir *r, const void *it, size_t nmemb,
 	if (v >= r->its[r->sz - 1].v)
 		return;
 
-	r->free_fun(r->its[r->sz-1].item_ptr);
+	r->free_fun((void*)r->its[r->sz-1].item_ptr);
 	store_item_at(r, r->sz - 1, it, nmemb, sz, w, u, v);
 
 end:
@@ -150,9 +150,9 @@ void free_reservoir_iterator(struct reservoir_iterator *ri)
 	free(ri);
 }
 
-void *next_item(struct reservoir_iterator *ri, size_t *nmemb, size_t *sz)
+const void *next_item(struct reservoir_iterator *ri, size_t *nmemb, size_t *sz)
 {
-	void *iptr;
+	const void *iptr;
 
 	if (ri->current_pos == ri->reservoir->actual)
 		return NULL;
