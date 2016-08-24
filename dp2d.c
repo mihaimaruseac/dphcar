@@ -118,9 +118,13 @@ static void print_this_rule(const int *A, const int* AB,
 static inline int its_already_seen(int *its, size_t itslen,
 		const int *seen, size_t seenlen)
 {
-	size_t ix = 0, i, j;
+	int *cf = calloc(itslen, sizeof(cf[0]));
+	size_t ix = 0, i, j, ret = 0;
 
-	qsort(its, itslen, sizeof(its[0]), int_cmp);
+	for (i = 0; i < itslen; i++)
+		cf[i] = its[i];
+
+	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
 	while (ix < seenlen) {
 		/* check length first */
 		if (seen[ix] != (int)itslen)
@@ -128,15 +132,18 @@ static inline int its_already_seen(int *its, size_t itslen,
 
 		/* same length, check by items */
 		for (i = 0, j = ix + 1; i < itslen; i++, j++)
-			if (its[i] != seen[j])
+			if (cf[i] != seen[j])
 				goto nothere;
 
-		return 1;
+		ret = 1;
+		goto end;
 nothere:
 		ix += seen[ix] + 1;
 	}
 
-	return 0;
+end:
+	free(cf);
+	return ret;
 }
 
 /**
@@ -145,13 +152,19 @@ nothere:
 static inline void update_seen_its(const int *its, size_t itslen,
 		int *seen, size_t *seenlen)
 {
+	int *cf = calloc(itslen, sizeof(cf[0]));
 	size_t ix = *seenlen, i;
 
+	for (i = 0; i < itslen; i++)
+		cf[i] = its[i];
+
+	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
 	seen[ix++] = itslen;
 	for (i = 0; i < itslen; i++)
-		seen[ix++] = its[i];
+		seen[ix++] = cf[i];
 
 	*seenlen = ix;
+	free(cf);
 }
 
 static void generate_rules_from_itemset(const int *AB, size_t ab_length,
@@ -356,9 +369,6 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		res_it[level] = ic[i].value;
 		if (generated_above(res_it, level))
 			continue;
-		if (level == lmax - 1)
-			printf("%d\n",
-					its_already_seen(res_it, lmax, seen, *seenlen));
 		if (level == lmax - 1 &&
 				its_already_seen(res_it, lmax, seen, *seenlen))
 			continue;
