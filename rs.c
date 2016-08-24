@@ -194,3 +194,21 @@ void print_int(const void *it, size_t unused)
 	(void)unused;
 	printf("%d", *(int*)it);
 }
+
+void print_size_t_array(const void *it, size_t nmemb)
+{
+	const size_t *arr = it;
+	size_t i;
+
+	if (!nmemb) return;
+	printf("[%lu", arr[0]);
+	for (i = 1; i < nmemb; i++)
+		printf(" %lu", arr[i]);
+	printf("]");
+}
+
+void print_size_t(const void *it, size_t unused)
+{
+	(void)unused;
+	printf("%lu", *(size_t*)it);
+}

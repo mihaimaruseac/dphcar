@@ -46,5 +46,7 @@ void *shallow_clone(const void *it, size_t nmemb, size_t sz);
 void no_print(const void *it, size_t nmemb);
 void print_int_array(const void *it, size_t nmemb);
 void print_int(const void *it, size_t unused);
+void print_size_t_array(const void *it, size_t nmemb);
+void print_size_t(const void *it, size_t unused);
 
 #endif
