@@ -139,3 +139,15 @@ void no_print(const void *it, size_t nmemb)
 	(void)it;
 	(void)nmemb;
 }
+
+void print_int_array(const void *it, size_t nmemb)
+{
+	const int *arr = it;
+	size_t i;
+
+	if (!nmemb) return;
+	printf("[%d", arr[0]);
+	for (i = 1; i < nmemb; i++)
+		printf(" %d", arr[i]);
+	printf("]");
+}
