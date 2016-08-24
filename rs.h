@@ -27,4 +27,7 @@ void add_to_reservoir(struct reservoir *r, const void *it, size_t sz,
 void add_to_reservoir_log(struct reservoir *r, const void *it, size_t sz,
 		double logw, struct drand48_data *randbuffer);
 
+/* utility functions */
+void *shallow_clone(const void *it, size_t sz);
+
 #endif

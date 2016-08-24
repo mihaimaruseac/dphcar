@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "globals.h"
 #include "rs.h"
@@ -130,4 +131,11 @@ void add_to_reservoir_log(struct reservoir *r, const void *it, size_t sz,
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
 	store_item(r, it, sz, logw, u, v);
+}
+
+void *shallow_clone(const void *it, size_t sz)
+{
+	void *ret = calloc(sz, sizeof(*it));
+	memcpy(ret, it, sz);
+	return ret;
 }
