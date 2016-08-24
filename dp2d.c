@@ -24,10 +24,6 @@
 #ifndef PRINT_RULE_LATTICE
 #define PRINT_RULE_LATTICE 0
 #endif
-/* print changes to the selected rule */
-#ifndef PRINT_RULE_LATTICE_TRACE
-#define PRINT_RULE_LATTICE_TRACE 0
-#endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
 #define PRINT_FINAL_RULES 0
@@ -399,7 +395,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		reservoir_iterator = init_reservoir_iterator(reservoir);
 		bitems = next_item(reservoir_iterator, NULL, NULL);
 
-#if PRINT_RULE_LATTICE_TRACE || PRINT_FINAL_RULES
+#if PRINT_FINAL_RULES
 		printf("Selected items: %lu(%d) -> ",
 				bitems[0], ic[bitems[0]].value);
 		for (j = 1; j < lmax; j++)
