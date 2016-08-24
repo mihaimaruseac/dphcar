@@ -8,7 +8,8 @@
 
 struct reservoir_item {
 	void *item_ptr;
-	size_t nmemb;
+	size_t nmemb; /* number of members of item */
+	size_t sz; /* size of one member of item */
 	double w;
 	double u;
 	double v;
@@ -149,7 +150,7 @@ void free_reservoir_iterator(struct reservoir_iterator *ri)
 	free(ri);
 }
 
-void *next_item(struct reservoir_iterator *ri, size_t *nmemb)
+void *next_item(struct reservoir_iterator *ri, size_t *nmemb, size_t *sz)
 {
 	void *iptr;
 
@@ -158,6 +159,7 @@ void *next_item(struct reservoir_iterator *ri, size_t *nmemb)
 
 	iptr = ri->reservoir->its[ri->current_pos].item_ptr;
 	if (nmemb) *nmemb = ri->reservoir->its[ri->current_pos].nmemb;
+	if (sz) *sz = ri->reservoir->its[ri->current_pos].sz;
 	ri->current_pos++;
 	return iptr;
 }
