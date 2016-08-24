@@ -29,5 +29,6 @@ void add_to_reservoir_log(struct reservoir *r, const void *it, size_t nmemb,
 void *shallow_clone(const void *it, size_t sz);
 void no_print(const void *it, size_t nmemb);
 void print_int_array(const void *it, size_t nmemb);
+void print_int(const void *it, size_t unused);
 
 #endif

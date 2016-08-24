@@ -151,3 +151,9 @@ void print_int_array(const void *it, size_t nmemb)
 		printf(" %d", arr[i]);
 	printf("]");
 }
+
+void print_int(const void *it, size_t unused)
+{
+	(void)unused;
+	printf("%d", *(int*)it);
+}
