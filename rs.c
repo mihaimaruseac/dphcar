@@ -136,7 +136,7 @@ void add_to_reservoir_log(struct reservoir *r, const void *it, size_t nmemb,
 	store_item(r, it, nmemb, sz, logw, u, v);
 }
 
-struct reservoir_iterator *reservoir_iterator(struct reservoir *r)
+struct reservoir_iterator *init_reservoir_iterator(struct reservoir *r)
 {
 	struct reservoir_iterator *ret = calloc(1, sizeof(*ret));
 	ret->reservoir = r;
