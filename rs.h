@@ -7,7 +7,7 @@
 
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 0
+#define PRINT_RS_TRACE 1
 #endif
 
 struct reservoir;

@@ -26,7 +26,7 @@
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 0
+#define PRINT_FINAL_RULES 1
 #endif
 /* asymmetric quality function */
 #ifndef ASYMMETRIC_Q
@@ -41,6 +41,7 @@
 #define UNIFORM_REDUCTION 1
 #endif
 
+#if 0
 static double quality(int x, int y, double c0, struct drand48_data *buffer)
 {
 	(void)buffer;
@@ -50,6 +51,7 @@ static double quality(int x, int y, double c0, struct drand48_data *buffer)
 #endif
 	return -fabs(q);
 }
+#endif
 
 struct item_count {
 	int value;
@@ -162,13 +164,13 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 	double c;
 
 	max = (1 << ab_length) - 1;
+	sup_ab = fpt_itemset_count(fp, AB, ab_length);
 	for (i = 1; i < max; i++) {
 		a_length = 0;
 		for (j = 0; j < ab_length; j++)
 			if (i & (1 << j))
 				A[a_length++] = AB[j];
 
-		sup_ab = fpt_itemset_count(fp, AB, ab_length);
 		sup_a = fpt_itemset_count(fp, A, a_length);
 		c = div_or_zero(sup_ab, sup_a);
 		if (c < *minc) *minc = c;
@@ -183,10 +185,10 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 	free(A);
 }
 
-static void generate_rules(const size_t *items, size_t lmax,
-		const struct fptree *fp, const struct item_count *ic,
+static void generate_rules(const int *items, size_t lmax,
+		const struct fptree *fp,
 		double *minc, double *maxc, struct histogram *h,
-		int *seen, size_t *seenix)
+		int *seen, size_t *seenlen)
 {
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	size_t i, j, max=1<<lmax, ab_length;
@@ -195,56 +197,15 @@ static void generate_rules(const size_t *items, size_t lmax,
 		ab_length = 0;
 		for (j = 0; j < lmax; j++)
 			if (i & (1 << j))
-				AB[ab_length++] = ic[items[j]].value;
+				AB[ab_length++] = items[j];
 		if (ab_length < 2)
 			continue;
-		if (its_already_seen(AB, ab_length, seen, *seenix))
+		if (its_already_seen(AB, ab_length, seen, *seenlen))
 			continue;
-		update_seen_its(AB, ab_length, seen, seenix);
+		update_seen_its(AB, ab_length, seen, seenlen);
 		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc, h);
 	}
 
-	free(AB);
-}
-
-/**
- * Analyze the current items to see if we can select a good rule lattice.
- */
-static void analyze_items(const size_t *items, size_t lmax,
-		struct reservoir *reservoir,
-		const struct fptree *fp, const struct item_count *ic,
-		double c0, double eps, struct drand48_data *randbuffer)
-{
-	size_t *citems = calloc(lmax, sizeof(citems[0]));
-	int *AB = calloc(lmax, sizeof(AB[0]));
-	int sup_ab, sup_a;
-	size_t i, j, k;
-	double q;
-
-	for (i = 0; i < lmax; i++)
-		AB[i] = ic[items[i]].value;
-
-	sup_ab = fpt_itemset_count(fp, AB, lmax);
-
-#if PRINT_RULE_LATTICE
-	printf("Analyzing new set of items: ");
-	for (i = 0; i < lmax; i++)
-		printf("%3d ", AB[i]);
-	printf(" | support: %d\n", sup_ab);
-#endif
-
-	/* try for each corner item */
-	for (i = 0; i < lmax; i++) {
-		sup_a = ic[items[i]].real_count;
-		q = quality(sup_a, sup_ab, c0, randbuffer);
-		/* need a copy to insert in reservoir */
-		for (j = 0; j < lmax; j++) citems[j] = items[j];
-		k = citems[0]; citems[0] = citems[i]; citems[i] = k;
-		add_to_reservoir_log(reservoir, citems, lmax,
-				sizeof(citems[0]), eps * q / 2, randbuffer);
-	}
-
-	free(citems);
 	free(AB);
 }
 
@@ -350,80 +311,112 @@ static inline int init_items(const struct item_count *ic, double c0,
 	return 0;
 }
 
+static inline double compute_quality(const struct fptree *fp,
+		int *items, size_t sz)
+{
+	(void)fp;
+	(void)items;
+	(void)sz;
+	/* TODO: quality functions */
+	return 0;
+}
+
+static inline int generated_above(int *celms, size_t level)
+{
+	size_t i;
+
+	for (i = 0; i < level; i++)
+		if (celms[i] == celms[level])
+			return 1;
+	return 0;
+}
+
+static void mine_level(const struct fptree *fp, const struct item_count *ic,
+		size_t numits, size_t lmax, const int *celms, size_t level,
+		double *epss, size_t *spls, struct histogram *h,
+		double *minc, double *maxc, int *seen, size_t *seenlen,
+		struct drand48_data *randbuffer)
+{
+	int *res_it = calloc(level + 1, sizeof(res_it[0]));
+	struct reservoir_iterator *ri;
+	struct reservoir *r;
+	double q, eps_round;
+	const int *ncelms;
+	size_t i;
+
+	r = init_reservoir(spls[level], print_int_array, shallow_clone, free);
+	eps_round = epss[level] / spls[level];
+
+	/* copy initial elements */
+	for (i = 0; i < level; i++)
+		res_it[i] = celms[i];
+
+	/* generate last element */
+	for (i = 0; i < numits; i++) {
+		res_it[level] = ic[i].value;
+		if (generated_above(res_it, level))
+			continue;
+		if (level == lmax - 1)
+			printf("%d\n",
+					its_already_seen(res_it, lmax, seen, *seenlen));
+		if (level == lmax - 1 &&
+				its_already_seen(res_it, lmax, seen, *seenlen))
+			continue;
+
+		q = compute_quality(fp, res_it, level + 1);
+		add_to_reservoir_log(r, res_it, level + 1,
+				sizeof(res_it[0]), eps_round * q / 2,
+				randbuffer);
+	}
+
+	ri = init_reservoir_iterator(r);
+	if (level == lmax - 1)
+		while ((ncelms = next_item(ri, NULL, NULL)))
+			generate_rules(ncelms, lmax, fp, minc, maxc, h,
+					seen, seenlen);
+	else while ((ncelms = next_item(ri, NULL, NULL)))
+		mine_level(fp, ic, numits, lmax, ncelms, level +1, epss, spls,
+				h, minc, maxc, seen, seenlen, randbuffer);
+	free_reservoir_iterator(ri);
+	free_reservoir(r);
+	free(res_it);
+}
+
 /**
  * Step 2 of mining, private.
  */
 static void mine_rules(const struct fptree *fp, const struct item_count *ic,
-		struct histogram *h, size_t numits, size_t lmax,
-		double *minc, double *maxc, double c0, size_t k, double eps,
-		struct drand48_data *randbuffer, size_t rf)
+		double eps, size_t numits, size_t lmax,
+		struct histogram *h, double *minc, double *maxc,
+		struct drand48_data *randbuffer)
 {
-	struct reservoir_iterator *reservoir_iterator;
-	size_t i, j, end, seenix, seenitsix;
-	struct timeval starttime, endtime;
-	size_t *items, *seen;
-	const size_t *bitems;
-	struct reservoir *reservoir;
-	double t1, t2;
-	int *seenits;
+	double *epsilons = calloc(lmax, sizeof(epsilons[0]));
+	size_t *spl = calloc(lmax, sizeof(spl[0]));
+	size_t i, seenlen = 0, f = 1;
+	int *seen;
 
-	printf("Mining %lu steps each with eps %lf, numitems=%lu\n",
-			k, eps, numits);
+	printf("Mining with eps %lf, numitems=%lu\n", eps, numits);
 
-	items = calloc(lmax, sizeof(items[0]));
-	seenits = calloc(k * (lmax+ 1) * (1 << lmax), sizeof(seenits[0]));
-	seen = calloc(k * lmax, sizeof(seen[0]));
-	seenix = 0;
-	seenitsix = 0;
-
-	for (i = 0; i < k; i++) {
-		gettimeofday(&starttime, NULL);
-		t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
-		end = init_items(ic, c0, items, lmax, numits, seen, seenix);
-		if (end) break;
-
-		reservoir = init_reservoir(1, print_size_t_array,
-				shallow_clone, free);
-		while (!end) {
-			analyze_items(items, lmax, reservoir,
-					fp, ic, c0, eps, randbuffer);
-			end = update_items(ic, c0, items, lmax, numits,
-					seen, seenix, rf);
-		}
-
-		reservoir_iterator = init_reservoir_iterator(reservoir);
-		bitems = next_item(reservoir_iterator, NULL, NULL);
-
-#if PRINT_FINAL_RULES
-		printf("Selected items: %lu(%d) -> ",
-				bitems[0], ic[bitems[0]].value);
-		for (j = 1; j < lmax; j++)
-			printf("%lu(%d) ", bitems[j],
-					ic[bitems[j]].value);
-		printf("\n");
-#endif
-
-		generate_rules(bitems, lmax, fp, ic, minc, maxc, h,
-				seenits, &seenitsix);
-
-		/* remove bitems from future items */
-		qsort((void*)bitems, lmax, sizeof(bitems[0]), int_cmp);
-		for (j = 0; j < lmax; j++)
-			seen[seenix++] = bitems[j];
-
-		free_reservoir_iterator(reservoir_iterator);
-		free_reservoir(reservoir);
-
-		gettimeofday(&endtime, NULL);
-		t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
-		printf("Round %lu time: %5.2lf\n", i, t2 - t1);
+	/* TODO: generate all subtrees after a level? */
+	for (i = 0; i < lmax; i++) {
+		/* TODO: check eps balance */
+		epsilons[i] = eps/lmax; /* TODO: other ways to distribute eps */
+		spl[i] = 2; /* TODO: more samples per level */
+		f *= spl[i];
 	}
+	seen = calloc(f * (lmax + 1) * (1 << lmax), sizeof(seen[0]));
 
-	free(seenits);
-	free(items);
+	mine_level(fp, ic, numits, lmax, NULL, 0, epsilons, spl, h,
+			minc, maxc, seen, &seenlen, randbuffer);
+	printf("%lu %lu\n", seenlen, f * (lmax + 1) * (1 << lmax));
+
+	free(epsilons);
 	free(seen);
+	free(spl);
 }
 
+/* TODO: needs redone */
+#if 0
 /**
  * Step 2 of mining, not private.
  */
@@ -452,6 +445,7 @@ static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
 	free(AB);
 	free(items);
 }
+#endif
 
 #if PRINT_ITEM_TABLE
 static inline void print_item_table(const struct item_count *ic, size_t n)
@@ -507,10 +501,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 				epsilon_step1, k, c0, lmax);
 		printf("Compute noisy counts for items with "
 				"eps_1 = %lf\n", epsilon_step1);
-	} else {
+	} else
 		printf("Running non-private method with k=%lu, c0=%5.2lf, "
 				"rmax=%lu\n", k, c0, lmax);
-	}
 
 	numits = build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
 #if PRINT_ITEM_TABLE
@@ -526,11 +519,15 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	if (numits > fp->n) numits = fp->n;
 	eps = eps - epsilon_step1;
 	gettimeofday(&starttime, NULL);
+	(void)rf; /* TODO: remove */
 	if (private)
-		mine_rules(fp, ic, h, numits, lmax, &minc, &maxc, c0, k,
-				eps / k, &randbuffer, rf);
+		mine_rules(fp, ic, eps, numits, lmax, h, &minc, &maxc,
+				&randbuffer);
+	/* TODO: needs redone */
+#if 0
 	else
 		mine_rules_np(fp, ic, h, numits, lmax, c0, &minc, &maxc);
+#endif
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
