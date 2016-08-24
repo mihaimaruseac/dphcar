@@ -1,4 +1,3 @@
-#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +26,7 @@
 #endif
 /* print changes to the selected rule */
 #ifndef PRINT_RULE_LATTICE_TRACE
-#define PRINT_RULE_LATTICE_TRACE 1
+#define PRINT_RULE_LATTICE_TRACE 0
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
@@ -216,15 +215,15 @@ static void generate_rules(const size_t *items, size_t lmax,
  * Analyze the current items to see if we can select a good rule lattice.
  */
 static void analyze_items(const size_t *items, size_t lmax,
-		double *bv, size_t *bitems, struct reservoir *reservoir,
+		struct reservoir *reservoir,
 		const struct fptree *fp, const struct item_count *ic,
 		double c0, double eps, struct drand48_data *randbuffer)
 {
 	size_t *citems = calloc(lmax, sizeof(citems[0]));
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	int sup_ab, sup_a;
-	double q, u, v;
 	size_t i, j, k;
+	double q;
 
 	for (i = 0; i < lmax; i++)
 		AB[i] = ic[items[i]].value;
@@ -366,9 +365,10 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	struct reservoir_iterator *reservoir_iterator;
 	size_t i, j, end, seenix, seenitsix;
 	struct timeval starttime, endtime;
-	size_t *items, *bitems, *seen;
+	size_t *items, *seen;
+	const size_t *bitems;
 	struct reservoir *reservoir;
-	double bv, t1, t2;
+	double t1, t2;
 	int *seenits;
 
 	printf("Mining %lu steps each with eps %lf, numitems=%lu\n",
@@ -386,12 +386,11 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		end = init_items(ic, c0, items, lmax, numits, seen, seenix);
 		if (end) break;
 		bitems = calloc(lmax, sizeof(bitems[0]));
-		bv = DBL_MAX;
 
 		reservoir = init_reservoir(1, print_size_t_array,
 				shallow_clone, free);
 		while (!end) {
-			analyze_items(items, lmax, &bv, bitems, reservoir,
+			analyze_items(items, lmax, reservoir,
 					fp, ic, c0, eps, randbuffer);
 			end = update_items(ic, c0, items, lmax, numits,
 					seen, seenix, rf);
@@ -413,7 +412,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 				seenits, &seenitsix);
 
 		/* remove bitems from future items */
-		qsort(bitems, lmax, sizeof(bitems[0]), int_cmp);
+		qsort((void*)bitems, lmax, sizeof(bitems[0]), int_cmp);
 		for (j = 0; j < lmax; j++)
 			seen[seenix++] = bitems[j];
 
