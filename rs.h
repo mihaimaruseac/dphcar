@@ -17,7 +17,7 @@ struct drand48_data;
 /* Notice one extra parameter when tracing the reservoir */
 struct reservoir *init_reservoir(size_t sz,
 		void (*print_fun)(const void *it, size_t nmemb),
-		void *(*clone_fun)(const void *it, size_t sz),
+		void *(*clone_fun)(const void *it, size_t nmemb, size_t sz),
 		void (*free_fun)(void *it));
 void free_reservoir(struct reservoir *r);
 
@@ -35,7 +35,7 @@ void free_reservoir_iterator(struct reservoir_iterator *ri);
 void *next_item(struct reservoir_iterator *ri);
 
 /* utility functions */
-void *shallow_clone(const void *it, size_t sz);
+void *shallow_clone(const void *it, size_t nmemb, size_t sz);
 void no_print(const void *it, size_t nmemb);
 void print_int_array(const void *it, size_t nmemb);
 void print_int(const void *it, size_t unused);

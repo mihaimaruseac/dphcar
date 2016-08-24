@@ -8,6 +8,7 @@
 
 struct reservoir_item {
 	void *item_ptr;
+	size_t nmemb;
 	double w;
 	double u;
 	double v;
@@ -19,7 +20,7 @@ struct reservoir {
 	size_t sz;
 	/* utility functions */
 	void (*print_fun)(const void *it, size_t nmemb);
-	void *(*clone_fun)(const void *it, size_t sz);
+	void *(*clone_fun)(const void *it, size_t nmemb, size_t sz);
 	void (*free_fun)(void *it);
 };
 
@@ -30,7 +31,7 @@ struct reservoir_iterator {
 
 struct reservoir *init_reservoir(size_t sz,
 		void (*print_fun)(const void *it, size_t nmemb),
-		void *(*clone_fun)(const void *it, size_t sz),
+		void *(*clone_fun)(const void *it, size_t nmemb, size_t sz),
 		void (*free_fun)(void *it))
 {
 	struct reservoir *ret = calloc(1, sizeof(*ret));
@@ -61,9 +62,11 @@ static inline double generate_random_uniform(struct drand48_data *randbuffer)
 }
 
 static void store_item_at(struct reservoir *r, size_t ix,
-		const void *it, size_t sz, double w, double u, double v)
+		const void *it, size_t nmemb, size_t sz,
+		double w, double u, double v)
 {
-	r->its[ix].item_ptr = r->clone_fun(it, sz);
+	r->its[ix].item_ptr = r->clone_fun(it, nmemb, sz);
+	r->its[ix].nmemb = nmemb;
 	r->its[ix].w = w;
 	r->its[ix].u = u;
 	r->its[ix].v = v;
@@ -95,7 +98,7 @@ static void store_item(struct reservoir *r, const void *it, size_t nmemb,
 {
 	/* not a full reservoir yet */
 	if (r->actual < r->sz) {
-		store_item_at(r, r->actual, it, sz, w, u, v);
+		store_item_at(r, r->actual, it, nmemb, sz, w, u, v);
 		r->actual++;
 		goto end;
 	}
@@ -105,7 +108,7 @@ static void store_item(struct reservoir *r, const void *it, size_t nmemb,
 		return;
 
 	r->free_fun(r->its[r->sz-1].item_ptr);
-	store_item_at(r, r->sz - 1, it, sz, w, u, v);
+	store_item_at(r, r->sz - 1, it, nmemb, sz, w, u, v);
 
 end:
 	if (r->actual == r->sz) {
@@ -154,10 +157,10 @@ void *next_item(struct reservoir_iterator *ri)
 	return ri->reservoir->its[ri->current_pos++].item_ptr;
 }
 
-void *shallow_clone(const void *it, size_t sz)
+void *shallow_clone(const void *it, size_t nmemb, size_t sz)
 {
-	void *ret = calloc(sz, sizeof(*it));
-	memcpy(ret, it, sz);
+	void *ret = calloc(nmemb * sz, sizeof(*it));
+	memcpy(ret, it, nmemb * sz);
 	return ret;
 }
 
