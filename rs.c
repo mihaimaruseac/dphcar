@@ -18,17 +18,13 @@ struct reservoir {
 	size_t actual;
 	size_t sz;
 	/* utility functions */
-#if PRINT_RS_TRACE
 	void (*print_fun)(void *it);
-#endif
 	void *(*clone_fun)(const void *it, size_t sz);
 	void (*free_fun)(void *it);
 };
 
 struct reservoir *init_reservoir(size_t sz,
-#if PRINT_RS_TRACE
 		void (*print_fun)(void *it),
-#endif
 		void *(*clone_fun)(const void *it, size_t sz),
 		void (*free_fun)(void *it))
 {
@@ -36,9 +32,7 @@ struct reservoir *init_reservoir(size_t sz,
 	ret->its = calloc(sz, sizeof(ret->its[0]));
 	ret->actual = 0;
 	ret->sz = sz;
-#if PRINT_RS_TRACE
 	ret->print_fun = print_fun;
-#endif
 	ret->clone_fun = clone_fun;
 	ret->free_fun = free_fun;
 	return ret;
