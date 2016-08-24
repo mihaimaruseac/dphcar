@@ -9,6 +9,7 @@
 #include "globals.h"
 #include "histogram.h"
 #include "rule.h"
+#include "rs.h"
 
 #define MICROSECONDS 1000000L
 
@@ -26,7 +27,7 @@
 #endif
 /* print changes to the selected rule */
 #ifndef PRINT_RULE_LATTICE_TRACE
-#define PRINT_RULE_LATTICE_TRACE 0
+#define PRINT_RULE_LATTICE_TRACE 1
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
@@ -215,10 +216,11 @@ static void generate_rules(const size_t *items, size_t lmax,
  * Analyze the current items to see if we can select a good rule lattice.
  */
 static void analyze_items(const size_t *items, size_t lmax,
-		double *bv, size_t *bitems,
+		double *bv, size_t *bitems, struct reservoir *reservoir,
 		const struct fptree *fp, const struct item_count *ic,
 		double c0, double eps, struct drand48_data *randbuffer)
 {
+	size_t *citems = calloc(lmax, sizeof(citems[0]));
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	int sup_ab, sup_a;
 	double q, u, v;
@@ -240,34 +242,14 @@ static void analyze_items(const size_t *items, size_t lmax,
 	for (i = 0; i < lmax; i++) {
 		sup_a = ic[items[i]].real_count;
 		q = quality(sup_a, sup_ab, c0, randbuffer);
-		drand48_r(randbuffer, &u);
-		v = log(log(1/u)) - eps * q / 2;
-
-#if PRINT_RULE_LATTICE
-		printf("\t%3d -> {}: c=%7.6f q=%5.2f u=%5.2f v=%5.2f\n",
-				AB[i], (sup_ab + 0.0)/sup_a, q, u, v);
-#endif
-
-		if (v < *bv) {
-			*bv = v;
-			for (j = 0; j < lmax; j++)
-				bitems[j] = items[j];
-			k = bitems[0];
-			bitems[0] = bitems[i];
-			bitems[i] = k;
-
-#if PRINT_RULE_LATTICE_TRACE
-			printf("Current best items: %lu(%d) -> ",
-					bitems[0], ic[bitems[0]].value);
-			for (j = 1; j < lmax; j++)
-				printf("%lu(%d) ", bitems[j],
-						ic[bitems[j]].value);
-			printf(": c=%7.6f q=%5.2f u=%5.2f v=%5.2f\n",
-					(sup_ab + 0.0)/sup_a, q, u, v);
-#endif
-		}
+		/* need a copy to insert in reservoir */
+		for (j = 0; j < lmax; j++) citems[j] = items[j];
+		k = citems[0]; citems[0] = citems[i]; citems[i] = k;
+		add_to_reservoir_log(reservoir, citems, lmax,
+				sizeof(citems[0]), eps * q / 2, randbuffer);
 	}
 
+	free(citems);
 	free(AB);
 }
 
@@ -381,9 +363,11 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		double *minc, double *maxc, double c0, size_t k, double eps,
 		struct drand48_data *randbuffer, size_t rf)
 {
+	struct reservoir_iterator *reservoir_iterator;
 	size_t i, j, end, seenix, seenitsix;
 	struct timeval starttime, endtime;
 	size_t *items, *bitems, *seen;
+	struct reservoir *reservoir;
 	double bv, t1, t2;
 	int *seenits;
 
@@ -404,12 +388,17 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		bitems = calloc(lmax, sizeof(bitems[0]));
 		bv = DBL_MAX;
 
+		reservoir = init_reservoir(1, print_size_t_array,
+				shallow_clone, free);
 		while (!end) {
-			analyze_items(items, lmax, &bv, bitems, fp, ic, c0,
-					eps, randbuffer);
+			analyze_items(items, lmax, &bv, bitems, reservoir,
+					fp, ic, c0, eps, randbuffer);
 			end = update_items(ic, c0, items, lmax, numits,
 					seen, seenix, rf);
 		}
+
+		reservoir_iterator = init_reservoir_iterator(reservoir);
+		bitems = next_item(reservoir_iterator, NULL, NULL);
 
 #if PRINT_RULE_LATTICE_TRACE || PRINT_FINAL_RULES
 		printf("Selected items: %lu(%d) -> ",
@@ -428,7 +417,9 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		for (j = 0; j < lmax; j++)
 			seen[seenix++] = bitems[j];
 
-		free(bitems);
+		free_reservoir_iterator(reservoir_iterator);
+		free_reservoir(reservoir);
+
 		gettimeofday(&endtime, NULL);
 		t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
 		printf("Round %lu time: %5.2lf\n", i, t2 - t1);
