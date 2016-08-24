@@ -83,7 +83,7 @@ static void print_reservoir(struct reservoir *r)
 	printf("Reservoir now:\n");
 	for (i = 0; i < r->actual; i++) {
 		printf("\t|");
-		r->print_fun(&r->its[i].item_ptr);
+		r->print_fun(r->its[i].item_ptr);
 		printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n",
 				r->its[i].w, r->its[i].u, r->its[i].v);
 	}
