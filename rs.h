@@ -21,6 +21,11 @@ struct reservoir *init_reservoir(size_t sz,
 		void (*free_fun)(void *it));
 void free_reservoir(struct reservoir *r);
 
+/**
+ * Add item to reservoir using weight (log weight).
+ * To add a single element (struct) set nmemb to 1, sz to sizeof struct.
+ * To add an array of elements set nmemb to size of array, sz to sizeof struct.
+ */
 void add_to_reservoir(struct reservoir *r, const void *it, size_t nmemb,
 		size_t sz, double w, struct drand48_data *randbuffer);
 void add_to_reservoir_log(struct reservoir *r, const void *it, size_t nmemb,
