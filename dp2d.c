@@ -381,7 +381,6 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 		end = init_items(ic, c0, items, lmax, numits, seen, seenix);
 		if (end) break;
-		bitems = calloc(lmax, sizeof(bitems[0]));
 
 		reservoir = init_reservoir(1, print_size_t_array,
 				shallow_clone, free);
