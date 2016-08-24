@@ -28,26 +28,6 @@
 #ifndef ASYMMETRIC_Q
 #define ASYMMETRIC_Q 0
 #endif
-/* clique cutoff */
-#ifndef CLIQUE_CUTTOF
-#define CLIQUE_CUTTOF 0
-#endif
-/* uniform ("proper") reduction method */
-#ifndef UNIFORM_REDUCTION
-#define UNIFORM_REDUCTION 1
-#endif
-
-#if 0
-static double quality(int x, int y, double c0, struct drand48_data *buffer)
-{
-	(void)buffer;
-	double q = -x + y / c0;
-#if ASYMMETRIC_Q
-	if (q > 0) q = 0;
-#endif
-	return -fabs(q);
-}
-#endif
 
 struct item_count {
 	int value;
@@ -218,107 +198,17 @@ static void generate_rules(const int *items, size_t lmax,
 	free(AB);
 }
 
-/**
- * Checks whether the current items vector is forbidden (already generated).
- */
-static inline int already_seen(const size_t *items, size_t lmax,
-		const size_t *seen, size_t seenlen)
+#if 0
+static double quality(int x, int y, double c0, struct drand48_data *buffer)
 {
-	size_t i, j, ix = 0;
-
-	while (ix < seenlen) {
-		for (i = 0, j = ix; i < lmax; i++, j++)
-			if (items[i] != seen[j]) {
-				ix += lmax;
-				break;
-			}
-
-		if (i == lmax)
-			return 1;
-	}
-
-	return 0;
+	(void)buffer;
+	double q = -x + y / c0;
+#if ASYMMETRIC_Q
+	if (q > 0) q = 0;
+#endif
+	return -fabs(q);
 }
-
-/**
- * Constructs the next items vector, the next set of rules to be analyzed.
- */
-static int update_items(const struct item_count *ic, double c0, size_t *items,
-		size_t lmax, size_t n, const size_t *seen, size_t seenlen,
-		size_t rf)
-{
-	size_t ix = lmax - 1, ok;
-#if CLIQUE_CUTTOF
-	double t = c0 * ic[items[0]].noisy_count;
-#else
-	(void)ic;
-	(void)c0;
 #endif
-
-	do {
-		do {
-			/* try next */
-			ok = 1;
-#if UNIFORM_REDUCTION
-			if (ix == lmax - 1) { /* here we can skip */
-#endif
-				items[ix] += rf;
-#if UNIFORM_REDUCTION
-				rf = items[ix] - n + 1;
-			} else
-				items[ix]++;
-#endif
-
-			/* if impossible or undesirable, move to one below */
-			if (items[ix] >= n
-#if CLIQUE_CUTTOF
-					|| ic[items[ix]].noisy_count < t
-#endif
-					) {
-				if (!ix) return 1; /* end of generation */
-				ix--;
-				ok = 0; /* this level was not finished */
-				break; /* restart process for ix - 1 */
-			}
-
-			/* check to not generate seen set */
-			if (ix == lmax - 1 &&
-				already_seen(items, lmax, seen, seenlen)) {
-#if UNIFORM_REDUCTION
-				rf = 1;
-#endif
-				ok = 0; /* get next set */
-			}
-		} while (!ok);
-
-		if (ok) {
-			ix++; /* move to next */
-			if (ix == lmax)
-				return 0; /* all generated */
-			items[ix] = items[ix - 1]; /* before first option */
-		}
-	} while (ix < lmax);
-
-	return 0; /* notreached */
-}
-
-/**
- * Initialize the items vector, the first set of rules to be analyzed.
- */
-static inline int init_items(const struct item_count *ic, double c0,
-		size_t *items, size_t lmax, size_t n,
-		const size_t *seen, size_t seenlen)
-{
-	size_t i;
-
-	for (i = 0; i < lmax; i++)
-		items[i] = i;
-
-	if (already_seen(items, lmax, seen, seenlen))
-		return update_items(ic, c0, items, lmax, n, seen, seenlen, 1);
-
-	return 0;
-}
 
 static inline double compute_quality(const struct fptree *fp,
 		int *items, size_t sz)
@@ -421,38 +311,6 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	free(spl);
 }
 
-/* TODO: needs redone */
-#if 0
-/**
- * Step 2 of mining, not private.
- */
-static void mine_rules_np(const struct fptree *fp, const struct item_count *ic,
-		struct histogram *h, size_t numits, size_t lmax, double c0,
-		double *minc, double *maxc)
-{
-	size_t *items = calloc(lmax, sizeof(items[0]));
-	int *AB = calloc(lmax, sizeof(AB[0]));
-	size_t clen, i, end;
-
-	printf("Mining all rules of top %lu items\n", numits);
-
-	for (clen = 2; clen <= lmax; clen++) {
-		end = init_items(ic, c0, items, clen, numits, NULL, 0);
-		while (!end) {
-			for (i = 0; i < clen; i++)
-				AB[i] = ic[items[i]].value;
-			generate_rules_from_itemset(AB, clen, fp,
-					minc, maxc, h);
-			end = update_items(ic, c0, items, clen, numits,
-					NULL, 0, 1);
-		}
-	}
-
-	free(AB);
-	free(items);
-}
-#endif
-
 #if PRINT_ITEM_TABLE
 static inline void print_item_table(const struct item_count *ic, size_t n)
 {
@@ -463,27 +321,6 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 		printf("%5lu[%5.2lf] %5d %7d %9.2lf\n", i, (i + 1.0)/n,
 				ic[i].value, ic[i].real_count,
 				ic[i].noisy_count);
-}
-#endif
-
-#if CLIQUE_CUTTOF
-static void count_cliques(const struct fptree *fp, const struct item_count *ic,
-		double c0, size_t lmax)
-{
-
-	size_t i, j;
-	double cliques = 0;
-	double t;
-
-	for (i = lmax-1; i < fp->n; i++) {
-		t = c0 * ic[i-lmax+1].noisy_count;
-		if (t == 0) break;
-		for (j = i; j < fp->n; j++)
-			if (ic[j].noisy_count < t)
-				break;
-		cliques += pow((j - i), lmax);
-	}
-	printf("Graph would have %lf cliques.\n", cliques);
 }
 #endif
 
@@ -499,6 +336,9 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	double minc, maxc, t1, t2;
 	size_t numits;
 
+	/* TODO: remove */
+	(void)rf;
+	(void)private;
 	init_rng(seed, &randbuffer);
 
 	if (private) {
@@ -515,9 +355,6 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 #if PRINT_ITEM_TABLE
 	print_item_table(ic, fp->n);
 #endif
-#if CLIQUE_CUTTOF
-	count_cliques(fp, ic, c0, lmax);
-#endif
 
 	minc = 1;
 	maxc = 0;
@@ -525,15 +362,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	if (numits > fp->n) numits = fp->n;
 	eps = eps - epsilon_step1;
 	gettimeofday(&starttime, NULL);
-	(void)rf; /* TODO: remove */
-	if (private)
-		mine_rules(fp, ic, eps, numits, lmax, h, &minc, &maxc,
-				&randbuffer);
-	/* TODO: needs redone */
-#if 0
-	else
-		mine_rules_np(fp, ic, h, numits, lmax, c0, &minc, &maxc);
-#endif
+	mine_rules(fp, ic, eps, numits, lmax, h, &minc, &maxc, &randbuffer);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
