@@ -32,6 +32,17 @@
 #ifndef EM_1ST_ITEM
 #define EM_1ST_ITEM 0
 #endif
+/* force last selection quality */
+#ifndef EM_FORCED_LAST
+#define EM_FORCED_LAST 0
+#endif
+
+enum quality_fun {
+	EM_QD = 0,
+	EM_QDELTA,
+	EM_QSIGMA
+};
+static const enum quality_fun QMETHOD = EM_QSIGMA;
 
 struct item_count {
 	int value;
@@ -262,6 +273,20 @@ static inline double quality_delta_sigma(int y, int z)
 	return y - z;
 }
 
+static inline double compute_d_quality(const struct fptree *fp,
+		struct reservoir_item *rit)
+{
+	/* TODO: d quality: one, ensemble */
+	return 0;
+}
+
+static inline double compute_delta_quality(const struct fptree *fp,
+		struct reservoir_item *rit)
+{
+	/* TODO: d quality: one, ensemble */
+	return 0;
+}
+
 static inline double compute_quality(const struct fptree *fp,
 		const struct item_count *ic, size_t ix_item,
 		struct reservoir_item *rit, size_t lmax)
@@ -275,13 +300,16 @@ static inline double compute_quality(const struct fptree *fp,
 #endif
 	}
 
-	/* select last item in set */
-	if (rit->sz == lmax) {
-		return 0;
-	}
+#if EM_FORCED_LAST
+	if (rit->sz == lmax)
+		return compute_d_quality(fp, rit);
+#endif
 
-	/* select other items */
-	return 0;
+	switch(QMETHOD) {
+	case EM_QD: return compute_d_quality(fp, rit);
+	case EM_QDELTA: return compute_delta_quality(fp, rit);
+	default: return fpt_itemset_count(fp, rit->items, rit->sz);
+	}
 }
 
 static inline int generated_above(const int *celms, size_t level)
