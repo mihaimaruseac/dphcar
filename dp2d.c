@@ -36,6 +36,10 @@
 #ifndef EM_FORCED_LAST
 #define EM_FORCED_LAST 0
 #endif
+/* use only last item added to itemset */
+#ifndef EM_LAST_ITEM
+#define EM_LAST_ITEM 1
+#endif
 
 enum quality_fun {
 	EM_QD = 0,
@@ -268,29 +272,35 @@ static inline double quality_d(int x, int y, double c0)
 	return -fabs(q);
 }
 
-static inline double quality_delta_sigma(int y, int z)
-{
-	return y - z;
-}
-
 static inline double compute_d_quality(const struct fptree *fp,
-		struct reservoir_item *rit)
+		double c0, int sup_ab, struct reservoir_item *rit)
 {
-	/* TODO: d quality: one, ensemble */
+#if EM_LAST_ITEM
+	return quality_d(fpt_item_count(fp, rit->items[rit->sz - 1]),
+			sup_ab, c0);
+#else
+	/* TODO: quality: one, ensemble */
 	return 0;
+#endif
 }
 
 static inline double compute_delta_quality(const struct fptree *fp,
-		struct reservoir_item *rit)
+		int sup_ab, struct reservoir_item *rit)
 {
-	/* TODO: d quality: one, ensemble */
+#if EM_LAST_ITEM
+	return sup_ab - fpt_itemset_count(fp, rit->items, rit->sz - 1);
+#else
+	/* TODO: quality: ensemble */
 	return 0;
+#endif
 }
 
-static inline double compute_quality(const struct fptree *fp,
+static inline double compute_quality(const struct fptree *fp, double c0,
 		const struct item_count *ic, size_t ix_item,
 		struct reservoir_item *rit, size_t lmax)
 {
+	int sup_ab;
+
 	/* select first item: use either real or noisy count */
 	if (rit->sz == 1) {
 #if EM_1ST_ITEM
@@ -300,15 +310,19 @@ static inline double compute_quality(const struct fptree *fp,
 #endif
 	}
 
+	sup_ab = fpt_itemset_count(fp, rit->items, rit->sz);
+
 #if EM_FORCED_LAST
 	if (rit->sz == lmax)
 		return compute_d_quality(fp, rit);
+#else
+	(void)lmax;
 #endif
 
 	switch(QMETHOD) {
-	case EM_QD: return compute_d_quality(fp, rit);
-	case EM_QDELTA: return compute_delta_quality(fp, rit);
-	default: return fpt_itemset_count(fp, rit->items, rit->sz);
+	case EM_QD: return compute_d_quality(fp, c0, sup_ab, rit);
+	case EM_QDELTA: return compute_delta_quality(fp, sup_ab, rit);
+	default: return sup_ab;
 	}
 }
 
@@ -324,7 +338,7 @@ static inline int generated_above(const int *celms, size_t level)
 
 static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		size_t numits, size_t lmax, const int *celms, size_t level,
-		double *epss, size_t *spls, struct histogram *h,
+		double c0, double *epss, size_t *spls, struct histogram *h,
 		double *minc, double *maxc, int *seen, size_t *seenlen,
 		struct drand48_data *randbuffer)
 {
@@ -355,7 +369,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 			continue;
 
 		rit->support = fpt_itemset_count(fp, rit->items, rit->sz);
-		rit->q = compute_quality(fp, ic, i, rit, lmax);
+		rit->q = compute_quality(fp, c0, ic, i, rit, lmax);
 		add_to_reservoir_log(r, rit, eps_round * rit->q/2, randbuffer);
 	}
 	free_reservoir_item(rit);
@@ -366,7 +380,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 			generate_rules(crit->items, lmax, fp, minc, maxc, h,
 					seen, seenlen);
 	else while ((crit = next_item(ri)))
-		mine_level(fp, ic, numits, lmax, crit->items, level + 1,
+		mine_level(fp, ic, numits, lmax, crit->items, level + 1, c0,
 				epss, spls, h, minc, maxc, seen, seenlen,
 				randbuffer);
 	free_reservoir_iterator(ri);
@@ -377,7 +391,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
  * Step 2 of mining, private.
  */
 static void mine_rules(const struct fptree *fp, const struct item_count *ic,
-		double eps, size_t numits, size_t lmax,
+		double eps, double c0, size_t numits, size_t lmax,
 		struct histogram *h, double *minc, double *maxc,
 		struct drand48_data *randbuffer)
 {
@@ -398,7 +412,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	printf("Total leaves %lu\n", f);
 	seen = calloc(f * (lmax + 1) * (1 << lmax), sizeof(seen[0]));
 
-	mine_level(fp, ic, numits, lmax, NULL, 0, epsilons, spl, h,
+	mine_level(fp, ic, numits, lmax, NULL, 0, c0, epsilons, spl, h,
 			minc, maxc, seen, &seenlen, randbuffer);
 	printf("%lu %lu\n", seenlen, f * (lmax + 1) * (1 << lmax));
 
@@ -448,7 +462,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	eps = eps - epsilon_step1;
 
 	gettimeofday(&starttime, NULL);
-	mine_rules(fp, ic, eps, numits, lmax, h, &minc, &maxc, &randbuffer);
+	mine_rules(fp, ic, eps, c0, numits, lmax, h, &minc, &maxc, &randbuffer);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
