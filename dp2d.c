@@ -235,13 +235,53 @@ static inline int generated_above(int *celms, size_t level)
 	return 0;
 }
 
+struct reservoir_item {
+	int *itemset;
+	size_t its_sz;
+	int support;
+	double q;
+};
+
+static void print_reservoir_item(const void *it)
+{
+	const struct reservoir_item *ri = it;
+	size_t i;
+
+	printf("[%d", ri->itemset[0]);
+	for (i = 1; i < ri->its_sz; i++)
+		printf(" %d", ri->itemset[i]);
+	printf("], s=%d q=%7.2lf", ri->support, ri->q);
+}
+
+static void *clone_reservoir_item(const void *it)
+{
+	struct reservoir_item *ret = calloc(1, sizeof(*ret));
+	const struct reservoir_item *ri = it;
+	size_t i;
+
+	ret->itemset = calloc(ri->its_sz, sizeof(ret->itemset[0]));
+	for (i = 0; i < ri->its_sz; i++)
+		ret->itemset[i] = ri->itemset[i];
+	ret->its_sz = ri->its_sz;
+	ret->support = ri->support;
+	ret->q = ri->q;
+
+	return ret;
+}
+
+static void free_reservoir_item(void *it)
+{
+	struct reservoir_item *ri = it;
+	free(ri->itemset);
+	free(ri);
+}
+
 static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		size_t numits, size_t lmax, const int *celms, size_t level,
 		double *epss, size_t *spls, struct histogram *h,
 		double *minc, double *maxc, int *seen, size_t *seenlen,
 		struct drand48_data *randbuffer)
 {
-#if 0
 	int *res_it = calloc(level + 1, sizeof(res_it[0]));
 	struct reservoir_iterator *ri;
 	struct reservoir *r;
@@ -249,7 +289,9 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	const int *ncelms;
 	size_t i;
 
-	r = init_reservoir(spls[level], print_int_array, shallow_clone, free);
+	r = init_reservoir(spls[level], print_reservoir_item,
+			clone_reservoir_item, free_reservoir_item);
+#if 0
 	eps_round = epss[level] / spls[level];
 
 	/* copy initial elements */
@@ -280,9 +322,9 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		mine_level(fp, ic, numits, lmax, ncelms, level +1, epss, spls,
 				h, minc, maxc, seen, seenlen, randbuffer);
 	free_reservoir_iterator(ri);
+#endif
 	free_reservoir(r);
 	free(res_it);
-#endif
 }
 
 /**
