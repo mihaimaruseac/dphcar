@@ -7,7 +7,11 @@
 
 /* print actions to the reservoir */
 #ifndef PRINT_RS_TRACE
-#define PRINT_RS_TRACE 1
+#define PRINT_RS_TRACE 0
+#endif
+/* detailed trace: print all items, including those ignored, very verbose!! */
+#ifndef DETAILED_RS_TRACE
+#define DETAILED_RS_TRACE 1
 #endif
 
 struct reservoir;

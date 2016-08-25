@@ -79,7 +79,7 @@ static int reservoir_cmp(const void *a, const void *b)
 	return double_cmp(&ra->v, &rb->v);
 }
 
-#if PRINT_RS_TRACE
+#if PRINT_RS_TRACE || DETAILED_RS_TRACE
 static void print_reservoir(struct reservoir *r, size_t nmemb)
 {
 	size_t i;
@@ -97,6 +97,12 @@ static void print_reservoir(struct reservoir *r, size_t nmemb)
 static void store_item(struct reservoir *r, const void *it, size_t nmemb,
 		size_t sz, double w, double u, double v)
 {
+#if DETAILED_RS_TRACE
+	printf("Current item |");
+	r->print_fun(it, nmemb);
+	printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n", w, u, v);
+#endif
+
 	/* not a full reservoir yet */
 	if (r->actual < r->sz) {
 		store_item_at(r, r->actual, it, nmemb, sz, w, u, v);
@@ -114,7 +120,7 @@ static void store_item(struct reservoir *r, const void *it, size_t nmemb,
 end:
 	if (r->actual == r->sz) {
 		qsort(r->its, r->sz, sizeof(r->its[0]), reservoir_cmp);
-#if PRINT_RS_TRACE
+#if PRINT_RS_TRACE || DETAILED_RS_TRACE
 		print_reservoir(r, nmemb);
 #endif
 	}
