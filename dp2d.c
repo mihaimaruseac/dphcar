@@ -225,16 +225,6 @@ static inline double compute_quality(const struct fptree *fp,
 	return 0;
 }
 
-static inline int generated_above(int *celms, size_t level)
-{
-	size_t i;
-
-	for (i = 0; i < level; i++)
-		if (celms[i] == celms[level])
-			return 1;
-	return 0;
-}
-
 struct reservoir_item {
 	int *items;
 	size_t sz;
@@ -306,8 +296,6 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	/* init common part of rit */
 	rit->sz = level + 1;
 	rit->items = calloc(rit->sz, sizeof(rit[0]));
-
-	/* copy initial elements */
 	for (i = 0; i < level; i++)
 		rit->items[i] = celms[i];
 
@@ -322,24 +310,19 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 
 		rit->support = fpt_itemset_count(fp, rit->items, rit->sz);
 		rit->q = compute_quality(fp, ic, i, rit, lmax);
-#if 0
-		add_to_reservoir_log(r, rit, NULL, level + 1,
-				sizeof(rit[0]), eps_round * rit->q / 2,
-				randbuffer);
-#endif
+		add_to_reservoir_log(r, rit, eps_round * rit->q/2, randbuffer);
 	}
 	free_reservoir_item(rit);
 
 	ri = init_reservoir_iterator(r);
-#if 0
 	if (level == lmax - 1)
-		while ((ncelms = next_item(ri, NULL, NULL)))
-			generate_rules(ncelms, lmax, fp, minc, maxc, h,
+		while ((rit = next_item(ri)))
+			generate_rules(rit->items, lmax, fp, minc, maxc, h,
 					seen, seenlen);
-	else while ((ncelms = next_item(ri, NULL, NULL)))
-		mine_level(fp, ic, numits, lmax, ncelms, level +1, epss, spls,
-				h, minc, maxc, seen, seenlen, randbuffer);
-#endif
+	else while ((rit = next_item(ri)))
+		mine_level(fp, ic, numits, lmax, rit->items, level + 1,
+				epss, spls, h, minc, maxc, seen, seenlen,
+				randbuffer);
 	free_reservoir_iterator(ri);
 	free_reservoir(r);
 }
