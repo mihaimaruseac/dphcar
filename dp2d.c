@@ -241,6 +241,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		double *minc, double *maxc, int *seen, size_t *seenlen,
 		struct drand48_data *randbuffer)
 {
+#if 0
 	int *res_it = calloc(level + 1, sizeof(res_it[0]));
 	struct reservoir_iterator *ri;
 	struct reservoir *r;
@@ -281,6 +282,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	free_reservoir_iterator(ri);
 	free_reservoir(r);
 	free(res_it);
+#endif
 }
 
 /**
