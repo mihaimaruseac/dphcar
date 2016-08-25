@@ -265,7 +265,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 			continue;
 
 		q = compute_quality(fp, res_it, level + 1);
-		add_to_reservoir_log(r, res_it, level + 1,
+		add_to_reservoir_log(r, res_it, NULL, level + 1,
 				sizeof(res_it[0]), eps_round * q / 2,
 				randbuffer);
 	}
