@@ -8,11 +8,6 @@
 
 struct reservoir_item {
 	const void *item_ptr;
-#if 0
-	const void *data;
-	size_t nmemb; /* number of members of item */
-	size_t sz; /* size of one member of item */
-#endif
 	double w;
 	double u;
 	double v;
@@ -23,8 +18,8 @@ struct reservoir {
 	size_t actual;
 	size_t sz;
 	/* utility functions */
-	void (*print_fun)(const void *it/*, size_t nmemb, const void *data*/);
-	void *(*clone_fun)(const void *it/*, size_t nmemb, size_t sz*/);
+	void (*print_fun)(const void *it);
+	void *(*clone_fun)(const void *it);
 	void (*free_fun)(void *it);
 };
 
@@ -34,8 +29,8 @@ struct reservoir_iterator {
 };
 
 struct reservoir *init_reservoir(size_t sz,
-		void (*print_fun)(const void *it/*, size_t nmemb, const void *data*/),
-		void *(*clone_fun)(const void *it/*, size_t nmemb, size_t sz*/),
+		void (*print_fun)(const void *it),
+		void *(*clone_fun)(const void *it),
 		void (*free_fun)(void *it))
 {
 	struct reservoir *ret = calloc(1, sizeof(*ret));
@@ -65,15 +60,10 @@ static inline double generate_random_uniform(struct drand48_data *randbuffer)
 	return u;
 }
 
-static void store_item_at(struct reservoir *r, size_t ix,
-		const void *it,/* const void *data, size_t nmemb, size_t sz,*/
+static void store_item_at(struct reservoir *r, size_t ix, const void *it,
 		double w, double u, double v)
 {
 	r->its[ix].item_ptr = r->clone_fun(it/*, nmemb, sz*/);
-	/*
-	r->its[ix].nmemb = nmemb;
-	r->its[ix].data = data;
-	*/
 	r->its[ix].w = w;
 	r->its[ix].u = u;
 	r->its[ix].v = v;
@@ -93,26 +83,25 @@ static void print_reservoir(struct reservoir *r)
 	printf("Reservoir now:\n");
 	for (i = 0; i < r->actual; i++) {
 		printf("\t|");
-		r->print_fun(r->its[i].item_ptr/*, r->its[i].nmemb,
-				r->its[i].data*/);
+		r->print_fun(r->its[i].item_ptr);
 		printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n",
 				r->its[i].w, r->its[i].u, r->its[i].v);
 	}
 }
 #endif
 
-static void store_item(struct reservoir *r, const void *it,/* const void *data,
-		size_t nmemb, size_t sz,*/ double w, double u, double v)
+static void store_item(struct reservoir *r, const void *it,
+		double w, double u, double v)
 {
 #if DETAILED_RS_TRACE
 	printf("Current item |");
-	r->print_fun(it/*, nmemb, data*/);
+	r->print_fun(it);
 	printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n", w, u, v);
 #endif
 
 	/* not a full reservoir yet */
 	if (r->actual < r->sz) {
-		store_item_at(r, r->actual, it,/* data, nmemb, sz,*/ w, u, v);
+		store_item_at(r, r->actual, it, w, u, v);
 		r->actual++;
 		goto end;
 	}
@@ -122,7 +111,7 @@ static void store_item(struct reservoir *r, const void *it,/* const void *data,
 		return;
 
 	r->free_fun((void*)r->its[r->sz-1].item_ptr);
-	store_item_at(r, r->sz - 1, it,/* data, nmemb, sz,*/ w, u, v);
+	store_item_at(r, r->sz - 1, it, w, u, v);
 
 end:
 	if (r->actual == r->sz) {
@@ -133,22 +122,20 @@ end:
 	}
 }
 
-void add_to_reservoir(struct reservoir *r, const void *it,/* const void *data,
-		size_t nmemb, size_t sz,*/
+void add_to_reservoir(struct reservoir *r, const void *it,
 		double w, struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = -log(u)/w;
-	store_item(r, it,/* data, nmemb, sz,*/ w, u, v);
+	store_item(r, it, w, u, v);
 }
 
-void add_to_reservoir_log(struct reservoir *r, const void *it,/* const void *data,
-		size_t nmemb, size_t sz,*/
+void add_to_reservoir_log(struct reservoir *r, const void *it,
 		double logw, struct drand48_data *randbuffer)
 {
 	double u = generate_random_uniform(randbuffer);
 	double v = log(log(1/u)) - logw;
-	store_item(r, it,/* data, nmemb, sz,*/ logw, u, v);
+	store_item(r, it, logw, u, v);
 }
 
 struct reservoir_iterator *init_reservoir_iterator(struct reservoir *r)
@@ -165,74 +152,12 @@ void free_reservoir_iterator(struct reservoir_iterator *ri)
 	free(ri);
 }
 
-const void *next_item(struct reservoir_iterator *ri/*, size_t *nmemb, size_t *sz*/)
+const void *next_item(struct reservoir_iterator *ri)
 {
 	const void *iptr;
 
 	if (ri->current_pos == ri->reservoir->actual)
 		return NULL;
 
-	iptr = ri->reservoir->its[ri->current_pos].item_ptr;
-	/*
-	if (nmemb) *nmemb = ri->reservoir->its[ri->current_pos].nmemb;
-	if (sz) *sz = ri->reservoir->its[ri->current_pos].sz;
-	*/
-	ri->current_pos++;
-	return iptr;
+	return ri->reservoir->its[ri->current_pos++].item_ptr;
 }
-
-/*
-void *shallow_clone(const void *it, size_t nmemb, size_t sz)
-{
-	void *ret = calloc(nmemb * sz, sizeof(*it));
-	memcpy(ret, it, nmemb * sz);
-	return ret;
-}
-
-void no_print(const void *it, size_t nmemb, const void *data)
-{
-	(void)it;
-	(void)nmemb;
-	(void)data;
-}
-
-void print_int_array(const void *it, size_t nmemb, const void *data)
-{
-	const int *arr = it;
-	size_t i;
-
-	(void)data;
-	if (!nmemb) return;
-	printf("[%d", arr[0]);
-	for (i = 1; i < nmemb; i++)
-		printf(" %d", arr[i]);
-	printf("]");
-}
-
-void print_int(const void *it, size_t unused, const void *data)
-{
-	(void)unused;
-	(void)data;
-	printf("%d", *(int*)it);
-}
-
-void print_size_t_array(const void *it, size_t nmemb, const void *data)
-{
-	const size_t *arr = it;
-	size_t i;
-
-	(void)data;
-	if (!nmemb) return;
-	printf("[%lu", arr[0]);
-	for (i = 1; i < nmemb; i++)
-		printf(" %lu", arr[i]);
-	printf("]");
-}
-
-void print_size_t(const void *it, size_t unused, const void *data)
-{
-	(void)unused;
-	(void)data;
-	printf("%lu", *(size_t*)it);
-}
-*/
