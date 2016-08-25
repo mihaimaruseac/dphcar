@@ -153,8 +153,6 @@ void free_reservoir_iterator(struct reservoir_iterator *ri)
 
 const void *next_item(struct reservoir_iterator *ri)
 {
-	const void *iptr;
-
 	if (ri->current_pos == ri->reservoir->actual)
 		return NULL;
 
