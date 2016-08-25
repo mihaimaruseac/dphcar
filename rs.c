@@ -95,7 +95,7 @@ static void store_item(struct reservoir *r, const void *it,
 #if DETAILED_RS_TRACE
 	printf("Current item: ");
 	r->print_fun(it);
-	printf(", w=%5.2lf u=%5.2lf v=%5.2lf\n", w, u, v);
+	printf(", w=%5.2lf, u=%5.2lf, v=%5.2lf\n", w, u, v);
 #endif
 
 	/* not a full reservoir yet */

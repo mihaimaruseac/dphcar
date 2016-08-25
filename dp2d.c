@@ -237,10 +237,10 @@ static void print_reservoir_item(const void *it)
 	const struct reservoir_item *ri = it;
 	size_t i;
 
-	printf("[%d", ri->items[0]);
+	printf("[%3d", ri->items[0]);
 	for (i = 1; i < ri->sz; i++)
-		printf(" %d", ri->items[i]);
-	printf("], s=%d q=%7.2lf", ri->support, ri->q);
+		printf(", %3d", ri->items[i]);
+	printf("], s=%5d, q=%7.2lf", ri->support, ri->q);
 }
 
 static void *clone_reservoir_item(const void *it)
