@@ -46,6 +46,7 @@ static size_t build_items_table(const struct fptree *fp, struct item_count *ic,
 {
 	size_t i;
 
+	printf("Compute noisy counts for items with eps = %lf\n", eps);
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
 		ic[i].real_count = fpt_item_count(fp, i);
@@ -59,6 +60,10 @@ static size_t build_items_table(const struct fptree *fp, struct item_count *ic,
 	}
 
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
+
+#if PRINT_ITEM_TABLE
+	print_item_table(ic, fp->n);
+#endif
 
 	printf("Noise scale: %5.2f\n", SCALE_FACTOR/eps);
 	for (i = 0; i < fp->n; i++)
@@ -342,26 +347,17 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	(void)private;
 	init_rng(seed, &randbuffer);
 
-	if (private) {
-		printf("Running private method with eps=%lf, eps_step1=%lf, "
-				"k=%lu, c0=%5.2lf, rmax=%lu\n", eps,
-				epsilon_step1, k, c0, lmax);
-		printf("Compute noisy counts for items with "
-				"eps_1 = %lf\n", epsilon_step1);
-	} else
-		printf("Running non-private method with k=%lu, c0=%5.2lf, "
-				"rmax=%lu\n", k, c0, lmax);
+	printf("eps=%lf, eps_step1=%lf, k=%lu, c0=%5.2lf, rmax=%lu\n",
+			eps, epsilon_step1, k, c0, lmax);
 
-	numits = build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
-#if PRINT_ITEM_TABLE
-	print_item_table(ic, fp->n);
-#endif
+	build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
 
 	minc = 1;
 	maxc = 0;
 	numits = ni;
 	if (numits > fp->n) numits = fp->n;
 	eps = eps - epsilon_step1;
+
 	gettimeofday(&starttime, NULL);
 	mine_rules(fp, ic, eps, numits, lmax, h, &minc, &maxc, &randbuffer);
 	gettimeofday(&endtime, NULL);
