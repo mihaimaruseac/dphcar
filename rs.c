@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "globals.h"
 #include "rs.h"
@@ -82,9 +81,9 @@ static void print_reservoir(struct reservoir *r)
 
 	printf("Reservoir now:\n");
 	for (i = 0; i < r->actual; i++) {
-		printf("\t|");
+		printf("\t");
 		r->print_fun(r->its[i].item_ptr);
-		printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n",
+		printf(", w=%5.2lf u=%5.2lf v=%5.2lf\n",
 				r->its[i].w, r->its[i].u, r->its[i].v);
 	}
 }
@@ -94,9 +93,9 @@ static void store_item(struct reservoir *r, const void *it,
 		double w, double u, double v)
 {
 #if DETAILED_RS_TRACE
-	printf("Current item |");
+	printf("Current item: ");
 	r->print_fun(it);
-	printf("| w=%5.2lf u=%5.2lf v=%5.2lf\n", w, u, v);
+	printf(", w=%5.2lf u=%5.2lf v=%5.2lf\n", w, u, v);
 #endif
 
 	/* not a full reservoir yet */
