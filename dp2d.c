@@ -295,7 +295,6 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 
 	/* TODO: generate all subtrees after a level? */
 	for (i = 0; i < lmax; i++) {
-		/* TODO: check eps balance */
 		epsilons[i] = eps/lmax; /* TODO: other ways to distribute eps */
 		epsilons[i] /= f; /* branching factor */
 		spl[i] = 2; /* TODO: more samples per level */
