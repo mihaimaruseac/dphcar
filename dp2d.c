@@ -314,7 +314,7 @@ static inline double compute_quality(const struct fptree *fp, double c0,
 
 #if EM_FORCED_LAST
 	if (rit->sz == lmax)
-		return compute_d_quality(fp, rit);
+		return compute_d_quality(fp, c0, sup_ab, rit);
 #else
 	(void)lmax;
 #endif
