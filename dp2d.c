@@ -354,8 +354,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 
 	minc = 1;
 	maxc = 0;
-	numits = ni;
-	if (numits > fp->n) numits = fp->n;
+	numits = min(ni, fp->n);
 	eps = eps - epsilon_step1;
 
 	gettimeofday(&starttime, NULL);

@@ -12,6 +12,19 @@
 		exit(EXIT_FAILURE); \
 	} while (0)
 
+#define max(a, b) \
+	({\
+		__typeof__ (a) _a = (a); \
+		__typeof__ (b) _b = (b); \
+		_a > _b ? _a : _b; \
+	})
+#define min(a, b) \
+	({\
+		__typeof__ (a) _a = (a); \
+		__typeof__ (b) _b = (b); \
+		_a < _b ? _a : _b; \
+	})
+
 struct drand48_data;
 
 /* qsort functions for integer comparisons */
