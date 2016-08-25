@@ -28,6 +28,10 @@
 #ifndef ASYMMETRIC_Q
 #define ASYMMETRIC_Q 0
 #endif
+/* use EM to select first item too, instead of noisy count */
+#ifndef EM_1ST_ITEM
+#define EM_1ST_ITEM 0
+#endif
 
 struct item_count {
 	int value;
@@ -203,28 +207,6 @@ static void generate_rules(const int *items, size_t lmax,
 	free(AB);
 }
 
-#if 0
-static double quality(int x, int y, double c0, struct drand48_data *buffer)
-{
-	(void)buffer;
-	double q = -x + y / c0;
-#if ASYMMETRIC_Q
-	if (q > 0) q = 0;
-#endif
-	return -fabs(q);
-}
-#endif
-
-static inline double compute_quality(const struct fptree *fp,
-		int *items, size_t sz)
-{
-	(void)fp;
-	(void)items;
-	(void)sz;
-	/* TODO: quality functions */
-	return 0;
-}
-
 struct reservoir_item {
 	int *items;
 	size_t sz;
@@ -264,6 +246,42 @@ static void free_reservoir_item(void *it)
 	struct reservoir_item *ri = it;
 	free(ri->items);
 	free(ri);
+}
+
+static inline double quality_d(int x, int y, double c0)
+{
+	double q = -x + y / c0;
+#if ASYMMETRIC_Q
+	if (q > 0) q = 0;
+#endif
+	return -fabs(q);
+}
+
+static inline double quality_delta_sigma(int y, int z)
+{
+	return y - z;
+}
+
+static inline double compute_quality(const struct fptree *fp,
+		const struct item_count *ic, size_t ix_item,
+		struct reservoir_item *rit, size_t lmax)
+{
+	/* select first item: use either real or noisy count */
+	if (rit->sz == 1) {
+#if EM_1ST_ITEM
+		return ic[ix_item].real_count;
+#else
+		return ic[ix_item].noisy_count;
+#endif
+	}
+
+	/* select last item in set */
+	if (rit->sz == lmax) {
+		return 0;
+	}
+
+	/* select other items */
+	return 0;
 }
 
 static inline int generated_above(const int *celms, size_t level)
