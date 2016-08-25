@@ -301,6 +301,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		spl[i] = 2; /* TODO: more samples per level */
 		f *= spl[i];
 	}
+	printf("Total leaves %lu\n", f);
 	seen = calloc(f * (lmax + 1) * (1 << lmax), sizeof(seen[0]));
 
 	mine_level(fp, ic, numits, lmax, NULL, 0, epsilons, spl, h,
