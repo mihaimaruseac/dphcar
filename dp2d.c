@@ -236,8 +236,8 @@ static inline int generated_above(int *celms, size_t level)
 }
 
 struct reservoir_item {
-	int *itemset;
-	size_t its_sz;
+	int *items;
+	size_t sz;
 	int support;
 	double q;
 };
@@ -247,9 +247,9 @@ static void print_reservoir_item(const void *it)
 	const struct reservoir_item *ri = it;
 	size_t i;
 
-	printf("[%d", ri->itemset[0]);
-	for (i = 1; i < ri->its_sz; i++)
-		printf(" %d", ri->itemset[i]);
+	printf("[%d", ri->items[0]);
+	for (i = 1; i < ri->sz; i++)
+		printf(" %d", ri->items[i]);
 	printf("], s=%d q=%7.2lf", ri->support, ri->q);
 }
 
@@ -259,10 +259,10 @@ static void *clone_reservoir_item(const void *it)
 	const struct reservoir_item *ri = it;
 	size_t i;
 
-	ret->itemset = calloc(ri->its_sz, sizeof(ret->itemset[0]));
-	for (i = 0; i < ri->its_sz; i++)
-		ret->itemset[i] = ri->itemset[i];
-	ret->its_sz = ri->its_sz;
+	ret->items = calloc(ri->sz, sizeof(ret->items[0]));
+	for (i = 0; i < ri->sz; i++)
+		ret->items[i] = ri->items[i];
+	ret->sz = ri->sz;
 	ret->support = ri->support;
 	ret->q = ri->q;
 
@@ -272,8 +272,18 @@ static void *clone_reservoir_item(const void *it)
 static void free_reservoir_item(void *it)
 {
 	struct reservoir_item *ri = it;
-	free(ri->itemset);
+	free(ri->items);
 	free(ri);
+}
+
+static inline int generated_above(const int *celms, size_t level)
+{
+	size_t i;
+
+	for (i = 0; i < level; i++)
+		if (celms[i] == celms[level])
+			return 1;
+	return 0;
 }
 
 static void mine_level(const struct fptree *fp, const struct item_count *ic,
@@ -282,7 +292,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		double *minc, double *maxc, int *seen, size_t *seenlen,
 		struct drand48_data *randbuffer)
 {
-	int *res_it = calloc(level + 1, sizeof(res_it[0]));
+	struct reservoir_item *rit = calloc(1, sizeof(*rit));
 	struct reservoir_iterator *ri;
 	struct reservoir *r;
 	double q, eps_round;
@@ -291,29 +301,37 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 
 	r = init_reservoir(spls[level], print_reservoir_item,
 			clone_reservoir_item, free_reservoir_item);
-#if 0
 	eps_round = epss[level] / spls[level];
+
+	/* init common part of rit */
+	rit->sz = level + 1;
+	rit->items = calloc(rit->sz, sizeof(rit[0]));
 
 	/* copy initial elements */
 	for (i = 0; i < level; i++)
-		res_it[i] = celms[i];
+		rit->items[i] = celms[i];
 
 	/* generate last element */
 	for (i = 0; i < numits; i++) {
-		res_it[level] = ic[i].value;
-		if (generated_above(res_it, level))
+		rit->items[level] = ic[i].value;
+		if (generated_above(rit->items, level))
 			continue;
-		if (level == lmax - 1 &&
-				its_already_seen(res_it, lmax, seen, *seenlen))
+		if (level == lmax - 1 && its_already_seen(rit->items,
+					lmax, seen, *seenlen))
 			continue;
 
-		q = compute_quality(fp, res_it, level + 1);
-		add_to_reservoir_log(r, res_it, NULL, level + 1,
-				sizeof(res_it[0]), eps_round * q / 2,
+		rit->support = fpt_itemset_count(fp, rit->items, rit->sz);
+		rit->q = compute_quality(fp, ic, i, rit, lmax);
+#if 0
+		add_to_reservoir_log(r, rit, NULL, level + 1,
+				sizeof(rit[0]), eps_round * rit->q / 2,
 				randbuffer);
+#endif
 	}
+	free_reservoir_item(rit);
 
 	ri = init_reservoir_iterator(r);
+#if 0
 	if (level == lmax - 1)
 		while ((ncelms = next_item(ri, NULL, NULL)))
 			generate_rules(ncelms, lmax, fp, minc, maxc, h,
@@ -321,10 +339,9 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	else while ((ncelms = next_item(ri, NULL, NULL)))
 		mine_level(fp, ic, numits, lmax, ncelms, level +1, epss, spls,
 				h, minc, maxc, seen, seenlen, randbuffer);
-	free_reservoir_iterator(ri);
 #endif
+	free_reservoir_iterator(ri);
 	free_reservoir(r);
-	free(res_it);
 }
 
 /**
