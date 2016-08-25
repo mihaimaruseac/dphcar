@@ -283,10 +283,10 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		struct drand48_data *randbuffer)
 {
 	struct reservoir_item *rit = calloc(1, sizeof(*rit));
+	const struct reservoir_item *crit;
 	struct reservoir_iterator *ri;
 	struct reservoir *r;
-	double q, eps_round;
-	const int *ncelms;
+	double eps_round;
 	size_t i;
 
 	r = init_reservoir(spls[level], print_reservoir_item,
@@ -316,11 +316,11 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 
 	ri = init_reservoir_iterator(r);
 	if (level == lmax - 1)
-		while ((rit = next_item(ri)))
-			generate_rules(rit->items, lmax, fp, minc, maxc, h,
+		while ((crit = next_item(ri)))
+			generate_rules(crit->items, lmax, fp, minc, maxc, h,
 					seen, seenlen);
-	else while ((rit = next_item(ri)))
-		mine_level(fp, ic, numits, lmax, rit->items, level + 1,
+	else while ((crit = next_item(ri)))
+		mine_level(fp, ic, numits, lmax, crit->items, level + 1,
 				epss, spls, h, minc, maxc, seen, seenlen,
 				randbuffer);
 	free_reservoir_iterator(ri);
