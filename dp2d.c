@@ -296,12 +296,26 @@ static inline double compute_d_quality(const struct fptree *fp,
 static inline double compute_delta_quality(const struct fptree *fp,
 		int sup_ab, struct reservoir_item *rit)
 {
-#if EM_LAST_ITEM
-	return sup_ab - fpt_itemset_count(fp, rit->items, rit->sz - 1);
-#else
-	/* TODO: quality: ensemble */
-	return 0;
+	double bq = sup_ab - fpt_itemset_count(fp, rit->items, rit->sz - 1);
+
+#if !EM_LAST_ITEM
+	size_t i, j, ep = rit->sz - 1;
+	int t;
+
+	for (i = 0; i < rit->sz; i++) {
+		t = rit->items[ep];
+		rit->items[ep] = rit->items[i];
+		rit->items[i] = t;
+		for (j = 1; j < ep; j++)
+			bq = EM_REDFUN(bq, sup_ab - fpt_itemset_count(fp,
+						rit->items, j));
+		t = rit->items[ep];
+		rit->items[ep] = rit->items[i];
+		rit->items[i] = t;
+	}
 #endif
+
+	return bq;
 }
 
 static inline double compute_quality(const struct fptree *fp, double c0,
