@@ -8,7 +8,6 @@
 struct fptree;
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
-		double c0, size_t lmax, size_t k, long int seed, int private,
-		size_t ni, size_t rf);
+		double c0, size_t lmax, size_t ni, long int seed);
 
 #endif

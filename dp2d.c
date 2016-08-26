@@ -65,7 +65,7 @@ static int ic_noisy_cmp(const void *a, const void *b)
 }
 
 static size_t build_items_table(const struct fptree *fp, struct item_count *ic,
-		double eps, struct drand48_data *buffer, int private)
+		double eps, struct drand48_data *buffer)
 {
 	size_t i;
 
@@ -73,13 +73,10 @@ static size_t build_items_table(const struct fptree *fp, struct item_count *ic,
 	for (i = 0; i < fp->n; i++) {
 		ic[i].value = i + 1;
 		ic[i].real_count = fpt_item_count(fp, i);
-		if (private) {
-			ic[i].noisy_count = laplace_mechanism(
-					ic[i].real_count, eps, 1, buffer);
-			if (ic[i].noisy_count < 0)
-				ic[i].noisy_count = 0;
-		} else
-			ic[i].noisy_count = ic[i].real_count;
+		ic[i].noisy_count = laplace_mechanism(ic[i].real_count, eps,
+				1, buffer);
+		if (ic[i].noisy_count < 0)
+			ic[i].noisy_count = 0;
 	}
 
 	qsort(ic, fp->n, sizeof(ic[0]), ic_noisy_cmp);
@@ -455,8 +452,7 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 #endif
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
-		double c0, size_t lmax, size_t k, long int seed, int private,
-		size_t ni, size_t rf)
+		double c0, size_t lmax, size_t ni, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
@@ -466,16 +462,11 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	double minc, maxc, t1, t2;
 	size_t numits;
 
-	/* TODO: remove */
-	(void)rf;
-	(void)private;
+	printf("eps=%lf, eps_step1=%lf, c0=%5.2lf, rmax=%lu\n",
+			eps, epsilon_step1, c0, lmax);
+
 	init_rng(seed, &randbuffer);
-
-	printf("eps=%lf, eps_step1=%lf, k=%lu, c0=%5.2lf, rmax=%lu\n",
-			eps, epsilon_step1, k, c0, lmax);
-
-	build_items_table(fp, ic, epsilon_step1, &randbuffer, private);
-
+	build_items_table(fp, ic, epsilon_step1, &randbuffer);
 	minc = 1;
 	maxc = 0;
 	numits = min(ni, fp->n);
