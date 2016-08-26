@@ -40,6 +40,10 @@
 #ifndef EM_LAST_ITEM
 #define EM_LAST_ITEM 1
 #endif
+/* Ensemble reduce function (min/max), valid only if EM_LAST_ITEM is 0 */
+#ifndef EM_REDFUN
+#define EM_REDFUN max
+#endif
 
 enum quality_fun {
 	EM_QD = 0,
@@ -275,13 +279,18 @@ static inline double quality_d(int x, int y, double c0)
 static inline double compute_d_quality(const struct fptree *fp,
 		double c0, int sup_ab, struct reservoir_item *rit)
 {
-#if EM_LAST_ITEM
-	return quality_d(fpt_item_count(fp, rit->items[rit->sz - 1]),
+	double bq = quality_d(fpt_item_count(fp, rit->items[rit->sz - 1]),
 			sup_ab, c0);
-#else
-	/* TODO: quality: one, ensemble */
-	return 0;
+#if !EM_LAST_ITEM
+	size_t i, ep = rit->sz - 1;
+
+	for (i = 0; i < ep; i++)
+		bq = EM_REDFUN(bq,
+			quality_d(fpt_item_count(fp, rit->items[i]),
+				sup_ab, c0));
 #endif
+
+	return bq;
 }
 
 static inline double compute_delta_quality(const struct fptree *fp,
