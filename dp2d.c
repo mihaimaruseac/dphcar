@@ -322,24 +322,20 @@ static inline double compute_quality(const struct fptree *fp, double c0,
 		const struct item_count *ic, size_t ix_item,
 		struct reservoir_item *rit, size_t lmax)
 {
-	int sup_ab;
+	int sup_ab = fpt_itemset_count(fp, rit->items, rit->sz);
+	(void)lmax; /* used only if EM_FORCED_LAST */
 
 	/* select first item: use either real or noisy count */
-	if (rit->sz == 1) {
+	if (rit->sz == 1)
 #if EM_1ST_ITEM
 		return ic[ix_item].real_count;
 #else
 		return ic[ix_item].noisy_count;
 #endif
-	}
-
-	sup_ab = fpt_itemset_count(fp, rit->items, rit->sz);
 
 #if EM_FORCED_LAST
 	if (rit->sz == lmax)
 		return compute_d_quality(fp, c0, sup_ab, rit);
-#else
-	(void)lmax;
 #endif
 
 	switch(QMETHOD) {
@@ -398,6 +394,7 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	free_reservoir_item(rit);
 
 	ri = init_reservoir_iterator(r);
+	/* TODO: generate all subtrees after a level? */
 	if (level == lmax - 1)
 		while ((crit = next_item(ri)))
 			generate_rules(crit->items, lmax, fp, minc, maxc, h,
@@ -425,11 +422,12 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 
 	printf("Mining with eps %lf, numitems=%lu\n", eps, numits);
 
-	/* TODO: generate all subtrees after a level? */
 	for (i = 0; i < lmax; i++) {
-		epsilons[i] = eps/lmax; /* TODO: other ways to distribute eps */
+		/* TODO: better formulas here */
+		epsilons[i] = eps/lmax;
+		spl[i] = 2;
+
 		epsilons[i] /= f; /* branching factor */
-		spl[i] = 2; /* TODO: more samples per level */
 		f *= spl[i];
 	}
 	printf("Total leaves %lu\n", f);
@@ -437,7 +435,6 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 
 	mine_level(fp, ic, numits, lmax, NULL, 0, c0, epsilons, spl, h,
 			minc, maxc, seen, &seenlen, randbuffer);
-	printf("%lu %lu\n", seenlen, f * (lmax + 1) * (1 << lmax));
 
 	free(epsilons);
 	free(seen);
