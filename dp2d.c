@@ -415,18 +415,25 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	double *epsilons = calloc(lmax, sizeof(epsilons[0]));
 	size_t *spl = calloc(lmax, sizeof(spl[0]));
 	size_t i, seenlen = 0, f = 1;
+	double cf = 0;
 	int *seen;
 
 	printf("Mining with eps %lf, numitems=%lu\n", eps, numits);
 
+#if !EM_1ST_ITEM
+	cf = 1;
+#endif
 	for (i = 0; i < lmax; i++) {
 		/* TODO: better formulas here */
-		epsilons[i] = eps/lmax;
-		spl[i] = 2;
+		epsilons[i] = eps/(lmax - cf);
+		spl[i] = 10;
 
 		epsilons[i] /= f; /* branching factor */
 		f *= spl[i];
 	}
+#if !EM_1ST_ITEM
+	epsilons[0] = spl[0] * 2; /* use noisy count */
+#endif
 	printf("Total leaves %lu\n", f);
 	seen = calloc(f * (lmax + 1) * (1 << lmax), sizeof(seen[0]));
 
