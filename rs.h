@@ -11,7 +11,7 @@
 #endif
 /* detailed trace: print all items, including those ignored, very verbose!! */
 #ifndef DETAILED_RS_TRACE
-#define DETAILED_RS_TRACE 1
+#define DETAILED_RS_TRACE 0
 #endif
 
 struct reservoir;

@@ -22,7 +22,7 @@
 #endif
 /* print the returned rules */
 #ifndef PRINT_FINAL_RULES
-#define PRINT_FINAL_RULES 1
+#define PRINT_FINAL_RULES 0
 #endif
 /* asymmetric quality function */
 #ifndef ASYMMETRIC_Q
