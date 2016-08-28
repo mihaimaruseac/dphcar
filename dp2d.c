@@ -404,6 +404,38 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	free_reservoir(r);
 }
 
+static void print_mining_scenario()
+{
+	size_t i;
+	enum quality_fun qf = QMETHOD;
+
+	printf("Methods used: ");
+#if EM_1ST_ITEM
+	printf("em ");
+#else
+	printf("noisy ");
+#endif
+
+	for (i = 0; i < 2; i++) {
+#if EM_FORCED_LAST
+		if (i) qf = EM_QD;
+#endif
+#if !EM_LAST_ITEM
+		printf("m%c%c(", -EM_REDFUN(-'i',-'a'), EM_REDFUN('n', 'x'));
+#endif
+		switch(qf) {
+		case EM_QD: printf("qd"); break;
+		case EM_QDELTA: printf("qdelta"); break;
+		default: printf("qsigma");
+		}
+#if !EM_LAST_ITEM
+		printf(")");
+#endif
+		if (i) printf("\n");
+		else printf(" ");
+	}
+}
+
 /**
  * Step 2 of mining, private.
  */
@@ -419,6 +451,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	int *seen;
 
 	printf("Mining with eps %lf, numitems=%lu\n", eps, numits);
+	print_mining_scenario();
 
 #if !EM_1ST_ITEM
 	cf = 1;
