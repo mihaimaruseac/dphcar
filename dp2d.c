@@ -441,7 +441,7 @@ static void print_mining_scenario()
  */
 static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		double eps, double c0, size_t numits, size_t lmax,
-		struct histogram *h, double *minc, double *maxc,
+		struct histogram *h, double *minc, double *maxc, size_t cspl,
 		struct drand48_data *randbuffer)
 {
 	double *epsilons = calloc(lmax, sizeof(epsilons[0]));
@@ -459,7 +459,7 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	for (i = 0; i < lmax; i++) {
 		/* TODO: better formulas here */
 		epsilons[i] = eps/(lmax - cf);
-		spl[i] = 10;
+		spl[i] = cspl;
 
 		epsilons[i] /= f; /* branching factor */
 		f *= spl[i];
@@ -492,7 +492,7 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 #endif
 
 void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
-		double c0, size_t lmax, size_t ni, long int seed)
+		double c0, size_t lmax, size_t ni, long int seed, size_t cspl)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
@@ -513,7 +513,8 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	eps = eps - epsilon_step1;
 
 	gettimeofday(&starttime, NULL);
-	mine_rules(fp, ic, eps, c0, numits, lmax, h, &minc, &maxc, &randbuffer);
+	mine_rules(fp, ic, eps, c0, numits, lmax, h, &minc, &maxc, cspl,
+			&randbuffer);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
 	t2 = endtime.tv_sec + (0.0 + endtime.tv_usec) / MICROSECONDS;
