@@ -114,20 +114,29 @@ static void print_this_rule(const int *A, const int* AB,
 }
 #endif
 
+struct seen_data {
+	int item;
+	struct seen *iptr;
+};
+
 struct seen {
-	int *items;
-	struct seen **iptrs;
+	struct seen_data *data;
 	size_t sp;
 	size_t sz;
 };
+
+int seen_data_cmp(const void *a, const void *b)
+{
+	const struct seen_data *pa = a, *pb = b;
+	return pa->item - pb->item;
+}
 
 #define INITIALSZ 10
 static struct seen *init_seen_node()
 {
 	struct seen *ret = calloc(1, sizeof(*ret));
 	ret->sp = INITIALSZ;
-	ret->items = calloc(ret->sp, sizeof(ret->items[0]));
-	ret->iptrs = calloc(ret->sp, sizeof(ret->iptrs[0]));
+	ret->data = calloc(ret->sp, sizeof(ret->data[0]));
 	return ret;
 }
 #undef INITIALSZ
@@ -135,47 +144,45 @@ static struct seen *init_seen_node()
 #define FILLFACTOR 2
 static void record_new_seen(struct seen *seen, const int *cf, size_t sz)
 {
-	size_t ix;
-	int *p;
+	struct seen_data k, *p;
 
 	if (!sz)
 		return;
 
-	p = lfind(&cf[0], seen->items, &seen->sz,
-			sizeof(seen->items[0]), int_cmp);
+	k.item = cf[0];
+	p = bsearch(&k, seen->data, seen->sz, sizeof(k), seen_data_cmp);
 
 	if (!p) {
 		if (seen->sz == seen->sp) {
 			seen->sp *= FILLFACTOR;
-			seen->items = realloc(seen->items,
-					seen->sp * sizeof(seen->items[0]));
-			seen->iptrs = realloc(seen->iptrs,
-					seen->sp * sizeof(seen->iptrs[0]));
+			seen->data = realloc(seen->data,
+					seen->sp * sizeof(seen->data[0]));
 		}
-		seen->items[seen->sz] = cf[0];
-		seen->iptrs[seen->sz] = init_seen_node();
-		ix = seen->sz++;
-	} else
-		ix = p - seen->items;
+		seen->data[seen->sz].item = cf[0];
+		seen->data[seen->sz].iptr = init_seen_node();
+		seen->sz++;
+		qsort(seen->data, seen->sz, sizeof(k), seen_data_cmp);
+		p = bsearch(&k,seen->data,seen->sz, sizeof(k), seen_data_cmp);
+	}
 
-	record_new_seen(seen->iptrs[ix], cf+1, sz-1);
+	record_new_seen(p->iptr, cf+1, sz-1);
 }
 #undef FILLFACTOR
 
 static int search_seen(const struct seen *seen, const int *cf, size_t sz)
 {
-	int *p;
+	struct seen_data k, *p;
 
 	if (!sz)
 		return 1;
 
-	p = lfind(&cf[0], seen->items, (size_t*)&seen->sz,
-			sizeof(seen->items[0]), int_cmp);
+	k.item = cf[0];
+	p = bsearch(&k, seen->data, seen->sz, sizeof(k), seen_data_cmp);
 
 	if (!p)
 		return 0;
 
-	return search_seen(seen->iptrs[p - seen->items], cf+1, sz-1);
+	return search_seen(p->iptr, cf+1, sz-1);
 }
 
 static void free_seen_node(struct seen *seen)
@@ -183,9 +190,8 @@ static void free_seen_node(struct seen *seen)
 	size_t i;
 
 	for (i = 0; i < seen->sz; i++)
-		free_seen_node(seen->iptrs[i]);
-	free(seen->iptrs);
-	free(seen->items);
+		free_seen_node(seen->data[i].iptr);
+	free(seen->data);
 	free(seen);
 }
 
