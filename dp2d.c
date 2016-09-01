@@ -1,4 +1,5 @@
 #include <math.h>
+#include <search.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -113,36 +114,95 @@ static void print_this_rule(const int *A, const int* AB,
 }
 #endif
 
+struct seen {
+	int *items;
+	struct seen **iptrs;
+	size_t sp;
+	size_t sz;
+};
+
+#define INITIALSZ 10
+static struct seen *init_seen_node()
+{
+	struct seen *ret = calloc(1, sizeof(*ret));
+	ret->sp = INITIALSZ;
+	ret->items = calloc(ret->sp, sizeof(ret->items[0]));
+	ret->iptrs = calloc(ret->sp, sizeof(ret->iptrs[0]));
+	return ret;
+}
+#undef INITIALSZ
+
+#define FILLFACTOR 2
+static void record_new_seen(struct seen *seen, const int *cf, size_t sz)
+{
+	size_t ix;
+	int *p;
+
+	if (!sz)
+		return;
+
+	p = lfind(&cf[0], seen->items, &seen->sz,
+			sizeof(seen->items[0]), int_cmp);
+
+	if (!p) {
+		if (seen->sz == seen->sp) {
+			seen->sp *= FILLFACTOR;
+			seen->items = realloc(seen->items,
+					seen->sp * sizeof(seen->items[0]));
+			seen->iptrs = realloc(seen->iptrs,
+					seen->sp * sizeof(seen->iptrs[0]));
+		}
+		seen->items[seen->sz] = cf[0];
+		seen->iptrs[seen->sz] = init_seen_node();
+		ix = seen->sz++;
+	} else
+		ix = p - seen->items;
+
+	record_new_seen(seen->iptrs[ix], cf+1, sz-1);
+}
+#undef FILLFACTOR
+
+static int search_seen(const struct seen *seen, const int *cf, size_t sz)
+{
+	int *p;
+
+	if (!sz)
+		return 1;
+
+	p = lfind(&cf[0], seen->items, (size_t*)&seen->sz,
+			sizeof(seen->items[0]), int_cmp);
+
+	if (!p)
+		return 0;
+
+	return search_seen(seen->iptrs[p - seen->items], cf+1, sz-1);
+}
+
+static void free_seen_node(struct seen *seen)
+{
+	size_t i;
+
+	for (i = 0; i < seen->sz; i++)
+		free_seen_node(seen->iptrs[i]);
+	free(seen->iptrs);
+	free(seen->items);
+	free(seen);
+}
+
 /**
  * Checks whether the current itemset has been generated previously
  */
-static inline int its_already_seen(int *its, size_t itslen,
-		const int *seen, size_t seenlen)
+static int its_already_seen(int *its, size_t itslen, const struct seen *seen)
 {
 	int *cf = calloc(itslen, sizeof(cf[0]));
-	size_t ix = 0, i, j, ret = 0;
+	size_t i, ret = 0;
 
 	for (i = 0; i < itslen; i++)
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	while (ix < seenlen) {
-		/* check length first */
-		if (seen[ix] != (int)itslen)
-			goto nothere;
+	ret = search_seen(seen, cf, itslen);
 
-		/* same length, check by items */
-		for (i = 0, j = ix + 1; i < itslen; i++, j++)
-			if (cf[i] != seen[j])
-				goto nothere;
-
-		ret = 1;
-		goto end;
-nothere:
-		ix += seen[ix] + 1;
-	}
-
-end:
 	free(cf);
 	return ret;
 }
@@ -150,21 +210,16 @@ end:
 /**
  * Updates the list of itemsets that were generated.
  */
-static inline void update_seen_its(const int *its, size_t itslen,
-		int *seen, size_t *seenlen)
+static void update_seen_its(const int *its, size_t itslen, struct seen *seen)
 {
 	int *cf = calloc(itslen, sizeof(cf[0]));
-	size_t ix = *seenlen, i;
+	size_t i;
 
 	for (i = 0; i < itslen; i++)
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	seen[ix++] = itslen;
-	for (i = 0; i < itslen; i++)
-		seen[ix++] = cf[i];
-
-	*seenlen = ix;
+	record_new_seen(seen, cf, itslen);
 	free(cf);
 }
 
@@ -202,7 +257,7 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 static void generate_rules(const int *items, size_t lmax,
 		const struct fptree *fp,
 		double *minc, double *maxc, struct histogram *h,
-		int *seen, size_t *seenlen)
+		struct seen *seen)
 {
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	size_t i, j, max=1<<lmax, ab_length;
@@ -214,9 +269,9 @@ static void generate_rules(const int *items, size_t lmax,
 				AB[ab_length++] = items[j];
 		if (ab_length < 2)
 			continue;
-		if (its_already_seen(AB, ab_length, seen, *seenlen))
+		if (its_already_seen(AB, ab_length, seen))
 			continue;
-		update_seen_its(AB, ab_length, seen, seenlen);
+		update_seen_its(AB, ab_length, seen);
 		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc, h);
 	}
 
@@ -355,7 +410,7 @@ static inline int generated_above(const int *celms, size_t level)
 static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		size_t numits, size_t lmax, const int *celms, size_t level,
 		double c0, double *epss, size_t *spls, struct histogram *h,
-		double *minc, double *maxc, int *seen, size_t *seenlen,
+		double *minc, double *maxc, struct seen *seen,
 		struct drand48_data *randbuffer)
 {
 	struct reservoir_item *rit = calloc(1, sizeof(*rit));
@@ -380,8 +435,8 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		rit->items[level] = ic[i].value;
 		if (generated_above(rit->items, level))
 			continue;
-		if (level == lmax - 1 && its_already_seen(rit->items,
-					lmax, seen, *seenlen))
+		if (level == lmax - 1 &&
+				its_already_seen(rit->items, lmax, seen))
 			continue;
 
 		rit->support = fpt_itemset_count(fp, rit->items, rit->sz);
@@ -395,11 +450,10 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	if (level == lmax - 1)
 		while ((crit = next_item(ri)))
 			generate_rules(crit->items, lmax, fp, minc, maxc, h,
-					seen, seenlen);
+					seen);
 	else while ((crit = next_item(ri)))
 		mine_level(fp, ic, numits, lmax, crit->items, level + 1, c0,
-				epss, spls, h, minc, maxc, seen, seenlen,
-				randbuffer);
+				epss, spls, h, minc, maxc, seen, randbuffer);
 	free_reservoir_iterator(ri);
 	free_reservoir(r);
 }
@@ -446,9 +500,9 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 {
 	double *epsilons = calloc(lmax, sizeof(epsilons[0]));
 	size_t *spl = calloc(lmax, sizeof(spl[0]));
-	size_t i, seenlen = 0, f = 1;
+	struct seen *seen = init_seen_node();
+	size_t i, f = 1;
 	double cf = 0;
-	int *seen;
 
 	printf("Mining with eps %lf, numitems=%lu\n", eps, numits);
 	print_mining_scenario();
@@ -468,13 +522,12 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	epsilons[0] = spl[0] * 2; /* use noisy count */
 #endif
 	printf("Total leaves %lu\n", f);
-	seen = calloc(f * (lmax + 1) * (1 << lmax), sizeof(seen[0]));
 
 	mine_level(fp, ic, numits, lmax, NULL, 0, c0, epsilons, spl, h,
-			minc, maxc, seen, &seenlen, randbuffer);
+			minc, maxc, seen, randbuffer);
 
 	free(epsilons);
-	free(seen);
+	free_seen_node(seen);
 	free(spl);
 }
 
