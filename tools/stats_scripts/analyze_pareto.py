@@ -9,31 +9,18 @@ def color(db):
     return 'k'
 
 def marker(md):
-    if md == 'n_s_s': return 'o'
-    if md == 'nisis': return 'v'
-    if md == 'nasas': return '^'
-    if md == 'n_s_d': return '>'
-    if md == 'nisid': return '<'
-    if md == 'nasad': return '1'
-    if md == 'n_e_e': return '2'
-    if md == 'nieie': return '3'
-    if md == 'naeae': return '4'
-    if md == 'n_e_d': return 's'
-    if md == 'nieid': return 'p'
-    if md == 'naead': return '*'
-    if md ==   'n_d': return 'h'
-    if md ==   'nid': return 'H'
-    if md ==   'nad': return 'D'
+    if md == '3': return 'o'
+    if md == '5': return 's'
     return '_'
 
 mx=my=None
 with open(sys.argv[1], 'r') as f:
     f.readline() # remove header
     for line in f:
-        db, md, _, _, _, rm, ni, bf, s, _, _, _, r, r50, _, _, _\
+        db, _, _, _, rm, ni, bf, s, _, _, _, r, r50, _\
                 = line[:-1].split(',')
         plt.plot(int(r), int(r50), c=color(db.strip()), mfc=color(db.strip()),
-                marker=marker(md), hold=True)
+                marker=marker(rm), hold=True)
         mx = max(mx, int(r))
         my = max(my, int(r50))
 

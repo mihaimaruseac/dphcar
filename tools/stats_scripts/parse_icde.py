@@ -3,8 +3,7 @@ import sys
 import matplotlib.pyplot as plt
 
 class Experiment:
-    def __init__(self, mode, db, eps, eps_share, c0, rmax, nits, bf, seed):
-        self.mode = mode
+    def __init__(self, db, eps, eps_share, c0, rmax, nits, bf, seed):
         self.db = db
         self.eps = eps
         self.eps_share = eps_share
@@ -37,7 +36,7 @@ class Experiment:
         self.rules = rules
 
     def __str__(self):
-        s = "{0.db:10}\t{0.mode}\t{0.eps}\t{0.eps_share}\t{0.c0}".format(self)
+        s = "{0.db:10}\t{0.eps}\t{0.eps_share}\t{0.c0}".format(self)
         s = "{1}\t{0.rmax}\t{0.nits}\t{0.bf}\t{0.seed}".format(self, s)
         s = "{1}\t{0.leaves}\t{0.time}\t{0.tpl:6.3f}".format(self, s)
         s = "{1}\t{0.rules}\t{0.rules50}\t{0.prec:5.2f}".format(self, s)
@@ -45,7 +44,7 @@ class Experiment:
 
     @staticmethod
     def legend():
-        s = "db\t\tmode\teps\tepsh\tc0\trmax\tnits\tbf\tseed\tleaves\ttime"
+        s = "db\t\teps\tepsh\tc0\trmax\tnits\tbf\tseed\tleaves\ttime"
         s += "\ttpl\trules\trules50\tprec50"
         return s
 
@@ -56,8 +55,8 @@ for r, _, files in os.walk(sys.argv[1]):
             exp = None
             for line in f:
                 if line.startswith("./dph"):
-                    n, ds, eps, es, c0, rmax, nits, bf, seed = line.split()
-                    exp = Experiment(n[6:], ds.split('/')[-1].split('.')[0],\
+                    _, ds, eps, es, c0, rmax, nits, bf, seed = line.split()
+                    exp = Experiment(ds.split('/')[-1].split('.')[0],\
                             float(eps), float(es), float(c0), int(rmax),\
                             int(nits), int(bf), int(seed))
                 elif line.startswith("Total leaves"):
@@ -101,7 +100,6 @@ def plot_exp(exps, xfun, yfun, selecfuns=[], outname=None, title=None,
     else: plt.show()
     plt.clf()
 
-getMode = lambda xp: xp.mode
 getDB = lambda xp: xp.db
 getRMax = lambda xp: xp.rmax
 getNI = lambda xp: xp.nits
@@ -135,7 +133,6 @@ def plot_against(exps, xfun, selecfuns, xlabel, xrng, xtitle):
     plot_exp(exps, xfun, getP50, selecfuns, xlabel=xlabel, xrng=xrng,
             ylabel="% rules", yrng=[-0.1,1.1], title=title, outname=outname)
 
-modes = set([getMode(xp) for xp in experiments])
 dbs = set([getDB(xp) for xp in experiments])
 rmaxes = set([getRMax(xp) for xp in experiments])
 nis = set([getNI(xp) for xp in experiments])
@@ -145,15 +142,13 @@ for db in dbs:
     dbsf = lambda xp: getDB(xp) == db
     for rmax in rmaxes:
         rmaxsf = lambda xp: getRMax(xp) == rmax
-        for mode in modes:
-            modesf = lambda xp: getMode(xp) == mode
-            for ni in nis:
-                nisf = lambda xp: getNI(xp) == ni
-                plot_against(experiments, getBF, [dbsf, rmaxsf, modesf, nisf],
-                        "branching factor", None,
-                        "branch for {}/{} rmax={} items={}".format(db, mode, rmax, ni))
-            for bf in bfs:
-                bisf = lambda xp: getBF(xp) == bf
-                plot_against(experiments, getNI, [dbsf, rmaxsf, modesf, bisf],
-                        "# items", None,
-                        "items for {}/{} rmax={} branch={}".format(db, mode, rmax, bf))
+        for ni in nis:
+            nisf = lambda xp: getNI(xp) == ni
+            plot_against(experiments, getBF, [dbsf, rmaxsf, nisf],
+                    "branching factor", None,
+                    "branch for {} rmax={} items={}".format(db, rmax, ni))
+        for bf in bfs:
+            bisf = lambda xp: getBF(xp) == bf
+            plot_against(experiments, getNI, [dbsf, rmaxsf, bisf],
+                    "# items", None,
+                    "items for {} rmax={} branch={}".format(db, rmax, bf))
