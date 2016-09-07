@@ -1,13 +1,12 @@
 #!/bin/bash
 
-exp=$1
-db=$2
-rmax=$3
-ni=$4
-bf=$5
-seed=$6
-outdir=icde_2016_outputs/private/tree2
+db=$1
+rmax=$2
+ni=$3
+bf=$4
+seed=$5
+outdir=icde_2016_outputs/private/tree3
 
-timeout -k 1200 1200 ./$exp inputs/data/datasets/${db}.dat 0.5 0.01 0.5\
+./dph inputs/data/datasets/${db}.dat 0.5 0.01 0.5\
     ${rmax} ${ni} ${bf} ${seed} \
-    > ${outdir}/${exp}_${db}_rmax${rmax}_ni${ni}_bf${bf}_seed${seed}.txt
+    > ${outdir}/${db}_rmax${rmax}_ni${ni}_bf${bf}_seed${seed}.txt
