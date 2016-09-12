@@ -8,7 +8,6 @@
 #include "fp.h"
 #include "globals.h"
 #include "histogram.h"
-#include "rule.h"
 #include "rs.h"
 
 #define MICROSECONDS 1000000L
