@@ -1,0 +1,137 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "fp.h"
+#include "globals.h"
+#include "itstree.h"
+#include "recall.h"
+
+struct item_count {
+	int value;
+	int real_count;
+};
+
+static int cmp(const void *a, const void *b)
+{
+	const struct item_count *ia = a, *ib = b;
+	return int_cmp_r(&ia->real_count, &ib->real_count);
+}
+
+static void build_items_table(const struct fptree *fp, struct item_count *ic)
+{
+	size_t i;
+
+	for (i = 0; i < fp->n; i++) {
+		ic[i].value = i + 1;
+		ic[i].real_count = fpt_item_count(fp, i);
+	}
+
+	qsort(ic, fp->n, sizeof(ic[0]), cmp);
+}
+
+static size_t ic_search(const struct item_count *ic, size_t n, int x)
+{
+	size_t i;
+
+	for (i = 0; i < n; i++)
+		if (ic[i].value == x)
+			return i;
+
+	die("Invalid value in ic_search");
+}
+
+static void generate_rules_from_itemset(const int *AB, size_t ab_length,
+		const struct fptree *fp, struct itstree_node *itst)
+{
+	size_t i, j, max, a_length, rc30, rc50, rc70;
+	int *A = calloc(ab_length, sizeof(A[0]));
+	int sup_ab, sup_a;
+	double c;
+
+	printf("Generating rules from:");
+	for (i = 0; i < ab_length; i++)
+		printf(" %d", AB[i]);
+	printf("\n");
+
+	max = (1 << ab_length) - 1;
+	rc30 = rc50 = rc70 = 0;
+	sup_ab = fpt_itemset_count(fp, AB, ab_length);
+	for (i = 1; i < max; i++) {
+		a_length = 0;
+		for (j = 0; j < ab_length; j++)
+			if (i & (1 << j))
+				A[a_length++] = AB[j];
+
+		sup_a = fpt_itemset_count(fp, A, a_length);
+		c = div_or_zero(sup_ab, sup_a);
+		/* TODO: counts */
+		if (c > .3) rc30++;
+		if (c > .5) rc50++;
+		if (c > .7) rc70++;
+	}
+
+	record_its(itst, AB, ab_length, rc30, rc50, rc70);
+	free(A);
+}
+
+static void generate(const struct fptree *fp, const struct item_count *ic,
+		struct itstree_node *itst, size_t ni, size_t lmax,
+		int *AB, size_t ab_length)
+{
+	size_t i, j, st, found, ix = ab_length - 1;
+
+	st = ix > 0 ? ic_search(ic, ni, AB[ix - 1]) : 0;
+	for (i = st; i < ni; i++) {
+		AB[ix] = ic[i].value;
+
+		found = 0;
+		for (j = 0; j < ix && !found; j++)
+			if (AB[j] == AB[ix])
+				found = 1;
+		if (found)
+			continue;
+
+		if (ab_length > 1)
+			generate_rules_from_itemset(AB, ab_length, fp, itst);
+		if (ab_length < lmax)
+			generate(fp, ic, itst, ni, lmax, AB, ab_length + 1);
+	}
+}
+
+static void generate_itemsets(const struct fptree *fp,
+		const struct item_count *ic, struct itstree_node *itst,
+		size_t ni, size_t lmax)
+{
+	int *AB = calloc(lmax, sizeof(AB[0]));
+	generate(fp, ic, itst, ni, lmax, AB, 1);
+#if 0
+	size_t i, j, max=1<<lmax, ab_length;
+
+	for (i = 0; i < max; i++) {
+		ab_length = 0;
+		for (j = 0; j < lmax; j++)
+			if (i & (1 << j))
+				AB[ab_length++] = items[j];
+		if (ab_length < 2)
+			continue;
+		if (its_already_seen(AB, ab_length, itst))
+			continue;
+		update_seen_its(AB, ab_length, itst);
+		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc, h);
+	}
+#endif
+	free(AB);
+}
+
+struct itstree_node * build_recall_tree(const struct fptree *fp,
+		size_t lmax, size_t ni)
+{
+	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
+	struct itstree_node *itst = init_empty_itstree();
+
+	build_items_table(fp, ic);
+	generate_itemsets(fp, ic, itst, ni, lmax);
+
+	free(ic);
+	return itst;
+}

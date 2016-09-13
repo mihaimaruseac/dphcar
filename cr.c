@@ -8,30 +8,22 @@
 
 #include "dp2d.h"
 #include "fp.h"
+#include "itstree.h"
+#include "recall.h"
 
 /* Command line arguments */
 static struct {
 	/* filename containing the transactions */
 	char *tfname;
-	/* global value for epsilon */
-	double eps;
-	/* fraction of epsilon for first step */
-	double er1;
-	/* confidence threshold */
-	double c0;
 	/* max number of items in rule */
 	size_t lmax;
 	/* num items (to be removed later) */
 	size_t ni;
-	/* branching factor */
-	size_t cspl;
-	/* random seed */
-	long int seed;
 } args;
 
 static void usage(const char *prg)
 {
-	fprintf(stderr, "Usage: %s TFILE C0 RMAX NI\n", prg);
+	fprintf(stderr, "Usage: %s TFILE RMAX NI\n", prg);
 	exit(EXIT_FAILURE);
 }
 
@@ -44,19 +36,18 @@ static void parse_arguments(int argc, char **argv)
 		printf("%s ", argv[i]);
 	printf("\n");
 
-	if (argc != 5)
+	if (argc != 4)
 		usage(argv[0]);
 	args.tfname = strdup(argv[1]);
-	if (sscanf(argv[2], "%lf", &args.c0) != 1 || args.c0 < 0 || args.c0 >= 1)
+	if (sscanf(argv[2], "%lu", &args.lmax) != 1 || args.lmax < 2 || args.lmax > 7)
 		usage(argv[0]);
-	if (sscanf(argv[3], "%lu", &args.lmax) != 1 || args.lmax < 2 || args.lmax > 7)
-		usage(argv[0]);
-	if (sscanf(argv[4], "%lu", &args.ni) != 1)
+	if (sscanf(argv[3], "%lu", &args.ni) != 1)
 		usage(argv[0]);
 }
 
 int main(int argc, char **argv)
 {
+	struct itstree_node *itst;
 	struct fptree fp;
 
 	parse_arguments(argc, argv);
@@ -65,11 +56,11 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-#if 0
-	dp2d(&fp, args.eps, args.er1, args.c0, args.lmax, args.ni, args.seed,
-			args.cspl);
-#endif
+	printf("Building the recall tree...");
+	itst = build_recall_tree(&fp, args.lmax, args.ni);
+	printf("OK\n");
 
+	free_itstree(itst);
 	fpt_cleanup(&fp);
 	free(args.tfname);
 

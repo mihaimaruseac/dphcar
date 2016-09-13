@@ -16,7 +16,7 @@ struct itstree_node {
 	/* record if rule has been seen in difpriv mining */
 	int dpseen;
 	/* rule counters (for recall) */
-	size_t rc25, rc50;
+	size_t rc30, rc50, rc70;
 };
 
 static int cmp(const void *a, const void *b)
@@ -37,13 +37,18 @@ struct itstree_node *init_empty_itstree()
 
 #define FILLFACTOR 2
 static void do_record_new_rule(struct itstree_node *itst, const int *its,
-		size_t sz, int private, size_t rc25, size_t rc50)
+		size_t sz, int private, size_t rc30, size_t rc50, size_t rc70)
 {
 	struct children_info k, *p;
 
 	if (!sz) {
 		if (private)
 			itst->dpseen = 1;
+		else {
+			itst->rc30 = rc30;
+			itst->rc50 = rc50;
+			itst->rc70 = rc70;
+		}
 		return;
 	}
 
@@ -63,19 +68,19 @@ static void do_record_new_rule(struct itstree_node *itst, const int *its,
 		p = bsearch(&k, itst->children, itst->sz, sizeof(k), cmp);
 	}
 
-	do_record_new_rule(p->iptr, its+1, sz-1, private, rc25, rc50);
+	do_record_new_rule(p->iptr, its+1, sz-1, private, rc30, rc50, rc70);
 }
 #undef FILLFACTOR
 
 void record_its_private(struct itstree_node *itst, const int *its, size_t sz)
 {
-	do_record_new_rule(itst, its, sz, 1, 0, 0);
+	do_record_new_rule(itst, its, sz, 1, 0, 0, 0);
 }
 
 void record_its(struct itstree_node *itst, const int *its, size_t sz,
-		size_t rc25, size_t rc50)
+		size_t rc30, size_t rc50, size_t rc70)
 {
-	do_record_new_rule(itst, its, sz, 0, rc25, rc50);
+	do_record_new_rule(itst, its, sz, 0, rc30, rc50, rc70);
 }
 
 int search_its_private(const struct itstree_node *itst, const int *its,
