@@ -421,12 +421,12 @@ static void print_mining_scenario()
  * Step 2 of mining, private.
  */
 static void mine_rules(const struct fptree *fp, const struct item_count *ic,
-		double eps, double c0, size_t numits, size_t lmax,
-		struct histogram *h, double *minc, double *maxc, size_t cspl,
+		struct itstree_node *itst, double eps, double c0,
+		size_t numits, size_t lmax, size_t cspl,
+		struct histogram *h, double *minc, double *maxc,
 		struct drand48_data *randbuffer)
 {
 	double *epsilons = calloc(lmax, sizeof(epsilons[0]));
-	struct itstree_node *itst = init_empty_itstree();
 	size_t *spl = calloc(lmax, sizeof(spl[0]));
 	size_t i, f = 1;
 	double cf = 0;
@@ -454,7 +454,6 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 			minc, maxc, itst, randbuffer);
 
 	free(epsilons);
-	free_itstree(itst);
 	free(spl);
 }
 
@@ -471,8 +470,9 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 }
 #endif
 
-void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
-		double c0, size_t lmax, size_t ni, long int seed, size_t cspl)
+void dp2d(const struct fptree *fp, struct itstree_node *itst,
+		double eps, double eps_ratio1, double c0, size_t lmax,
+		size_t ni, size_t cspl, long int seed)
 {
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	double epsilon_step1 = eps * eps_ratio1;
@@ -493,7 +493,7 @@ void dp2d(const struct fptree *fp, double eps, double eps_ratio1,
 	eps = eps - epsilon_step1;
 
 	gettimeofday(&starttime, NULL);
-	mine_rules(fp, ic, eps, c0, numits, lmax, h, &minc, &maxc, cspl,
+	mine_rules(fp, ic, itst, eps, c0, numits, lmax, cspl, h, &minc, &maxc,
 			&randbuffer);
 	gettimeofday(&endtime, NULL);
 	t1 = starttime.tv_sec + (0.0 + starttime.tv_usec) / MICROSECONDS;
