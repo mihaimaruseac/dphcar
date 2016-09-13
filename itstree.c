@@ -41,9 +41,11 @@ static void do_record_new_rule(struct itstree_node *itst, const int *its,
 {
 	struct children_info k, *p;
 
-	/* TODO: dpseen flag */
-	if (!sz)
+	if (!sz) {
+		if (private)
+			itst->dpseen = 1;
 		return;
+	}
 
 	k.item = its[0];
 	p = bsearch(&k, itst->children, itst->sz, sizeof(k), cmp);
@@ -80,9 +82,8 @@ int search_its(const struct itstree_node *itst, const int *its, size_t sz)
 {
 	struct children_info k, *p;
 
-	/* TODO: dpseen flag */
 	if (!sz)
-		return 1;
+		return itst->dpseen;
 
 	k.item = its[0];
 	p = bsearch(&k, itst->children, itst->sz, sizeof(k), cmp);
