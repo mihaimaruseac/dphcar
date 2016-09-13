@@ -16,5 +16,8 @@ void record_its(struct itstree_node *itst, const int *its, size_t sz,
 int search_its_private(const struct itstree_node *itst, const int *its,
 		size_t sz);
 
+void save_its(const struct itstree_node *itst, const char *fname,
+		size_t lmax, size_t ni);
+
 #endif
 

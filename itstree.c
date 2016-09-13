@@ -109,3 +109,8 @@ void free_itstree(struct itstree_node *itst)
 	free(itst->children);
 	free(itst);
 }
+
+void save_its(const struct itstree_node *itst, const char *fname,
+		size_t lmax, size_t ni)
+{
+}

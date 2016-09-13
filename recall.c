@@ -48,11 +48,6 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 	int sup_ab, sup_a;
 	double c;
 
-	printf("Generating rules from:");
-	for (i = 0; i < ab_length; i++)
-		printf(" %d", AB[i]);
-	printf("\n");
-
 	max = (1 << ab_length) - 1;
 	rc30 = rc50 = rc70 = 0;
 	sup_ab = fpt_itemset_count(fp, AB, ab_length);
@@ -64,7 +59,6 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 
 		sup_a = fpt_itemset_count(fp, A, a_length);
 		c = div_or_zero(sup_ab, sup_a);
-		/* TODO: counts */
 		if (c > .3) rc30++;
 		if (c > .5) rc50++;
 		if (c > .7) rc70++;
@@ -104,22 +98,6 @@ static void generate_itemsets(const struct fptree *fp,
 {
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	generate(fp, ic, itst, ni, lmax, AB, 1);
-#if 0
-	size_t i, j, max=1<<lmax, ab_length;
-
-	for (i = 0; i < max; i++) {
-		ab_length = 0;
-		for (j = 0; j < lmax; j++)
-			if (i & (1 << j))
-				AB[ab_length++] = items[j];
-		if (ab_length < 2)
-			continue;
-		if (its_already_seen(AB, ab_length, itst))
-			continue;
-		update_seen_its(AB, ab_length, itst);
-		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc, h);
-	}
-#endif
 	free(AB);
 }
 
@@ -129,8 +107,10 @@ struct itstree_node * build_recall_tree(const struct fptree *fp,
 	struct item_count *ic = calloc(fp->n, sizeof(ic[0]));
 	struct itstree_node *itst = init_empty_itstree();
 
+	printf("Building the recall tree ... ");
 	build_items_table(fp, ic);
 	generate_itemsets(fp, ic, itst, ni, lmax);
+	printf("OK\n");
 
 	free(ic);
 	return itst;

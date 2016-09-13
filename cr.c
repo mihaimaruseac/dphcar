@@ -56,9 +56,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	printf("Building the recall tree...");
 	itst = build_recall_tree(&fp, args.lmax, args.ni);
-	printf("OK\n");
 
 	free_itstree(itst);
 	fpt_cleanup(&fp);
