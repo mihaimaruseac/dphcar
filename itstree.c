@@ -9,9 +9,14 @@ struct children_info {
 };
 
 struct itstree_node {
+	/* children data */
 	struct children_info *children;
 	size_t sp;
 	size_t sz;
+	/* record if rule has been seen in difpriv mining */
+	int dpseen;
+	/* rule counters (for recall) */
+	size_t rc25, rc50;
 };
 
 static int cmp(const void *a, const void *b)
@@ -35,6 +40,7 @@ void record_new_rule(struct itstree_node *itst, const int *cf, size_t sz)
 {
 	struct children_info k, *p;
 
+	/* TODO: dpseen flag */
 	if (!sz)
 		return;
 
@@ -62,6 +68,7 @@ int search_rule(const struct itstree_node *itst, const int *cf, size_t sz)
 {
 	struct children_info k, *p;
 
+	/* TODO: dpseen flag */
 	if (!sz)
 		return 1;
 
