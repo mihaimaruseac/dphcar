@@ -1,6 +1,8 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "globals.h"
 #include "itstree.h"
 
 struct children_info {
@@ -110,7 +112,41 @@ void free_itstree(struct itstree_node *itst)
 	free(itst);
 }
 
+static void save_its_node(FILE *f, const struct itstree_node *n)
+{
+	size_t i;
+	int item;
+
+	fwrite(&n->sp, sizeof(n->sp), 1, f);
+	fwrite(&n->sz, sizeof(n->sz), 1, f);
+	fwrite(&n->dpseen, sizeof(n->dpseen), 1, f);
+	fwrite(&n->rc30, sizeof(n->rc30), 1, f);
+	fwrite(&n->rc50, sizeof(n->rc50), 1, f);
+	fwrite(&n->rc70, sizeof(n->rc70), 1, f);
+
+	for (i = 0; i < n->sz; i++) {
+		item = n->children[i].item;
+		fwrite(&item, sizeof(item), 1, f);
+		save_its_node(f, n->children[i].iptr);
+	}
+}
+
 void save_its(const struct itstree_node *itst, const char *fname,
 		size_t lmax, size_t ni)
 {
+	char *filename = NULL;
+	FILE *f;
+
+	asprintf(&filename, "%s_%lu_%lu", fname, lmax, ni);
+	f = fopen(filename, "w");
+
+	fwrite(&lmax, sizeof(lmax), 1, f);
+	fwrite(&ni, sizeof(ni), 1, f);
+	save_its_node(f, itst);
+
+	if (!f)
+		die("Unable to save file %s", filename);
+
+	fclose(f);
+	free(filename);
 }

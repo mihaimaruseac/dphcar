@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
 	itst = build_recall_tree(&fp, args.lmax, args.ni);
+	save_its(itst, args.tfname, args.lmax, args.ni);
 
 	free_itstree(itst);
 	fpt_cleanup(&fp);
