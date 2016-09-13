@@ -60,9 +60,9 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 
 		sup_a = fpt_itemset_count(fp, A, a_length);
 		c = div_or_zero(sup_ab, sup_a);
-		if (c > .3) rc30++;
-		if (c > .5) rc50++;
-		if (c > .7) rc70++;
+		if (c >= .3) rc30++;
+		if (c >= .5) rc50++;
+		if (c >= .7) rc70++;
 	}
 
 	for (i = 0; i < ab_length; i++)
