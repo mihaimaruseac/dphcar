@@ -8,6 +8,7 @@
 
 #include "dp2d.h"
 #include "fp.h"
+#include "globals.h"
 #include "itstree.h"
 #include "recall.h"
 
@@ -56,7 +57,7 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	itst = build_recall_tree(&fp, args.lmax, args.ni);
+	itst = build_recall_tree(&fp, args.lmax, min(fp.n, args.ni));
 	save_its(itst, args.tfname, args.lmax, args.ni);
 
 	free_itstree(itst);
