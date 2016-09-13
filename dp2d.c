@@ -127,7 +127,7 @@ static int its_already_seen(int *its, size_t itslen,
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	ret = search_rule(itst, cf, itslen);
+	ret = search_its(itst, cf, itslen);
 
 	free(cf);
 	return ret;
@@ -146,7 +146,7 @@ static void update_seen_its(const int *its, size_t itslen,
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	record_new_rule(itst, cf, itslen);
+	record_its_private(itst, cf, itslen);
 	free(cf);
 }
 

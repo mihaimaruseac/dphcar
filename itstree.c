@@ -36,7 +36,8 @@ struct itstree_node *init_empty_itstree()
 #undef INITIALSZ
 
 #define FILLFACTOR 2
-void record_new_rule(struct itstree_node *itst, const int *cf, size_t sz)
+static void do_record_new_rule(struct itstree_node *itst, const int *its,
+		size_t sz, int private, size_t rc25, size_t rc50)
 {
 	struct children_info k, *p;
 
@@ -44,7 +45,7 @@ void record_new_rule(struct itstree_node *itst, const int *cf, size_t sz)
 	if (!sz)
 		return;
 
-	k.item = cf[0];
+	k.item = its[0];
 	p = bsearch(&k, itst->children, itst->sz, sizeof(k), cmp);
 
 	if (!p) {
@@ -53,18 +54,29 @@ void record_new_rule(struct itstree_node *itst, const int *cf, size_t sz)
 			itst->children = realloc(itst->children,
 					itst->sp * sizeof(itst->children[0]));
 		}
-		itst->children[itst->sz].item = cf[0];
+		itst->children[itst->sz].item = its[0];
 		itst->children[itst->sz].iptr = init_empty_itstree();
 		itst->sz++;
 		qsort(itst->children, itst->sz, sizeof(k), cmp);
 		p = bsearch(&k, itst->children, itst->sz, sizeof(k), cmp);
 	}
 
-	record_new_rule(p->iptr, cf+1, sz-1);
+	do_record_new_rule(p->iptr, its+1, sz-1, private, rc25, rc50);
 }
 #undef FILLFACTOR
 
-int search_rule(const struct itstree_node *itst, const int *cf, size_t sz)
+void record_its_private(struct itstree_node *itst, const int *its, size_t sz)
+{
+	do_record_new_rule(itst, its, sz, 1, 0, 0);
+}
+
+void record_its(struct itstree_node *itst, const int *its, size_t sz,
+		size_t rc25, size_t rc50)
+{
+	do_record_new_rule(itst, its, sz, 0, rc25, rc50);
+}
+
+int search_its(const struct itstree_node *itst, const int *its, size_t sz)
 {
 	struct children_info k, *p;
 
@@ -72,13 +84,13 @@ int search_rule(const struct itstree_node *itst, const int *cf, size_t sz)
 	if (!sz)
 		return 1;
 
-	k.item = cf[0];
+	k.item = its[0];
 	p = bsearch(&k, itst->children, itst->sz, sizeof(k), cmp);
 
 	if (!p)
 		return 0;
 
-	return search_rule(p->iptr, cf+1, sz-1);
+	return search_its(p->iptr, its+1, sz-1);
 }
 
 void free_itstree(struct itstree_node *itst)
