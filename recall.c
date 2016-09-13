@@ -44,6 +44,7 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 		const struct fptree *fp, struct itstree_node *itst)
 {
 	size_t i, j, max, a_length, rc30, rc50, rc70;
+	int *cf = calloc(ab_length, sizeof(cf[0]));
 	int *A = calloc(ab_length, sizeof(A[0]));
 	int sup_ab, sup_a;
 	double c;
@@ -64,7 +65,12 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 		if (c > .7) rc70++;
 	}
 
-	record_its(itst, AB, ab_length, rc30, rc50, rc70);
+	for (i = 0; i < ab_length; i++)
+		cf[i] = AB[i];
+	qsort(cf, ab_length, sizeof(cf[0]), int_cmp);
+	record_its(itst, cf, ab_length, rc30, rc50, rc70);
+
+	free(cf);
 	free(A);
 }
 
