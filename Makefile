@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-TARGET = ./dph
+TARGET = ./dph ./cr
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0
 LDFLAGS = -lm
