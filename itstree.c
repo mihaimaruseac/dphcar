@@ -78,7 +78,8 @@ void record_its(struct itstree_node *itst, const int *its, size_t sz,
 	do_record_new_rule(itst, its, sz, 0, rc25, rc50);
 }
 
-int search_its(const struct itstree_node *itst, const int *its, size_t sz)
+int search_its_private(const struct itstree_node *itst, const int *its,
+		size_t sz)
 {
 	struct children_info k, *p;
 
@@ -91,7 +92,7 @@ int search_its(const struct itstree_node *itst, const int *its, size_t sz)
 	if (!p)
 		return 0;
 
-	return search_its(p->iptr, its+1, sz-1);
+	return search_its_private(p->iptr, its+1, sz-1);
 }
 
 void free_itstree(struct itstree_node *itst)

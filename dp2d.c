@@ -127,7 +127,7 @@ static int its_already_seen(int *its, size_t itslen,
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	ret = search_its(itst, cf, itslen);
+	ret = search_its_private(itst, cf, itslen);
 
 	free(cf);
 	return ret;
