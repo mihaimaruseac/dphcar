@@ -18,6 +18,7 @@ int search_its_private(const struct itstree_node *itst, const int *its,
 
 void save_its(const struct itstree_node *itst, const char *fname,
 		size_t lmax, size_t ni);
+struct itstree_node *load_its(const char *fname, size_t lmax, size_t ni);
 
 #endif
 

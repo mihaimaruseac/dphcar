@@ -117,18 +117,41 @@ static void save_its_node(FILE *f, const struct itstree_node *n)
 	size_t i;
 	int item;
 
-	fwrite(&n->sp, sizeof(n->sp), 1, f);
-	fwrite(&n->sz, sizeof(n->sz), 1, f);
+	fwrite(&n->sp,     sizeof(n->sp),     1, f);
+	fwrite(&n->sz,     sizeof(n->sz),     1, f);
 	fwrite(&n->dpseen, sizeof(n->dpseen), 1, f);
-	fwrite(&n->rc30, sizeof(n->rc30), 1, f);
-	fwrite(&n->rc50, sizeof(n->rc50), 1, f);
-	fwrite(&n->rc70, sizeof(n->rc70), 1, f);
+	fwrite(&n->rc30,   sizeof(n->rc30),   1, f);
+	fwrite(&n->rc50,   sizeof(n->rc50),   1, f);
+	fwrite(&n->rc70,   sizeof(n->rc70),   1, f);
 
 	for (i = 0; i < n->sz; i++) {
 		item = n->children[i].item;
 		fwrite(&item, sizeof(item), 1, f);
 		save_its_node(f, n->children[i].iptr);
 	}
+}
+
+static struct itstree_node *read_its_node(FILE *f)
+{
+	struct itstree_node *ret = init_empty_itstree();
+	size_t i;
+	int item;
+
+	fread(&ret->sp,     sizeof(ret->sp),     1, f);
+	fread(&ret->sz,     sizeof(ret->sz),     1, f);
+	fread(&ret->dpseen, sizeof(ret->dpseen), 1, f);
+	fread(&ret->rc30,   sizeof(ret->rc30),   1, f);
+	fread(&ret->rc50,   sizeof(ret->rc50),   1, f);
+	fread(&ret->rc70,   sizeof(ret->rc70),   1, f);
+	ret->children = realloc(ret->children, ret->sp*sizeof(ret->children[0]));
+
+	for (i = 0; i < ret->sz; i++) {
+		fread(&item, sizeof(item), 1, f);
+		ret->children[i].item = item;
+		ret->children[i].iptr = read_its_node(f);
+	}
+
+	return ret;
 }
 
 void save_its(const struct itstree_node *itst, const char *fname,
@@ -141,7 +164,7 @@ void save_its(const struct itstree_node *itst, const char *fname,
 	f = fopen(filename, "w");
 
 	fwrite(&lmax, sizeof(lmax), 1, f);
-	fwrite(&ni, sizeof(ni), 1, f);
+	fwrite(&ni,   sizeof(ni),   1, f);
 	save_its_node(f, itst);
 
 	if (!f)
@@ -149,4 +172,24 @@ void save_its(const struct itstree_node *itst, const char *fname,
 
 	fclose(f);
 	free(filename);
+}
+
+struct itstree_node *load_its(const char *fname, size_t lmax, size_t ni)
+{
+	FILE *f = fopen(fname, "r");
+	struct itstree_node *ret;
+	size_t lmaxc, nic;
+
+	if (!f)
+		die("Unable to read itemset tree from %s", fname);
+
+	fread(&lmaxc, sizeof(lmaxc), 1, f);
+	fread(&nic,   sizeof(nic),   1, f);
+	if (lmaxc != lmax || nic != ni)
+		die("Itemset tree input filename %s for wrong settings", fname);
+
+	ret = read_its_node(f);
+
+	fclose(f);
+	return ret;
 }
