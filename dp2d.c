@@ -8,8 +8,8 @@
 #include "fp.h"
 #include "globals.h"
 #include "histogram.h"
+#include "itstree.h"
 #include "rs.h"
-#include "rule_data.h"
 
 #define MICROSECONDS 1000000L
 
@@ -117,7 +117,8 @@ static void print_this_rule(const int *A, const int* AB,
 /**
  * Checks whether the current itemset has been generated previously
  */
-static int its_already_seen(int *its, size_t itslen, const struct rule_data *rd)
+static int its_already_seen(int *its, size_t itslen,
+		const struct itstree_node *itst)
 {
 	int *cf = calloc(itslen, sizeof(cf[0]));
 	size_t i, ret = 0;
@@ -126,7 +127,7 @@ static int its_already_seen(int *its, size_t itslen, const struct rule_data *rd)
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	ret = search_rule_data(rd, cf, itslen);
+	ret = search_rule(itst, cf, itslen);
 
 	free(cf);
 	return ret;
@@ -136,7 +137,7 @@ static int its_already_seen(int *its, size_t itslen, const struct rule_data *rd)
  * Updates the list of itemsets that were generated.
  */
 static void update_seen_its(const int *its, size_t itslen,
-		struct rule_data *rd)
+		struct itstree_node *itst)
 {
 	int *cf = calloc(itslen, sizeof(cf[0]));
 	size_t i;
@@ -145,7 +146,7 @@ static void update_seen_its(const int *its, size_t itslen,
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	record_new_rule(rd, cf, itslen);
+	record_new_rule(itst, cf, itslen);
 	free(cf);
 }
 
@@ -183,7 +184,7 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 static void generate_rules(const int *items, size_t lmax,
 		const struct fptree *fp,
 		double *minc, double *maxc, struct histogram *h,
-		struct rule_data *rd)
+		struct itstree_node *itst)
 {
 	int *AB = calloc(lmax, sizeof(AB[0]));
 	size_t i, j, max=1<<lmax, ab_length;
@@ -195,9 +196,9 @@ static void generate_rules(const int *items, size_t lmax,
 				AB[ab_length++] = items[j];
 		if (ab_length < 2)
 			continue;
-		if (its_already_seen(AB, ab_length, rd))
+		if (its_already_seen(AB, ab_length, itst))
 			continue;
-		update_seen_its(AB, ab_length, rd);
+		update_seen_its(AB, ab_length, itst);
 		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc, h);
 	}
 
@@ -336,7 +337,7 @@ static inline int generated_above(const int *celms, size_t level)
 static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		size_t numits, size_t lmax, const int *celms, size_t level,
 		double c0, double *epss, size_t *spls, struct histogram *h,
-		double *minc, double *maxc, struct rule_data *rd,
+		double *minc, double *maxc, struct itstree_node *itst,
 		struct drand48_data *randbuffer)
 {
 	struct reservoir_item *rit = calloc(1, sizeof(*rit));
@@ -361,7 +362,8 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 		rit->items[level] = ic[i].value;
 		if (generated_above(rit->items, level))
 			continue;
-		if (level == lmax - 1 && its_already_seen(rit->items, lmax, rd))
+		if (level == lmax - 1 &&
+				its_already_seen(rit->items, lmax, itst))
 			continue;
 
 		rit->support = fpt_itemset_count(fp, rit->items, rit->sz);
@@ -375,10 +377,10 @@ static void mine_level(const struct fptree *fp, const struct item_count *ic,
 	if (level == lmax - 1)
 		while ((crit = next_item(ri)))
 			generate_rules(crit->items, lmax, fp, minc, maxc, h,
-					rd);
+					itst);
 	else while ((crit = next_item(ri)))
 		mine_level(fp, ic, numits, lmax, crit->items, level + 1, c0,
-				epss, spls, h, minc, maxc, rd, randbuffer);
+				epss, spls, h, minc, maxc, itst, randbuffer);
 	free_reservoir_iterator(ri);
 	free_reservoir(r);
 }
@@ -424,8 +426,8 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 		struct drand48_data *randbuffer)
 {
 	double *epsilons = calloc(lmax, sizeof(epsilons[0]));
+	struct itstree_node *itst = init_empty_itstree();
 	size_t *spl = calloc(lmax, sizeof(spl[0]));
-	struct rule_data *rd = init_rule_data();
 	size_t i, f = 1;
 	double cf = 0;
 
@@ -449,10 +451,10 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	printf("Total leaves %lu\n", f);
 
 	mine_level(fp, ic, numits, lmax, NULL, 0, c0, epsilons, spl, h,
-			minc, maxc, rd, randbuffer);
+			minc, maxc, itst, randbuffer);
 
 	free(epsilons);
-	free_rule_data(rd);
+	free_itstree(itst);
 	free(spl);
 }
 
