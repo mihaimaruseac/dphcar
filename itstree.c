@@ -193,3 +193,30 @@ struct itstree_node *load_its(const char *fname, size_t lmax, size_t ni)
 	fclose(f);
 	return ret;
 }
+
+static void do_count(const struct itstree_node *itst,
+		size_t *n30, size_t *n50, size_t *n70, int private)
+{
+	size_t i;
+
+	if (!private || itst->dpseen) {
+		*n30 += itst->rc30;
+		*n50 += itst->rc50;
+		*n70 += itst->rc70;
+	}
+
+	for (i = 0; i < itst->sz; i++)
+		do_count(itst->children[i].iptr, n30, n50, n70, private);
+}
+
+void itstree_count_real(const struct itstree_node *itst,
+		size_t *n30, size_t *n50, size_t *n70)
+{
+	do_count(itst, n30, n50, n70, 0);
+}
+
+void itstree_count_priv(const struct itstree_node *itst,
+		size_t *p30, size_t *p50, size_t *p70)
+{
+	do_count(itst, p30, p50, p70, 1);
+}

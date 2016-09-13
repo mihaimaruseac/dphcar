@@ -20,5 +20,11 @@ void save_its(const struct itstree_node *itst, const char *fname,
 		size_t lmax, size_t ni);
 struct itstree_node *load_its(const char *fname, size_t lmax, size_t ni);
 
+
+void itstree_count_real(const struct itstree_node *itst,
+		size_t *n30, size_t *n50, size_t *n70);
+void itstree_count_priv(const struct itstree_node *itst,
+		size_t *p30, size_t *p50, size_t *p70);
+
 #endif
 
