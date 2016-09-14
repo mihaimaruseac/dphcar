@@ -137,6 +137,7 @@ static int its_already_seen(int *its, size_t itslen,
  * Updates the list of itemsets that were generated.
  */
 static void update_seen_its(const int *its, size_t itslen,
+		size_t n30, size_t n50, size_t n70,
 		struct itstree_node *itst)
 {
 	int *cf = calloc(itslen, sizeof(cf[0]));
@@ -146,12 +147,13 @@ static void update_seen_its(const int *its, size_t itslen,
 		cf[i] = its[i];
 
 	qsort(cf, itslen, sizeof(cf[0]), int_cmp);
-	record_its_private(itst, cf, itslen);
+	record_its_private(itst, cf, itslen, n30, n50, n70);
 	free(cf);
 }
 
 static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 		const struct fptree *fp, double *minc, double *maxc,
+		size_t *n30, size_t *n50, size_t *n70,
 		struct histogram *h)
 {
 	int *A = calloc(ab_length, sizeof(A[0]));
@@ -172,6 +174,9 @@ static void generate_rules_from_itemset(const int *AB, size_t ab_length,
 		if (c < *minc) *minc = c;
 		if (c > *maxc) *maxc = c;
 		histogram_register(h, c);
+		if (c > .3) *n30+=1;
+		if (c > .5) *n50+=1;
+		if (c > .7) *n70+=1;
 
 #if PRINT_FINAL_RULES
 		print_this_rule(A, AB, a_length, ab_length, c);
@@ -186,8 +191,8 @@ static void generate_rules(const int *items, size_t lmax,
 		double *minc, double *maxc, struct histogram *h,
 		struct itstree_node *itst)
 {
+	size_t i, j, max=1<<lmax, ab_length, n30, n50, n70;
 	int *AB = calloc(lmax, sizeof(AB[0]));
-	size_t i, j, max=1<<lmax, ab_length;
 
 	for (i = 0; i < max; i++) {
 		ab_length = 0;
@@ -198,8 +203,10 @@ static void generate_rules(const int *items, size_t lmax,
 			continue;
 		if (its_already_seen(AB, ab_length, itst))
 			continue;
-		update_seen_its(AB, ab_length, itst);
-		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc, h);
+		n30 = n50 = n70 = 0;
+		generate_rules_from_itemset(AB, ab_length, fp, minc, maxc,
+				&n30, &n50, &n70, h);
+		update_seen_its(AB, ab_length, n30, n50, n70, itst);
 	}
 
 	free(AB);
@@ -485,10 +492,10 @@ static void print_recall(const struct itstree_node *itst)
 	r50 = div_or_zero(p50, n50);
 	r70 = div_or_zero(p70, n70);
 
-	printf("Confthr: %10.2lf %10.2lf %10.2lf\n", .30, .50, .70);
-	printf("Real   : %10.2lu %10.2lu %10.2lu\n", n30, n50, n70);
-	printf("Private: %10.2lu %10.2lu %10.2lu\n", p30, p50, p70);
-	printf("Recall : %10.2lf %10.2lf %10.2lf\n", r30, r50, r70);
+	printf("Confthr: %14.2lf %14.2lf %14.2lf\n", .30, .50, .70);
+	printf("Real   :   %12lu   %12lu   %12lu\n", n30, n50, n70);
+	printf("Private:   %12lu   %12lu   %12lu\n", p30, p50, p70);
+	printf("Recall : %14.2lf %14.2lf %14.2lf\n", r30, r50, r70);
 }
 
 void dp2d(const struct fptree *fp, struct itstree_node *itst,

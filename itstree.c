@@ -19,6 +19,8 @@ struct itstree_node {
 	int dpseen;
 	/* rule counters (for recall) */
 	size_t rc30, rc50, rc70;
+	/* private counters (for recall) */
+	size_t pc30, pc50, pc70;
 };
 
 static int cmp(const void *a, const void *b)
@@ -44,9 +46,12 @@ static void do_record_new_rule(struct itstree_node *itst, const int *its,
 	struct children_info k, *p;
 
 	if (!sz) {
-		if (private)
+		if (private) {
 			itst->dpseen = 1;
-		else {
+			itst->pc30 = rc30;
+			itst->pc50 = rc50;
+			itst->pc70 = rc70;
+		} else {
 			itst->rc30 = rc30;
 			itst->rc50 = rc50;
 			itst->rc70 = rc70;
@@ -74,9 +79,10 @@ static void do_record_new_rule(struct itstree_node *itst, const int *its,
 }
 #undef FILLFACTOR
 
-void record_its_private(struct itstree_node *itst, const int *its, size_t sz)
+void record_its_private(struct itstree_node *itst, const int *its, size_t sz,
+		size_t rc30, size_t rc50, size_t rc70)
 {
-	do_record_new_rule(itst, its, sz, 1, 0, 0, 0);
+	do_record_new_rule(itst, its, sz, 1, rc30, rc50, rc70);
 }
 
 void record_its(struct itstree_node *itst, const int *its, size_t sz,
@@ -203,7 +209,11 @@ static void do_count(const struct itstree_node *itst,
 {
 	size_t i;
 
-	if (!private || itst->dpseen) {
+	if (private) {
+		*n30 += itst->pc30;
+		*n50 += itst->pc50;
+		*n70 += itst->pc70;
+	} else {
 		*n30 += itst->rc30;
 		*n50 += itst->rc50;
 		*n70 += itst->rc70;
