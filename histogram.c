@@ -36,6 +36,19 @@ void histogram_register(struct histogram *h, double val)
 		}
 }
 
+size_t histogram_get_bin_c(const struct histogram *h, int bin)
+{
+	size_t ret = 0;
+
+	if (bin < 0 || bin >= c_num_values)
+		die("Invalid bin requested");
+
+	for (; bin >= 0; bin--)
+		ret += h->values[bin];
+
+	return ret;
+}
+
 size_t histogram_get_bin(const struct histogram *h, int bin)
 {
 	if (bin < 0 || bin >= c_num_values)

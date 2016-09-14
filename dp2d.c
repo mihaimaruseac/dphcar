@@ -477,9 +477,10 @@ static inline void print_item_table(const struct item_count *ic, size_t n)
 }
 #endif
 
-static void print_recall(const struct itstree_node *itst)
+static void print_recall(const struct itstree_node *itst,
+		const struct histogram *h, size_t numits, size_t lmax)
 {
-	size_t n30, n50, n70, p30, p50, p70;
+	size_t n30, n50, n70, p30, p50, p70, N, T;
 	double r30, r50, r70;
 
 	n30 = n50 = n70 = 0;
@@ -493,9 +494,31 @@ static void print_recall(const struct itstree_node *itst)
 	r70 = div_or_zero(p70, n70);
 
 	printf("Confthr: %14.2lf %14.2lf %14.2lf\n", .30, .50, .70);
-	printf("Real   :   %12lu   %12lu   %12lu\n", n30, n50, n70);
 	printf("Private:   %12lu   %12lu   %12lu\n", p30, p50, p70);
+	printf("Real   :   %12lu   %12lu   %12lu\n", n30, n50, n70);
 	printf("Recall : %14.2lf %14.2lf %14.2lf\n", r30, r50, r70);
+
+	switch (lmax) {
+	case 3: N = numits * (numits -1) * (numits - 1); break;
+	case 5: {
+			size_t x2 = numits * numits;
+			size_t x4 = x2 * x2;
+			N = 3 * x4 - 23 * x2 * numits + 75 * x2 - 97 * numits;
+			N = (N + 42) / 12 * numits;
+			break;
+		}
+	default: N = 0;
+	}
+
+	T = histogram_get_all(h);
+	n30 = N * div_or_zero(histogram_get_bin_c(h, 6), T);
+	n50 = N * div_or_zero(histogram_get_bin_c(h, 4), T);
+	n70 = N * div_or_zero(histogram_get_bin_c(h, 2), T);
+	r30 = div_or_zero(p30, n30);
+	r50 = div_or_zero(p50, n50);
+	r70 = div_or_zero(p70, n70);
+	printf("estReal:   %12lu   %12lu   %12lu\n", n30, n50, n70);
+	printf("estRcll: %14.2lf %14.2lf %14.2lf\n", r30, r50, r70);
 }
 
 void dp2d(const struct fptree *fp, struct itstree_node *itst,
@@ -536,7 +559,7 @@ void dp2d(const struct fptree *fp, struct itstree_node *itst,
 	printf("Final histogram:\n");
 	histogram_dump(stdout, h, 1, "\t");
 
-	print_recall(itst);
+	print_recall(itst, h, numits, lmax);
 
 	free_histogram(h);
 	free(ic);

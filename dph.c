@@ -81,7 +81,10 @@ int main(int argc, char **argv)
 	printf("fp-tree: items: %lu, transactions: %lu, nodes: %d, depth: %d\n",
 			fp.n, fp.t, fpt_nodes(&fp), fpt_height(&fp));
 
-	itst = load_its(args.rfname, args.lmax, args.ni);
+	if (!strncmp(args.rfname, "-", 1))
+		itst = init_empty_itstree();
+	else
+		itst = load_its(args.rfname, args.lmax, args.ni);
 	dp2d(&fp, itst, args.eps, args.er1, args.c0, args.lmax,
 			args.ni, args.cspl, args.seed);
 
