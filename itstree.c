@@ -163,12 +163,14 @@ void save_its(const struct itstree_node *itst, const char *fname,
 	asprintf(&filename, "%s_%lu_%lu", fname, lmax, ni);
 	f = fopen(filename, "w");
 
+	if (!f)
+		die("Unable to save file %s", filename);
+
+	printf("Saving its to %s ... ", filename);
 	fwrite(&lmax, sizeof(lmax), 1, f);
 	fwrite(&ni,   sizeof(ni),   1, f);
 	save_its_node(f, itst);
-
-	if (!f)
-		die("Unable to save file %s", filename);
+	printf("OK\n");
 
 	fclose(f);
 	free(filename);
@@ -183,12 +185,14 @@ struct itstree_node *load_its(const char *fname, size_t lmax, size_t ni)
 	if (!f)
 		die("Unable to read itemset tree from %s", fname);
 
+	printf("Loading its ... ");
 	fread(&lmaxc, sizeof(lmaxc), 1, f);
 	fread(&nic,   sizeof(nic),   1, f);
 	if (lmaxc != lmax || nic != ni)
 		die("Itemset tree input filename %s for wrong settings", fname);
 
 	ret = read_its_node(f);
+	printf("OK\n");
 
 	fclose(f);
 	return ret;
