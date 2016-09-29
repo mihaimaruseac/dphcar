@@ -18,6 +18,8 @@ class Experiment:
         self.rules50 = 0
         self.rules = 0
         self.prec = 0
+        self.realrules = 0
+        self.recall = 0
 
     def recordLeaves(self, leaves):
         self.leaves = leaves
@@ -35,17 +37,24 @@ class Experiment:
     def recordRules(self, rules):
         self.rules = rules
 
+    def recordRealRules(self, realrules):
+        self.realrules = realrules
+
+    def recordRecall(self, recall):
+        self.recall = recall
+
     def __str__(self):
         s = "{0.db:10}\t{0.eps}\t{0.eps_share}\t{0.c0}".format(self)
         s = "{1}\t{0.rmax}\t{0.nits}\t{0.bf}\t{0.seed}".format(self, s)
         s = "{1}\t{0.leaves}\t{0.time}\t{0.tpl:6.3f}".format(self, s)
         s = "{1}\t{0.rules}\t{0.rules50}\t{0.prec:5.2f}".format(self, s)
+        s = "{1}\t{0.realrules}\t{0.recall}".format(self, s)
         return s
 
     @staticmethod
     def legend():
         s = "db\t\teps\tepsh\tc0\trmax\tnits\tbf\tseed\tleaves\ttime"
-        s += "\ttpl\trules\trules50\tprec50"
+        s += "\ttpl\trules\trules50\tprec50\trealrls\trecall"
         return s
 
 experiments = []
@@ -55,7 +64,7 @@ for r, _, files in os.walk(sys.argv[1]):
             exp = None
             for line in f:
                 if line.startswith("./dph"):
-                    _, ds, eps, es, c0, rmax, nits, bf, seed = line.split()
+                    _, ds, _, eps, es, c0, rmax, nits, bf, seed = line.split()
                     exp = Experiment(ds.split('/')[-1].split('.')[0],\
                             float(eps), float(es), float(c0), int(rmax),\
                             int(nits), int(bf), int(seed))
@@ -70,6 +79,12 @@ for r, _, files in os.walk(sys.argv[1]):
                 elif line.startswith("\t0.00"):
                     _, _, _, rs, _ = line.split()
                     exp.recordRules(int(rs))
+                elif line.startswith("Real"):
+                    _, _, _, rr, _ = line.split()
+                    exp.recordRealRules(int(rr))
+                elif line.startswith("Recall"):
+                    _, _, _, rc, _ = line.split()
+                    exp.recordRecall(float(rc))
             experiments.append(exp)
     break # disable recursion
 
@@ -77,6 +92,9 @@ def print_experiments():
     print Experiment.legend()
     for exp in experiments:
         print exp
+
+print_experiments()
+sys.exit(-1)
 
 def plot_exp(exps, xfun, yfun, selecfuns=[], outname=None, title=None,
         xlabel=None, ylabel=None, xrng=None, yrng=None):
