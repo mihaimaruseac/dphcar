@@ -65,6 +65,19 @@ static int ic_noisy_cmp(const void *a, const void *b)
 	return double_cmp_r(&ia->noisy_count, &ib->noisy_count);
 }
 
+#if PRINT_ITEM_TABLE
+static inline void print_item_table(const struct item_count *ic, size_t n)
+{
+	size_t i;
+
+	printf("\n");
+	for (i = 0; i < n; i++)
+		printf("%5lu[%5.2lf] %5d %7d %9.2lf\n", i, (i + 1.0)/n,
+				ic[i].value, ic[i].real_count,
+				ic[i].noisy_count);
+}
+#endif
+
 static size_t build_items_table(const struct fptree *fp, struct item_count *ic,
 		double eps, struct drand48_data *buffer)
 {
@@ -463,19 +476,6 @@ static void mine_rules(const struct fptree *fp, const struct item_count *ic,
 	free(epsilons);
 	free(spl);
 }
-
-#if PRINT_ITEM_TABLE
-static inline void print_item_table(const struct item_count *ic, size_t n)
-{
-	size_t i;
-
-	printf("\n");
-	for (i = 0; i < n; i++)
-		printf("%5lu[%5.2lf] %5d %7d %9.2lf\n", i, (i + 1.0)/n,
-				ic[i].value, ic[i].real_count,
-				ic[i].noisy_count);
-}
-#endif
 
 static void print_recall(const struct itstree_node *itst,
 		const struct histogram *h, size_t numits, size_t lmax)
