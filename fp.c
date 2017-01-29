@@ -85,10 +85,11 @@ static void single_item_stat(FILE *f, struct fptree *fp)
 	}
 	qsort(fp->table, fp->n, sizeof(fp->table[0]), fptable_cmp);
 
-	for (i = 0; i < fp->n; i++)
-		for (x = 0; x < fp->n; x++)
-			if (fp->table[x].val == i + 1)
-				fp->table[i].rpi = x;
+	for (x = 0; x < fp->n; x++) {
+		i = fp->table[x].val - 1;
+		if (i < fp->n) /* check to be inside table */
+			fp->table[i].rpi = x;
+	}
 
 	free(xs);
 	fseek(f, 0, SEEK_SET);
